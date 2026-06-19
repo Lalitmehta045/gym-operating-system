@@ -6,6 +6,12 @@ export function middleware(request: NextRequest) {
 
   // Determine allowed origins for CSP
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  let apiOrigin = apiUrl;
+  try {
+    apiOrigin = new URL(apiUrl).origin;
+  } catch (e) {
+    console.error("Invalid NEXT_PUBLIC_API_URL");
+  }
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   // Apply strict security headers
@@ -28,7 +34,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https://i.pravatar.cc", // Whitelist pravatar for testimonials
     "font-src 'self'",
-    `connect-src 'self' ${apiUrl} ws://localhost:* wss://localhost:* http://localhost:*`,
+    `connect-src 'self' ${apiOrigin} ws://localhost:* wss://localhost:* http://localhost:*`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
