@@ -55,7 +55,7 @@ export class AuthController {
     response.cookie('csrfToken', csrfToken, {
       httpOnly: false,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: isProduction ? 'none' : 'strict',
       maxAge: 24 * 60 * 60 * 1000,
       path: '/',
     });

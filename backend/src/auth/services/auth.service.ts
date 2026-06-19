@@ -679,7 +679,7 @@ export class AuthService {
     response.cookie(REFRESH_TOKEN_COOKIE_NAME, token, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: isProduction ? 'none' : 'strict',
       maxAge: REFRESH_TOKEN_COOKIE_MAX_AGE,
       path: '/api/v1/auth',
     });
@@ -694,7 +694,7 @@ export class AuthService {
     response.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: isProduction ? 'none' : 'strict',
       path: '/api/v1/auth',
     });
   }
