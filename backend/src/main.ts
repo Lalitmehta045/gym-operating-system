@@ -41,6 +41,11 @@ async function bootstrap() {
   const allowedOrigins = frontendUrl
     ? frontendUrl.split(',').map((url) => url.trim())
     : ['http://localhost:3000', 'http://localhost:3001'];
+  
+  // Ensure the deployed Vercel frontend is always allowed
+  if (!allowedOrigins.includes('https://gym-operating-system.vercel.app')) {
+    allowedOrigins.push('https://gym-operating-system.vercel.app');
+  }
 
   app.enableCors({
     origin: allowedOrigins,
