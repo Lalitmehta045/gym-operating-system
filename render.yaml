@@ -18,6 +18,8 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=4096"
 
 databases:
   - name: gym-os-db
