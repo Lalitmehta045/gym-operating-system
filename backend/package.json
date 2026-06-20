@@ -9,7 +9,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "npx prisma migrate deploy && (npx prisma db seed || echo 'Seed failed or skipped') && node dist/src/main.js",
+    "start": "npx prisma db push --accept-data-loss && (npx prisma db seed || echo 'Seed failed or skipped') && node dist/src/main.js",
     "start:local": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
