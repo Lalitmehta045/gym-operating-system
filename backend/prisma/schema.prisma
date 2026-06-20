@@ -20,6 +20,7 @@ enum TenantStatus {
   TRIAL
   EXPIRED
   SUSPENDED
+  PENDING
 }
 
 enum TenantSubscriptionStatus {
@@ -142,8 +143,8 @@ model Tenant {
   currency       String  @default("INR") @db.VarChar(3)
   businessHours  Json?   @map("business_hours")
 
-  status    TenantStatus @default(TRIAL) @map("status")
-  isActive  Boolean      @default(true)
+  status    TenantStatus @default(PENDING) @map("status")
+  isActive  Boolean      @default(false)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")

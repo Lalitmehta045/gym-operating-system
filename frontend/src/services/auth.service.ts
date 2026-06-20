@@ -5,6 +5,17 @@ export interface LoginCredentials {
   password: string
 }
 
+export interface RegisterOwnerData {
+  gymName: string;
+  gymEmail: string;
+  gymPhone?: string;
+  gymAddress?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
 export interface AuthResponse {
   accessToken: string
   refreshToken?: string
@@ -30,6 +41,13 @@ export const authService = {
 
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const { data } = await api.post<AuthResponse>("/auth/login", credentials, {
+      withCredentials: true,
+    })
+    return data
+  },
+
+  register: async (credentials: RegisterOwnerData): Promise<{ message: string }> => {
+    const { data } = await api.post<{ message: string }>("/auth/register", credentials, {
       withCredentials: true,
     })
     return data

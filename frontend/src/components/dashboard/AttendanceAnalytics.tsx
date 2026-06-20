@@ -11,28 +11,28 @@ export function AttendanceAnalytics() {
   if (!data) return null
 
   return (
-    <div className="rounded-[8px] border border-[#ebebeb] bg-[#ffffff] p-[24px] shadow-[0px_1px_1px_#00000005,0px_2px_2px_#0000000a]">
-      <div className="flex items-center justify-between">
-        <h2 className="font-mono text-[12px] uppercase tracking-wider text-[#888888]">Attendance Analytics</h2>
-        <span className="text-[14px] font-medium text-[#171717]">Rate: {data.attendanceRate.toFixed(1)}%</span>
+    <div className="metric-card">
+      <div className="flex items-center justify-between border-b border-[var(--hairline-soft)] pb-4 mb-[24px]">
+        <h2 className="text-mono-caps text-[var(--mute)]">Attendance Analytics</h2>
+        <span className="text-body-sm font-medium text-[var(--on-primary)]">Rate: {data.attendanceRate.toFixed(1)}%</span>
       </div>
 
-      <div className="mt-[24px] grid grid-cols-2 gap-[16px] sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-[16px] sm:grid-cols-4">
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Present</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.todayPresent}</span>
+          <span className="text-body-sm text-[var(--ash)]">Present</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.todayPresent}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Absent</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.todayAbsent}</span>
+          <span className="text-body-sm text-[var(--ash)]">Absent</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.todayAbsent}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Late</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.todayLate}</span>
+          <span className="text-body-sm text-[var(--ash)]">Late</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.todayLate}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Missed</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.todayMissed}</span>
+          <span className="text-body-sm text-[var(--ash)]">Missed</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.todayMissed}</span>
         </div>
       </div>
     </div>

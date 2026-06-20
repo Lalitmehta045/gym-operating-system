@@ -84,7 +84,7 @@ export class AuthService {
     response: Response,
     userAgent?: string,
     ipAddress?: string,
-  ): Promise<AuthResponseDto> {
+  ): Promise<{ message: string }> {
     // Check for existing tenant with same email
     const existingTenant = await this.prisma.tenant.findUnique({
       where: { email: dto.gymEmail },
@@ -104,6 +104,8 @@ export class AuthService {
           email: dto.gymEmail,
           phone: dto.gymPhone,
           address: dto.gymAddress,
+          status: 'PENDING',
+          isActive: false,
         },
       });
 
@@ -115,6 +117,7 @@ export class AuthService {
           email: dto.email,
           passwordHash,
           role: Role.OWNER,
+          isActive: false,
         },
       });
 
@@ -123,10 +126,7 @@ export class AuthService {
 
     this.logger.log(`Gym "${tenant.name}" registered with owner ${user.email}`);
 
-    await this.tenantSubscriptionService.createTrialSubscription(tenant.id);
-
-    // Generate tokens
-    return this.buildAuthResponse(user, response, userAgent, ipAddress);
+    return { message: 'Registration successful. Your account is pending superadmin approval.' };
   }
 
   // ─── Login (with account-lock protection) ─────────────────────────────────
@@ -152,11 +152,18 @@ export class AuthService {
         email: dto.email,
         deletedAt: null,
       },
+      include: {
+        tenant: true,
+      },
     });
 
     // Always run the same generic error to prevent user-enumeration
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.tenant && user.tenant.status === 'PENDING') {
+      throw new UnauthorizedException('Your account is currently under review by the superadmin.');
     }
 
     if (!user.isActive) {

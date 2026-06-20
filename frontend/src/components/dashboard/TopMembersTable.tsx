@@ -12,27 +12,27 @@ export function TopMembersTable() {
   if (!data) return null
 
   return (
-    <div className="rounded-[8px] border border-[#ebebeb] bg-[#ffffff] p-[24px] shadow-[0px_1px_1px_#00000005,0px_2px_2px_#0000000a]">
-      <h2 className="mb-[16px] font-mono text-[12px] uppercase tracking-wider text-[#888888]">Top Members (Attendance)</h2>
+    <div className="metric-card">
+      <h2 className="mb-[16px] text-mono-caps text-[var(--mute)]">Top Members (Attendance)</h2>
 
       {data.length === 0 ? (
         <EmptyState title="No members found" description="There is not enough attendance data to determine top members yet." />
       ) : (
-        <div className="overflow-hidden rounded-[8px] border border-[#ebebeb]">
+        <div className="overflow-hidden rounded-[var(--radius-app-lg)] border border-[var(--hairline-soft)]">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Rank</TableHead>
-                <TableHead>Member Name</TableHead>
-                <TableHead className="text-right">Attendance %</TableHead>
+              <TableRow className="border-b border-[var(--hairline-soft)] hover:bg-[var(--canvas)]">
+                <TableHead className="w-16 text-[var(--mute)]">Rank</TableHead>
+                <TableHead className="text-[var(--mute)]">Member Name</TableHead>
+                <TableHead className="text-right text-[var(--mute)]">Attendance %</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((member, index) => (
-                <TableRow key={member.memberId}>
-                  <TableCell className="font-medium text-[#888888]">#{index + 1}</TableCell>
-                  <TableCell className="font-medium">{member.memberName}</TableCell>
-                  <TableCell className="text-right">{member.attendancePercentage.toFixed(1)}%</TableCell>
+                <TableRow key={member.memberId} className="border-b border-[var(--hairline-soft)] hover:bg-[var(--canvas)]">
+                  <TableCell className="font-medium text-[var(--ash)]">#{index + 1}</TableCell>
+                  <TableCell className="font-medium text-[var(--on-primary)]">{member.memberName}</TableCell>
+                  <TableCell className="text-right text-[var(--on-primary)]">{member.attendancePercentage.toFixed(1)}%</TableCell>
                 </TableRow>
               ))}
             </TableBody>

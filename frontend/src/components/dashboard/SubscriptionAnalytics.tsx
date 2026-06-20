@@ -11,42 +11,42 @@ export function SubscriptionAnalytics() {
   if (!data) return null
 
   return (
-    <div className="rounded-[8px] border border-[#ebebeb] bg-[#ffffff] p-[24px] shadow-[0px_1px_1px_#00000005,0px_2px_2px_#0000000a]">
-      <h2 className="font-mono text-[12px] uppercase tracking-wider text-[#888888]">Subscription Analytics</h2>
+    <div className="metric-card">
+      <h2 className="text-mono-caps text-[var(--mute)] border-b border-[var(--hairline-soft)] pb-4 mb-[24px]">Subscription Analytics</h2>
 
-      <div className="mt-[24px] grid grid-cols-2 gap-[16px] sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-[16px] sm:grid-cols-4">
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Active</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.activeSubscriptions}</span>
+          <span className="text-body-sm text-[var(--ash)]">Active</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.activeSubscriptions}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Pending</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.pendingSubscriptions}</span>
+          <span className="text-body-sm text-[var(--ash)]">Pending</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.pendingSubscriptions}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Expired</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.expiredSubscriptions}</span>
+          <span className="text-body-sm text-[var(--ash)]">Expired</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.expiredSubscriptions}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Cancelled</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.cancelledSubscriptions}</span>
+          <span className="text-body-sm text-[var(--ash)]">Cancelled</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.cancelledSubscriptions}</span>
         </div>
       </div>
 
-      <div className="mt-[24px] border-t border-[#ebebeb] pt-[24px]">
-        <h3 className="font-mono text-[11px] uppercase tracking-wider text-[#888888]">Upcoming Expiries</h3>
-        <div className="mt-[12px] grid grid-cols-3 gap-[16px]">
+      <div className="mt-[24px] border-t border-[var(--hairline-soft)] pt-[24px]">
+        <h3 className="text-mono-caps text-[var(--mute)] mb-[12px]">Upcoming Expiries</h3>
+        <div className="grid grid-cols-3 gap-[16px]">
           <div className="flex flex-col">
-            <span className="text-[14px] text-[#4d4d4d]">Next 7 Days</span>
-            <span className="text-[16px] font-medium text-[#171717]">{data.expiringNext7Days}</span>
+            <span className="text-body-sm text-[var(--ash)]">Next 7 Days</span>
+            <span className="text-body font-medium text-[var(--on-primary)]">{data.expiringNext7Days}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[14px] text-[#4d4d4d]">Next 15 Days</span>
-            <span className="text-[16px] font-medium text-[#171717]">{data.expiringNext15Days}</span>
+            <span className="text-body-sm text-[var(--ash)]">Next 15 Days</span>
+            <span className="text-body font-medium text-[var(--on-primary)]">{data.expiringNext15Days}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[14px] text-[#4d4d4d]">Next 30 Days</span>
-            <span className="text-[16px] font-medium text-[#171717]">{data.expiringNext30Days}</span>
+            <span className="text-body-sm text-[var(--ash)]">Next 30 Days</span>
+            <span className="text-body font-medium text-[var(--on-primary)]">{data.expiringNext30Days}</span>
           </div>
         </div>
       </div>

@@ -11,29 +11,29 @@ export function MembersAnalytics() {
   if (!data) return null
 
   return (
-    <div className="rounded-[8px] border border-[#ebebeb] bg-[#ffffff] p-[24px] shadow-[0px_1px_1px_#00000005,0px_2px_2px_#0000000a]">
-      <h2 className="font-mono text-[12px] uppercase tracking-wider text-[#888888]">Member Analytics</h2>
+    <div className="metric-card">
+      <h2 className="text-mono-caps text-[var(--mute)] border-b border-[var(--hairline-soft)] pb-4 mb-[24px]">Member Analytics</h2>
 
-      <div className="mt-[24px] grid grid-cols-2 gap-[16px] sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-[16px] sm:grid-cols-5">
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Total Members</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.totalMembers}</span>
+          <span className="text-body-sm text-[var(--ash)]">Total Members</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.totalMembers}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Active</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.activeMembers}</span>
+          <span className="text-body-sm text-[var(--ash)]">Active</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.activeMembers}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Inactive</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.inactiveMembers}</span>
+          <span className="text-body-sm text-[var(--ash)]">Inactive</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.inactiveMembers}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">Suspended</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.suspendedMembers}</span>
+          <span className="text-body-sm text-[var(--ash)]">Suspended</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.suspendedMembers}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[14px] text-[#4d4d4d]">New This Month</span>
-          <span className="text-[20px] font-semibold text-[#171717]">{data.newMembersThisMonth}</span>
+          <span className="text-body-sm text-[var(--ash)]">New This Month</span>
+          <span className="text-heading-sm text-[var(--on-primary)]">{data.newMembersThisMonth}</span>
         </div>
       </div>
     </div>

@@ -1,6 +1,40 @@
 @import "tailwindcss";
 
 :root {
+  --canvas: #ffffff;
+  --canvas-soft: #fafafa;
+  --canvas-light: #ffffff;
+  --canvas-paper: #ededed;
+  
+  --brand: #f36458;
+  --brand-deep: #dd0000;
+  
+  --primary: #ffffff;
+  --on-primary: #171717;
+  
+  --ink: #0b0b0b;
+  --ink-soft: #212121;
+  
+  --graphite: #353535;
+  --slate: #3c4758;
+  --slate-soft: #505b6c;
+  
+  --mute: #797979;
+  --ash: #4d4d4d;
+  
+  --hairline: #ebebeb;
+  --hairline-soft: #ebebeb;
+  
+  --surface-blue-bg: #afe3ff;
+  
+  --link-blue: #0052ef;
+  --link-blue-soft: #55beff;
+  
+  --success: #37cd84;
+  --error: #dd0000;
+}
+
+.dark {
   --canvas: #0b0b0b;
   --canvas-soft: #212121;
   --canvas-light: #ffffff;
@@ -24,15 +58,8 @@
   
   --hairline: #ededed;
   --hairline-soft: #353535;
-  
-  --surface-blue-bg: #afe3ff;
-  
-  --link-blue: #0052ef;
-  --link-blue-soft: #55beff;
-  
-  --success: #37cd84;
-  --error: #dd0000;
-
+}
+:root {
   --spacing-xxs: 4px;
   --spacing-xs: 8px;
   --spacing-sm: 12px;
@@ -281,10 +308,24 @@ body {
     transition: all 0.2s;
   }
 
-  /* Polarity Containers */
-  .marketing-section-dark {
+  /* Unified Containers for Dashboard/Auth */
+  .marketing-section {
     background-color: var(--canvas);
     color: var(--on-primary);
+    padding-top: var(--spacing-section-lg);
+    padding-bottom: var(--spacing-section-lg);
+  }
+  @media (max-width: 768px) {
+    .marketing-section {
+      padding-top: var(--spacing-section);
+      padding-bottom: var(--spacing-section);
+    }
+  }
+
+  /* Polarity Containers (Landing Page Rhythm) */
+  .marketing-section-dark {
+    background-color: #0b0b0b;
+    color: #ffffff;
     padding-top: var(--spacing-section-lg);
     padding-bottom: var(--spacing-section-lg);
   }
@@ -322,12 +363,46 @@ body {
   }
 
   /* Cards */
-  .feature-card-dark {
-    background-color: var(--canvas-soft);
+  .metric-card {
+    background-color: var(--canvas);
     color: var(--on-primary);
-    padding: var(--spacing-xl);
+    padding: var(--spacing-lg);
     border-radius: var(--radius-marketing);
     border: 1px solid var(--hairline-soft);
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .dark .metric-card {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1), 0 4px 8px -4px rgba(0, 0, 0, 0.05);
+    border-color: var(--mute);
+  }
+
+  .dark .metric-card:hover {
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    border-color: var(--slate-soft);
+  }
+
+  .feature-card {
+    background-color: var(--canvas);
+    color: var(--on-primary);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-marketing);
+    border: 1px solid var(--hairline-soft);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .feature-card-dark {
+    background-color: #212121;
+    color: #ffffff;
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-marketing);
+    border: 1px solid #353535;
   }
 
   .feature-card-light {

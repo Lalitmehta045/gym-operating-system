@@ -185,7 +185,19 @@ export function GymSettingsForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label htmlFor="currency" className="text-[14px] font-medium text-[#171717]">Currency Code</label>
-            <Input id="currency" {...form.register("currency")} placeholder="INR" />
+            <select
+              id="currency"
+              {...form.register("currency")}
+              className="flex w-full rounded-[6px] border border-[#ebebeb] bg-[#ffffff] px-[12px] py-[8px] text-[14px] text-[#171717] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171717]"
+            >
+              <option value="INR">INR (₹)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="AUD">AUD (A$)</option>
+              <option value="CAD">CAD (C$)</option>
+              <option value="SGD">SGD (S$)</option>
+            </select>
             {form.formState.errors.currency && (
               <p className="text-[12px] text-red-600">{form.formState.errors.currency.message}</p>
             )}

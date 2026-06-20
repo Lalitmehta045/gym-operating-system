@@ -1,12 +1,13 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Building2, Repeat, DollarSign, ClipboardList } from "lucide-react"
+import { LayoutDashboard, Building2, Repeat, DollarSign, ClipboardList, ClipboardCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
   { name: "Dashboard", href: "/platform/dashboard", icon: LayoutDashboard },
   { name: "Gyms", href: "/platform/gyms", icon: Building2 },
+  { name: "Approvals", href: "/platform/approvals", icon: ClipboardCheck },
   { name: "Subscriptions", href: "/platform/subscriptions", icon: Repeat },
   { name: "Revenue", href: "/platform/revenue", icon: DollarSign },
   { name: "Plans", href: "/platform/plans", icon: ClipboardList },

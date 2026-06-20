@@ -76,7 +76,7 @@ export class AuthController {
     @Body() dto: RegisterOwnerDto,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<AuthResponseDto> {
+  ): Promise<{ message: string }> {
     const userAgent = request.headers['user-agent'];
     const ipAddress = request.ip;
     return this.authService.registerOwner(dto, response, userAgent, ipAddress);

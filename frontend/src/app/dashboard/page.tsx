@@ -9,8 +9,8 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-y-[32px]">
       <div className="flex flex-col gap-y-[8px]">
-        <h1 className="text-[32px] font-semibold tracking-[-1.28px] text-[#171717]">Dashboard</h1>
-        <p className="text-[16px] text-[#4d4d4d]">Welcome to GymOS</p>
+        <h1 className="text-display-sm text-[var(--on-primary)]">Dashboard</h1>
+        <p className="text-body text-[var(--ash)]">Welcome to GymOS</p>
       </div>
 
       <OverviewCards />

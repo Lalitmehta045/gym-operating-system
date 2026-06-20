@@ -25,7 +25,7 @@ export function HeroSection() {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-[var(--spacing-sm)] mb-[var(--spacing-section)]">
-          <Link href="/signup" className="button-primary">
+          <Link href="/register" className="button-primary">
             Get Started Free
           </Link>
         </div>

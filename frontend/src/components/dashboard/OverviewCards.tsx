@@ -1,15 +1,20 @@
 "use client"
 
 import { useDashboardOverview } from "@/hooks/api/useDashboard"
+import { useGymProfile } from "@/hooks/api/useSettings"
 import { LoadingState, ErrorState } from "@/components/ui/States"
 import { Users, UserCheck, CreditCard, Activity, Calendar, DollarSign, TrendingUp, AlertCircle } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 export function OverviewCards() {
   const { data, isLoading, isError } = useDashboardOverview()
+  const { data: gymProfile } = useGymProfile()
 
   if (isLoading) return <LoadingState />
   if (isError) return <ErrorState title="Failed to load overview data" />
   if (!data) return null
+
+  const currency = gymProfile?.currency || "INR"
 
   const cards = [
     { title: "Total Members", value: data.totalMembers, icon: Users },
@@ -18,8 +23,8 @@ export function OverviewCards() {
     { title: "Expired Subscriptions", value: data.expiredSubscriptions, icon: AlertCircle },
     { title: "Today's Attendance", value: data.todayAttendance, icon: Calendar },
     { title: "Attendance Rate", value: `${data.monthlyAttendanceRate.toFixed(1)}%`, icon: Activity },
-    { title: "Total Revenue", value: `$${data.totalRevenue.toLocaleString()}`, icon: DollarSign },
-    { title: "Monthly Revenue", value: `$${data.monthlyRevenue.toLocaleString()}`, icon: TrendingUp },
+    { title: "Total Revenue", value: formatCurrency(data.totalRevenue, currency), icon: DollarSign },
+    { title: "Monthly Revenue", value: formatCurrency(data.monthlyRevenue, currency), icon: TrendingUp },
     { title: "Expiring Soon", value: data.expiringMemberships, icon: AlertCircle },
   ]
 
@@ -30,18 +35,20 @@ export function OverviewCards() {
         return (
           <div
             key={i}
-            className="flex items-center justify-between rounded-[8px] border border-[#ebebeb] bg-[#ffffff] p-[24px] shadow-[0px_1px_1px_#00000005,0px_2px_2px_#0000000a]"
+            className="metric-card flex flex-col justify-between h-full min-h-[140px]"
           >
-            <div>
-              <p className="font-mono text-[12px] uppercase tracking-wider text-[#888888]">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-mono-caps text-[var(--mute)]">
                 {card.title}
               </p>
-              <h3 className="mt-[8px] text-[24px] font-semibold text-[#171717]">
+              <div className="flex h-[36px] w-[36px] items-center justify-center rounded-[var(--radius-app-lg)] bg-[var(--canvas-soft)] border border-[var(--hairline-soft)] group-hover:border-[var(--brand)]/30 transition-colors">
+                <Icon className="h-[18px] w-[18px] text-[var(--ash)]" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-[32px] font-semibold tracking-tight text-[var(--on-primary)]">
                 {card.value}
               </h3>
-            </div>
-            <div className="flex h-[48px] w-[48px] items-center justify-center rounded-[8px] bg-[#fafafa]">
-              <Icon className="h-[24px] w-[24px] text-[#171717]" />
             </div>
           </div>
         )

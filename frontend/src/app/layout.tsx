@@ -15,8 +15,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Saniti",
-  description: "Structure powers intelligence",
+  title: "GymOS",
+  description: "Gym Operating System",
 };
 
 export default function RootLayout({
@@ -28,6 +28,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -28,13 +30,14 @@ export function Navbar() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2 md:gap-4">
-            <Link href="/login" className="hidden md:inline-flex text-[var(--ash)] text-button-sm font-medium hover:text-[var(--on-primary)] transition-colors">
+            <ThemeToggle />
+            <Link href="/login" className="!hidden md:!inline-flex text-[var(--ash)] text-button-sm font-medium hover:text-[var(--on-primary)] transition-colors">
               Sign In
             </Link>
-            <Link href="/demo" className="hidden lg:!inline-flex button-secondary-dark">
+            <Link href="/demo" className="!hidden lg:!inline-flex button-secondary-dark">
               Book a Demo
             </Link>
-            <Link href="/signup" className="button-primary !inline-flex !h-[36px] !px-4 !text-[14px] md:!h-[44px] md:!px-[var(--spacing-lg)] md:!text-[16px]">
+            <Link href="/register" className="button-primary !inline-flex !h-[36px] !px-4 !text-[14px] md:!h-[44px] md:!px-[var(--spacing-lg)] md:!text-[16px]">
               <span className="hidden sm:inline">Get Started Free</span>
               <span className="sm:hidden">Get Started</span>
             </Link>
@@ -75,7 +78,7 @@ export function Navbar() {
               <Link href="/demo" onClick={() => setIsMobileMenuOpen(false)} className="button-secondary-dark !inline-flex w-full !h-[48px] !text-[16px]">
                 Book a Demo
               </Link>
-              <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)} className="button-primary !inline-flex w-full !h-[48px]">
+              <Link href="/register" onClick={() => setIsMobileMenuOpen(false)} className="button-primary !inline-flex w-full !h-[48px]">
                 Get Started Free
               </Link>
             </div>

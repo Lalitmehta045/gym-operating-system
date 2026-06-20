@@ -23,6 +23,7 @@ import { CacheInvalidationInterceptor } from './common/interceptors/cache-invali
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { InvoicesModule } from './invoices/invoices.module.js';
+import { SuperadminModule } from './superadmin/superadmin.module.js';
 import { ReportsModule } from './reports/reports.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -54,6 +55,7 @@ import { TenantSubscriptionGuard } from './billing/guards/tenant-subscription.gu
     InvoicesModule,
     ReportsModule,
     DashboardModule,
+    SuperadminModule,
     RazorpayModule,
     WhatsappModule,
     ScheduleModule.forRoot(),

@@ -10,11 +10,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen w-full bg-[#fafafa] overflow-hidden">
+    <div className="flex h-screen w-full bg-[var(--canvas)] overflow-hidden">
       {/* Mobile Sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[#171717]/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-[var(--canvas-soft)]/80 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
