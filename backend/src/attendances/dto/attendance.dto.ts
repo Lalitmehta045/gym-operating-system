@@ -17,6 +17,11 @@ export interface AttendanceDto {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  member?: {
+    firstName: string;
+    lastName: string;
+    memberCode: string;
+  };
 }
 
 export interface AttendanceWithMemberDto extends AttendanceDto {

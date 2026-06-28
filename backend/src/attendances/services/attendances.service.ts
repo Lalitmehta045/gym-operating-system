@@ -233,8 +233,14 @@ export class AttendanceService implements AttendanceServiceInterface {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const nowIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    const attendanceDate = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate());
+    const nowIST = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+    );
+    const attendanceDate = new Date(
+      nowIST.getFullYear(), 
+      nowIST.getMonth(), 
+      nowIST.getDate()
+    );
 
     const existing = await this.prisma.attendance.findFirst({
       where: {
@@ -491,6 +497,13 @@ export class AttendanceService implements AttendanceServiceInterface {
           createdAt: true,
           updatedAt: true,
           deletedAt: true,
+          member: {
+            select: {
+              firstName: true,
+              lastName: true,
+              memberCode: true
+            }
+          }
         },
       }),
       this.prisma.attendance.count({ where }),
@@ -666,20 +679,19 @@ export class AttendanceService implements AttendanceServiceInterface {
     if (!tenantId)
       throw new ForbiddenException('Tenant-scoped access is required');
 
-    const today = new Date();
-    const start = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
+    const todayIST = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
     );
-    const end = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      23,
-      59,
-      59,
-      999,
+    const startOfTodayIST = new Date(
+      todayIST.getFullYear(), 
+      todayIST.getMonth(), 
+      todayIST.getDate()
+    );
+    const endOfTodayIST = new Date(
+      todayIST.getFullYear(), 
+      todayIST.getMonth(), 
+      todayIST.getDate(), 
+      23, 59, 59, 999
     );
 
     const [totalMembers, attGroups] = await Promise.all([
@@ -690,8 +702,11 @@ export class AttendanceService implements AttendanceServiceInterface {
         by: ['status'],
         where: {
           tenantId,
-          attendanceDate: { gte: start, lte: end },
           deletedAt: null,
+          attendanceDate: {
+            gte: startOfTodayIST,
+            lte: endOfTodayIST
+          }
         },
         _count: true,
       }),
@@ -794,6 +809,7 @@ export class AttendanceService implements AttendanceServiceInterface {
       createdAt: a.createdAt,
       updatedAt: a.updatedAt,
       deletedAt: a.deletedAt ?? null,
+      member: a.member,
     };
   }
 }
