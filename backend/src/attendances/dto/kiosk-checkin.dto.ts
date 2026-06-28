@@ -1,11 +1,10 @@
 import { IsNotEmpty, IsString, IsUUID, Matches } from 'class-validator';
-import { Transform } from 'class-transformer';
+
 
 export class KioskCheckInDto {
+  @IsUUID('4')
   @IsNotEmpty()
-  @IsString()
-  @Transform(({ value }) => value?.trim())
-  memberCode: string;
+  memberId: string;
 
   @IsNotEmpty()
   @IsString()

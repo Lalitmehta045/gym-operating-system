@@ -42,6 +42,16 @@ export class AttendancesController {
 
   // Note: This endpoint should be rate-limited at the nginx/gateway level
   @Public()
+  @Get('kiosk-search')
+  async kioskMemberSearch(
+    @Query('gymId', new ParseUUIDPipe({ version: '4' })) gymId: string,
+    @Query('query') query: string,
+  ) {
+    return this.attendanceService.kioskMemberSearch(gymId, query);
+  }
+
+  // Note: This endpoint should be rate-limited at the nginx/gateway level
+  @Public()
   @Post('kiosk-checkin')
   async kioskCheckInEndpoint(@Body() body: KioskCheckInDto, @Req() req: any) {
     const ip = req.ip || req.headers['x-forwarded-for'] || '';

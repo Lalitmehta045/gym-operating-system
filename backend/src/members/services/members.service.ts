@@ -163,6 +163,12 @@ export class MembersService implements MemberServiceInterface {
     dto: CreateMemberDto,
   ): Promise<MemberDto> {
     this.assertTenantScope(tenantId);
+    
+    // Ensure memberCode is plain number by stripping common prefixes
+    if (dto.memberCode) {
+      dto.memberCode = dto.memberCode.replace(/^(M-|MEM-)/i, '').trim();
+    }
+
     await Promise.all([
       this.assertTenantExists(tenantId),
       this.assertMemberCodeUnique(tenantId, dto.memberCode),
@@ -217,6 +223,11 @@ export class MembersService implements MemberServiceInterface {
 
     if (!existing) {
       throw new NotFoundException('Member not found');
+    }
+
+    // Ensure memberCode is plain number by stripping common prefixes
+    if (dto.memberCode) {
+      dto.memberCode = dto.memberCode.replace(/^(M-|MEM-)/i, '').trim();
     }
 
     if (dto.memberCode && dto.memberCode !== existing.memberCode) {

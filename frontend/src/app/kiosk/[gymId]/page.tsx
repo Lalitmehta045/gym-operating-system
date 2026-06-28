@@ -3,41 +3,77 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, XCircle, Loader2, Dumbbell } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Dumbbell, ArrowLeft } from "lucide-react";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 type KioskState = "idle" | "loading" | "success" | "error";
+type IdleStep = "search" | "phone";
+
+interface SelectedMember {
+  memberId: string;
+  displayName: string;
+  memberCode: string;
+}
 
 export default function KioskCheckInPage() {
   const params = useParams<{ gymId: string }>();
   const gymId = params?.gymId;
 
   const [state, setState] = useState<KioskState>("idle");
-  const [memberCode, setMemberCode] = useState("");
+  const [idleStep, setIdleStep] = useState<IdleStep>("search");
+  const [selectedMember, setSelectedMember] = useState<SelectedMember | null>(null);
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SelectedMember[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  
   const [phoneLast4, setPhoneLast4] = useState("");
 
   const [errorMsg, setErrorMsg] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
-
   const [successData, setSuccessData] = useState<{ memberName: string; time: string } | null>(null);
 
   const [validationError, setValidationError] = useState("");
   const [countdown, setCountdown] = useState(0);
 
-  const memberCodeInputRef = useRef<HTMLInputElement>(null);
+  const debouncedSearch = useDebounce(searchQuery, 400);
+
+  useEffect(() => {
+    async function searchMembers() {
+      if (!gymId || debouncedSearch.trim().length < 3) {
+        setSearchResults([]);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/kiosk/search?gymId=${gymId}&query=${encodeURIComponent(debouncedSearch.trim())}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data || []);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (err) {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }
+    searchMembers();
+  }, [debouncedSearch, gymId]);
 
   const resetToIdle = () => {
     setState("idle");
-    setMemberCode("");
+    setIdleStep("search");
+    setSelectedMember(null);
+    setSearchQuery("");
     setPhoneLast4("");
+    setSearchResults([]);
     setErrorMsg("");
     setErrorStatus(null);
     setSuccessData(null);
     setValidationError("");
     setCountdown(0);
-    // Focus back on member code after a short delay to allow render
-    setTimeout(() => {
-      memberCodeInputRef.current?.focus();
-    }, 100);
   };
 
   useEffect(() => {
@@ -66,8 +102,8 @@ export default function KioskCheckInPage() {
     e.preventDefault();
     setValidationError("");
 
-    if (!memberCode.trim()) {
-      setValidationError("Member ID is required.");
+    if (!selectedMember) {
+      setValidationError("Please select a member first.");
       return;
     }
     if (!/^\d{4}$/.test(phoneLast4)) {
@@ -87,7 +123,7 @@ export default function KioskCheckInPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          memberCode: memberCode.trim(),
+          memberId: selectedMember.memberId,
           phoneLast4,
           gymId,
         }),
@@ -97,7 +133,7 @@ export default function KioskCheckInPage() {
 
       if (!res.ok) {
         setErrorStatus(res.status);
-        if (res.status === 401) setErrorMsg("Invalid Member ID or Phone");
+        if (res.status === 401) setErrorMsg("Invalid Phone Number");
         else if (res.status === 403) setErrorMsg("Your membership is inactive. Please contact the gym.");
         else if (res.status === 409) setErrorMsg("Already checked in today!");
         else if (res.status === 404) setErrorMsg("Member not found");
@@ -132,67 +168,136 @@ export default function KioskCheckInPage() {
             transition={{ duration: 0.3 }}
             className="w-full max-w-md"
           >
-            <div className="flex flex-col items-center mb-10 text-center">
-              <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
-                <Dumbbell className="w-10 h-10 text-emerald-500" />
-              </div>
-              <h1 className="text-4xl font-bold mb-2 tracking-tight">Welcome!</h1>
-              <p className="text-zinc-400 text-lg">Enter your details to check in</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-400 pl-1">Member ID</label>
-                <input
-                  ref={memberCodeInputRef}
-                  type="text"
-                  inputMode="numeric"
-                  value={memberCode}
-                  onChange={(e) => setMemberCode(e.target.value)}
-                  disabled={state === "loading"}
-                  className="w-full h-16 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 text-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors disabled:opacity-50"
-                  placeholder="e.g. 12345"
-                  autoComplete="off"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-400 pl-1">Last 4 digits of phone</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={phoneLast4}
-                  onChange={(e) => setPhoneLast4(e.target.value)}
-                  disabled={state === "loading"}
-                  className="w-full h-16 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 text-xl tracking-[0.5em] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors disabled:opacity-50 font-mono"
-                  placeholder="••••"
-                  autoComplete="off"
-                />
-              </div>
-
-              {validationError && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-red-400 text-center text-sm font-medium"
+            <AnimatePresence mode="wait">
+              {idleStep === "search" ? (
+                <motion.div
+                  key="search"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6 w-full"
                 >
-                  {validationError}
-                </motion.p>
-              )}
+                  <div className="flex flex-col items-center mb-8 text-center">
+                    <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+                      <Dumbbell className="w-8 h-8 text-emerald-500" />
+                    </div>
+                    <h1 className="text-3xl font-bold mb-2 tracking-tight">Who are you?</h1>
+                    <p className="text-zinc-400 text-base">Find your name to check in</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      inputMode="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      autoFocus
+                      disabled={state === "loading"}
+                      className="w-full h-14 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 text-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors disabled:opacity-50"
+                      placeholder="Type your name..."
+                      autoComplete="off"
+                    />
+                    
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden shadow-lg">
+                      {searchQuery.trim().length < 3 ? (
+                        <div className="p-4 text-center text-zinc-500 text-sm min-h-[48px] flex items-center justify-center">
+                          Type at least 3 letters...
+                        </div>
+                      ) : isSearching ? (
+                        <div className="p-4 flex justify-center items-center min-h-[48px]">
+                          <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                        </div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="p-4 text-center text-zinc-500 text-sm min-h-[48px] flex items-center justify-center">
+                          No members found
+                        </div>
+                      ) : (
+                        <div className="max-h-64 overflow-y-auto">
+                          {searchResults.map((member) => (
+                            <div
+                              key={member.memberId}
+                              onClick={() => {
+                                setSelectedMember(member);
+                                setIdleStep("phone");
+                                setValidationError("");
+                              }}
+                              className="flex justify-between items-center p-4 hover:bg-zinc-800 cursor-pointer border-b border-zinc-800 last:border-0 min-h-[48px] transition-colors"
+                            >
+                              <span className="font-medium text-lg text-white">{member.displayName}</span>
+                              <span className="text-xs text-zinc-400 font-mono">#{member.memberCode}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="phone"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="space-y-6 w-full"
+                >
+                  <div className="flex flex-col items-center mb-8 text-center">
+                    <h1 className="text-3xl font-bold mb-2 tracking-tight text-white">Hi, {selectedMember?.displayName}! 👋</h1>
+                    <p className="text-zinc-400 text-base">Enter last 4 digits of your phone to confirm</p>
+                  </div>
 
-              <button
-                type="submit"
-                disabled={state === "loading"}
-                className="w-full h-16 mt-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-xl font-bold transition-all disabled:opacity-70 disabled:hover:bg-emerald-500 flex items-center justify-center shadow-[0_0_40px_-10px_rgba(16,185,129,0.4)] hover:shadow-[0_0_60px_-15px_rgba(16,185,129,0.6)]"
-              >
-                {state === "loading" ? (
-                  <Loader2 className="w-8 h-8 animate-spin" />
-                ) : (
-                  "Check In"
-                )}
-              </button>
-            </form>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={phoneLast4}
+                      onChange={(e) => setPhoneLast4(e.target.value)}
+                      disabled={state === "loading"}
+                      autoFocus
+                      className="w-full h-16 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 text-2xl text-center tracking-[1em] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors disabled:opacity-50 font-mono"
+                      placeholder="••••"
+                      autoComplete="off"
+                    />
+                    
+                    {validationError && (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-red-400 text-center text-sm font-medium"
+                      >
+                        {validationError}
+                      </motion.p>
+                    )}
+
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIdleStep("search");
+                          setPhoneLast4("");
+                          setValidationError("");
+                        }}
+                        disabled={state === "loading"}
+                        className="flex-1 h-14 bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl text-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <ArrowLeft className="w-5 h-5" /> Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={state === "loading"}
+                        className="flex-[2] h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-lg font-bold transition-all disabled:opacity-70 disabled:hover:bg-emerald-500 flex items-center justify-center shadow-[0_0_30px_-10px_rgba(16,185,129,0.4)]"
+                      >
+                        {state === "loading" ? (
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                        ) : (
+                          "Check In 🚀"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         ) : state === "success" ? (
           <motion.div

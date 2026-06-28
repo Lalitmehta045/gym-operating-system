@@ -136,13 +136,77 @@ export class AttendanceService implements AttendanceServiceInterface {
     }
   }
 
+  async kioskMemberSearch(gymId: string, query: string) {
+    // Validate query length
+    if (!query || query.trim().length < 3) {
+      throw new BadRequestException('Search query must be at least 3 characters');
+    }
+
+    const members = await this.prisma.member.findMany({
+      where: {
+        tenantId: gymId,
+        deletedAt: null,
+        isActive: true,
+        status: 'ACTIVE',
+        OR: [
+          {
+            firstName: {
+              contains: query.trim(),
+              mode: 'insensitive'
+            }
+          },
+          {
+            lastName: {
+              contains: query.trim(),
+              mode: 'insensitive'
+            }
+          },
+          {
+            // full name search: "rahul sh" matches firstName+lastName
+            AND: [
+              {
+                firstName: {
+                  contains: query.trim().split(' ')[0],
+                  mode: 'insensitive'
+                }
+              },
+              query.trim().split(' ')[1] ? {
+                lastName: {
+                  contains: query.trim().split(' ')[1],
+                  mode: 'insensitive'
+                }
+              } : {}
+            ]
+          }
+        ]
+      },
+      select: {
+        id: true,
+        memberCode: true,
+        firstName: true,
+        lastName: true,
+      },
+      take: 8,
+      orderBy: [
+        { firstName: 'asc' },
+        { lastName: 'asc' }
+      ]
+    });
+
+    return members.map(m => ({
+      memberId: m.id,
+      memberCode: m.memberCode,
+      displayName: `${m.firstName} ${m.lastName}`.trim()
+    }));
+  }
+
   async kioskCheckIn(dto: KioskCheckInDto, ip: string) {
-    const { gymId, memberCode, phoneLast4 } = dto;
+    const { gymId, memberId, phoneLast4 } = dto;
 
     const member = await this.prisma.member.findFirst({
       where: {
+        id: memberId,
         tenantId: gymId,
-        memberCode: memberCode,
         deletedAt: null,
       },
       select: {

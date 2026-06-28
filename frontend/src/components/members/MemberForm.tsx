@@ -95,7 +95,7 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-[#171717]">Member Code</label>
-            <Input {...form.register("memberCode")} placeholder="MEM-001" disabled={isEdit} />
+            <Input {...form.register("memberCode")} placeholder="1" disabled={isEdit} />
             {form.formState.errors.memberCode && (
               <p className="text-sm text-red-500">{form.formState.errors.memberCode.message}</p>
             )}
