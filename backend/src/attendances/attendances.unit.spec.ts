@@ -1,5 +1,5 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { AttendanceService } from './services/attendances.service';
+import { AttendanceService } from './services/attendances.service.js';
 
 // Minimal mocked PrismaService to capture call args
 const makePrismaMock = () => ({
@@ -19,9 +19,11 @@ describe('AttendanceService - tenant isolation & listing', () => {
   const tenantId = 'tenant-x';
   const otherTenant = 'tenant-y';
 
+  const makeJwt = () => ({ verify: jest.fn() });
+
   beforeEach(() => {
     prisma = makePrismaMock();
-    svc = new AttendanceService(prisma);
+    svc = new AttendanceService(prisma, makeJwt() as any);
   });
 
   test('getAttendanceById filters by tenantId', async () => {

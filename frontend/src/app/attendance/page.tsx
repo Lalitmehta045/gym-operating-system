@@ -2,6 +2,7 @@ import Link from "next/link"
 import { CheckSquare, Clock } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { AttendanceDashboardCards } from "@/components/attendance/AttendanceDashboardCards"
+import { KioskQRSection } from "@/components/attendance/KioskQRSection"
 
 export default function AttendancePage() {
   return (
@@ -26,6 +27,8 @@ export default function AttendancePage() {
           </Link>
         </div>
       </div>
+
+      <KioskQRSection />
 
       <AttendanceDashboardCards />
     </div>

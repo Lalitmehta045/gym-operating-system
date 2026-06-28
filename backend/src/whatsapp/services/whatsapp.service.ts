@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import axios from 'axios';
+import { ExternalServiceCall } from '../../common/utils/circuit-breaker.util.js';
 
 @Injectable()
 export class WhatsappService {
@@ -28,20 +29,34 @@ export class WhatsappService {
     }
 
     try {
-      const response = await axios.post(
-        `${this.apiUrl}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-        {
-          messaging_product: 'whatsapp',
-          to,
-          type: 'text',
-          text: { body: text },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
+      const response = await ExternalServiceCall.execute(
+        'whatsapp-send-message',
+        () => axios.post(
+          `${this.apiUrl}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+          {
+            messaging_product: 'whatsapp',
+            to,
+            type: 'text',
+            text: { body: text },
           },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+        (err) => {
+          this.logger.error('WhatsApp API unavailable. Gracefully degrading.', err);
+          return { 
+            data: { messages: [] },
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config: {} as any,
+          };
         },
+        { timeout: 5000 }
       );
 
       const messageId = response.data.messages?.[0]?.id;
@@ -95,24 +110,38 @@ export class WhatsappService {
     }
 
     try {
-      const response = await axios.post(
-        `${this.apiUrl}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-        {
-          messaging_product: 'whatsapp',
-          to,
-          type: 'template',
-          template: {
-            name: templateName,
-            language: { code: languageCode },
-            components,
+      const response = await ExternalServiceCall.execute(
+        'whatsapp-send-template',
+        () => axios.post(
+          `${this.apiUrl}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+          {
+            messaging_product: 'whatsapp',
+            to,
+            type: 'template',
+            template: {
+              name: templateName,
+              language: { code: languageCode },
+              components,
+            },
           },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
           },
+        ),
+        (err) => {
+          this.logger.error('WhatsApp API unavailable for template. Gracefully degrading.', err);
+          return { 
+            data: { messages: [] },
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config: {} as any,
+          };
         },
+        { timeout: 5000 }
       );
 
       const messageId = response.data.messages?.[0]?.id;
@@ -229,16 +258,17 @@ export class WhatsappService {
   }
 
   async sendWelcomeMessage(tenantId: string, memberId: string) {
-    const member = await this.prisma.member.findFirst({
-      where: { id: memberId, tenantId },
-    });
-    if (!member || !member.phone) return;
-
     const type = 'WELCOME';
-    const text = `Hi ${member.firstName}, welcome to the gym! We are excited to have you onboard.`;
+    const [member, canSend] = await Promise.all([
+      this.prisma.member.findFirst({
+        where: { id: memberId, tenantId },
+      }),
+      this.canSendMessage(tenantId, memberId, type),
+    ]);
 
-    const canSend = await this.canSendMessage(tenantId, memberId, type);
-    if (!canSend) return;
+    if (!member || !member.phone || !canSend) return;
+
+    const text = `Hi ${member.firstName}, welcome to the gym! We are excited to have you onboard.`;
 
     await this.sendMessage(member.phone, text, tenantId, memberId, type);
   }
@@ -275,24 +305,35 @@ export class WhatsappService {
 
   async processWebhook(body: any) {
     if (body.object === 'whatsapp_business_account') {
-      for (const entry of body.entry) {
-        for (const change of entry.changes) {
+      const statusGroups: Record<string, string[]> = {};
+
+      for (const entry of body.entry || []) {
+        for (const change of entry.changes || []) {
           if (change.value && change.value.statuses) {
             for (const status of change.value.statuses) {
               const messageId = status.id;
               const deliveryStatus = status.status; // 'sent', 'delivered', 'read', 'failed'
 
-              if (messageId) {
-                // Update log
-                await this.prisma.whatsAppLog.updateMany({
-                  where: { messageId },
-                  data: { status: deliveryStatus.toUpperCase() },
-                });
+              if (messageId && deliveryStatus) {
+                const upperStatus = deliveryStatus.toUpperCase();
+                if (!statusGroups[upperStatus]) statusGroups[upperStatus] = [];
+                statusGroups[upperStatus].push(messageId);
               }
             }
           }
         }
       }
+
+      const updatePromises = Object.entries(statusGroups).map(
+        ([status, messageIds]) => {
+          return this.prisma.whatsAppLog.updateMany({
+            where: { messageId: { in: messageIds } },
+            data: { status },
+          });
+        },
+      );
+
+      await Promise.all(updatePromises);
     }
   }
 }

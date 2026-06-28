@@ -35,7 +35,11 @@ export class AuthCronService {
         where: {
           AND: [
             { revokedAt: { not: null } },
-            { expiresAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+            {
+              expiresAt: {
+                lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+              },
+            },
           ],
         },
       });

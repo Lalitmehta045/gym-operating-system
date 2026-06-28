@@ -2,7 +2,12 @@
 // PrismaService — Managed PrismaClient lifecycle for NestJS
 // ============================================================================
 
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient } from '../../generated/prisma/client.js';
 
 @Injectable()
@@ -19,6 +24,7 @@ export class PrismaService
           ? ['query', 'info', 'warn', 'error']
           : ['error'],
     });
+
   }
 
   async onModuleInit(): Promise<void> {

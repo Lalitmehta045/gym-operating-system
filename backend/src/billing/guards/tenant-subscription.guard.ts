@@ -22,10 +22,10 @@ export class TenantSubscriptionGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const skipSubscription = this.reflector.getAllAndOverride<boolean>('skipSubscription', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const skipSubscription = this.reflector.getAllAndOverride<boolean>(
+      'skipSubscription',
+      [context.getHandler(), context.getClass()],
+    );
     if (skipSubscription) return true;
 
     const request = context.switchToHttp().getRequest();
@@ -43,7 +43,9 @@ export class TenantSubscriptionGuard implements CanActivate {
     if (!tenant) return true;
 
     if (tenant.status === TenantStatus.EXPIRED) {
-      throw new ForbiddenException('Tenant subscription expired. Please renew.');
+      throw new ForbiddenException(
+        'Tenant subscription expired. Please renew.',
+      );
     }
 
     return true;

@@ -2,12 +2,7 @@
 // UpdateProfileDto — Authenticated user profile update
 // ============================================================================
 
-import {
-  IsNotEmpty,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsString()

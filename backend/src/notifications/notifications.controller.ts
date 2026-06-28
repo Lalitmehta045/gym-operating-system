@@ -14,7 +14,10 @@ import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { Role } from '../../generated/prisma/client.js';
 import { TenantId } from '../common/decorators/tenant-id.decorator.js';
-import { CacheControl, CACHE_PRESETS } from '../common/decorators/cache-control.decorator.js';
+import {
+  CacheControl,
+  CACHE_PRESETS,
+} from '../common/decorators/cache-control.decorator.js';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard, RolesGuard)

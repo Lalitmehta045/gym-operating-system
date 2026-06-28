@@ -1,4 +1,4 @@
-import { BillingService } from './billing.service';
+import { BillingService } from './billing.service.js';
 import { NotFoundException } from '@nestjs/common';
 
 const makePrismaMock = (overrides = {}) => {
@@ -13,7 +13,11 @@ const makePrismaMock = (overrides = {}) => {
     },
     $transaction: jest.fn(async (cb: any) => {
       if (Array.isArray(cb)) {
-        return Promise.all(cb.map((fn: any) => (typeof fn === 'function' ? fn(defaultMock) : fn)));
+        return Promise.all(
+          cb.map((fn: any) =>
+            typeof fn === 'function' ? fn(defaultMock) : fn,
+          ),
+        );
       }
       return cb(defaultMock);
     }),
@@ -97,7 +101,10 @@ describe('BillingService', () => {
   });
 
   test('upgrade calls razorpayService.createTenantOrder', async () => {
-    prisma.platformPlan.findUnique.mockResolvedValue({ id: 'plan-1', name: 'Growth' });
+    prisma.platformPlan.findUnique.mockResolvedValue({
+      id: 'plan-1',
+      name: 'Growth',
+    });
     razorpayService.createTenantOrder.mockResolvedValue({ orderId: 'order-1' });
 
     const result = await svc.upgrade(tenantId, { planId: 'plan-1' });
@@ -155,7 +162,10 @@ describe('BillingService', () => {
 
     const result = await svc.verifyPayment(tenantId, dto);
 
-    expect(razorpayService.verifyTenantPayment).toHaveBeenCalledWith(tenantId, dto);
+    expect(razorpayService.verifyTenantPayment).toHaveBeenCalledWith(
+      tenantId,
+      dto,
+    );
     expect(result.success).toBe(true);
   });
 });

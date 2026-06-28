@@ -1,7 +1,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Building2, Repeat, DollarSign, ClipboardList, ClipboardCheck } from "lucide-react"
+import { LayoutDashboard, Building2, Repeat, DollarSign, ClipboardList, ClipboardCheck, Activity } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -11,6 +11,7 @@ const navigation = [
   { name: "Subscriptions", href: "/platform/subscriptions", icon: Repeat },
   { name: "Revenue", href: "/platform/revenue", icon: DollarSign },
   { name: "Plans", href: "/platform/plans", icon: ClipboardList },
+  { name: "Audit Logs", href: "/platform/audit", icon: Activity },
 ]
 
 export function PlatformSidebar({ className }: { className?: string }) {

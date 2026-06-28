@@ -19,15 +19,19 @@ export class AppController {
   @Public()
   @Get('seed-admin')
   async seedAdmin() {
-    const { PrismaClient, Role } = await import('../generated/prisma/client.js');
+    const { PrismaClient, Role } =
+      await import('../generated/prisma/client.js');
     const bcrypt = await import('bcrypt');
     const prisma = new PrismaClient();
-    
+
     const email = process.env.SUPERADMIN_EMAIL;
     const password = process.env.SUPERADMIN_PASSWORD;
-    
+
     if (!email || !password) {
-      return { error: 'SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set in environment variables' };
+      return {
+        error:
+          'SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set in environment variables',
+      };
     }
 
     const existingSuperAdmin = await prisma.user.findFirst({

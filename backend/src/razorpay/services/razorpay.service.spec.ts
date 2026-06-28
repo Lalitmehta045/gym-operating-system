@@ -3,6 +3,7 @@ import { RazorpayService } from './razorpay.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { WhatsappService } from '../../whatsapp/services/whatsapp.service.js';
 import { TenantSubscriptionService } from '../../tenant-subscription/services/tenant-subscription.service.js';
+import { AuditService } from '../../audit/audit.service.js';
 import { BadRequestException } from '@nestjs/common';
 import {
   PaymentStatus,
@@ -29,7 +30,7 @@ describe('RazorpayService', () => {
               update: jest.fn(),
             },
             invoice: {
-              create: jest.fn(),
+              create: jest.fn().mockResolvedValue({ id: 'inv_123' }),
             },
             notification: {
               create: jest.fn(),
@@ -48,8 +49,16 @@ describe('RazorpayService', () => {
         {
           provide: TenantSubscriptionService,
           useValue: {
-            generateInvoiceNumber: jest.fn().mockResolvedValue('INV-SAAS-2026-0001'),
+            generateInvoiceNumber: jest
+              .fn()
+              .mockResolvedValue('INV-SAAS-2026-0001'),
             activateSubscription: jest.fn().mockResolvedValue({ id: 'sub-1' }),
+          },
+        },
+        {
+          provide: AuditService,
+          useValue: {
+            createLog: jest.fn().mockResolvedValue(true),
           },
         },
       ],
@@ -90,6 +99,7 @@ describe('RazorpayService', () => {
         razorpay_order_id: 'order_123',
         razorpay_payment_id: 'razor_pay_123',
         razorpay_signature: signature,
+        subscriptionId: 'sub_1',
       };
 
       // First call succeeds updateMany, second fails

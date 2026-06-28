@@ -6,16 +6,28 @@ import { TenantSubscriptionService } from '../../tenant-subscription/services/te
 export class SuperadminService {
   constructor(
     private prisma: PrismaService,
-    private tenantSubscriptionService: TenantSubscriptionService
+    private tenantSubscriptionService: TenantSubscriptionService,
   ) {}
 
-  async getPendingTenants() {
+  async getPendingTenants(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
     return this.prisma.tenant.findMany({
       where: {
         status: 'PENDING',
         deletedAt: null,
       },
-      include: {
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        city: true,
+        state: true,
+        country: true,
+        createdAt: true,
+        status: true,
         users: {
           where: { role: 'OWNER' },
           select: { firstName: true, lastName: true, email: true },
@@ -26,19 +38,22 @@ export class SuperadminService {
   }
 
   async approveTenant(tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
 
     const updatedTenantResult = await this.prisma.$transaction(async (tx) => {
-      const updatedTenant = await tx.tenant.update({
-        where: { id: tenantId },
-        data: { status: 'TRIAL', isActive: true },
-      });
-
-      await tx.user.updateMany({
-        where: { tenantId, role: 'OWNER' },
-        data: { isActive: true },
-      });
+      const [updatedTenant] = await Promise.all([
+        tx.tenant.update({
+          where: { id: tenantId },
+          data: { status: 'TRIAL', isActive: true },
+        }),
+        tx.user.updateMany({
+          where: { tenantId, role: 'OWNER' },
+          data: { isActive: true },
+        }),
+      ]);
 
       return updatedTenant;
     });
@@ -49,7 +64,9 @@ export class SuperadminService {
   }
 
   async rejectTenant(tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
 
     // Soft delete or completely remove depending on logic.

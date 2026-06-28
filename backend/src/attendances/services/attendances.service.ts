@@ -28,6 +28,7 @@ import { ManualAttendanceDto } from '../dto/manual-attendance.dto.js';
 import { MemberAttendanceReportDto } from '../dto/member-report.dto.js';
 import { DailyAttendanceReportDto } from '../dto/daily-report.dto.js';
 import { MonthlyAttendanceReportDto } from '../dto/monthly-report.dto.js';
+import { KioskCheckInDto } from '../dto/kiosk-checkin.dto.js';
 
 @Injectable()
 export class AttendanceService implements AttendanceServiceInterface {
@@ -133,6 +134,76 @@ export class AttendanceService implements AttendanceServiceInterface {
       }
       throw error;
     }
+  }
+
+  async kioskCheckIn(dto: KioskCheckInDto, ip: string) {
+    const { gymId, memberCode, phoneLast4 } = dto;
+
+    const member = await this.prisma.member.findFirst({
+      where: {
+        tenantId: gymId,
+        memberCode: memberCode,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        status: true,
+        isActive: true,
+        phone: true,
+        memberCode: true,
+      },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found');
+    }
+
+    if (member.status !== 'ACTIVE' || member.isActive !== true) {
+      throw new ForbiddenException('Member account is inactive or suspended');
+    }
+
+    const memberPhoneLast4 = member.phone ? member.phone.slice(-4) : '';
+    if (memberPhoneLast4 !== phoneLast4) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const nowIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const attendanceDate = new Date(nowIST.getFullYear(), nowIST.getMonth(), nowIST.getDate());
+
+    const existing = await this.prisma.attendance.findFirst({
+      where: {
+        tenantId: gymId,
+        memberId: member.id,
+        attendanceDate,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      throw new ConflictException('Already checked in today');
+    }
+
+    const attendance = await this.prisma.attendance.create({
+      data: {
+        tenantId: gymId,
+        memberId: member.id,
+        markedByUserId: null,
+        checkInAt: new Date(), // UTC time
+        attendanceDate,
+        status: AttendanceStatus.PRESENT,
+        notes: 'Kiosk self check-in',
+      },
+    });
+
+    return {
+      success: true,
+      memberName: `${member.firstName} ${member.lastName}`.trim(),
+      memberCode: member.memberCode,
+      checkInAt: attendance.checkInAt,
+    };
   }
 
   // Check-out by attendanceId — used by /attendances/check-out
@@ -338,7 +409,26 @@ export class AttendanceService implements AttendanceServiceInterface {
     }
 
     const [data, total] = await this.prisma.$transaction([
-      this.prisma.attendance.findMany({ where, skip, take: limit, orderBy }),
+      this.prisma.attendance.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        select: {
+          id: true,
+          tenantId: true,
+          memberId: true,
+          markedByUserId: true,
+          checkInAt: true,
+          checkOutAt: true,
+          attendanceDate: true,
+          status: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+        },
+      }),
       this.prisma.attendance.count({ where }),
     ]);
 

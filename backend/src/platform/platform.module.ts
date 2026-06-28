@@ -6,9 +6,10 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module.js';
 import { PlatformController } from './controllers/platform.controller.js';
 import { PlatformService } from './services/platform.service.js';
+import { TenantStorageModule } from '../storage/tenant-storage.module.js';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, TenantStorageModule],
   controllers: [PlatformController],
   providers: [PlatformService],
   exports: [PlatformService],

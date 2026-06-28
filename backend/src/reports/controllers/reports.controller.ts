@@ -1,6 +1,13 @@
-import { Controller, Get, ForbiddenException, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  ForbiddenException,
+  UseInterceptors,
+} from '@nestjs/common';
 import { CacheTTL } from '@nestjs/cache-manager';
 import { ReportsService } from '../services/reports.service.js';
+import { ExpiringMembersQueryDto } from '../dto/expiring-members-query.dto.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import { Role } from '../../../generated/prisma/client.js';
@@ -21,20 +28,26 @@ export class ReportsController {
   }
 
   @Get('revenue')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(60000) // 1 minute
   getRevenueReport(@CurrentUser() user: JwtPayload) {
     return this.reportsService.getRevenueReport(this.getTenantId(user));
   }
 
   @Get('subscriptions')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(60000) // 1 minute
   getSubscriptionReport(@CurrentUser() user: JwtPayload) {
     return this.reportsService.getSubscriptionReport(this.getTenantId(user));
   }
 
   @Get('expiring-members')
-  @CacheTTL(900) // 15 minutes
-  getExpiringMembersReport(@CurrentUser() user: JwtPayload) {
-    return this.reportsService.getExpiringMembersReport(this.getTenantId(user));
+  @CacheTTL(60000) // 1 minute
+  getExpiringMembersReport(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: ExpiringMembersQueryDto,
+  ) {
+    return this.reportsService.getExpiringMembersReport(
+      this.getTenantId(user),
+      query,
+    );
   }
 }

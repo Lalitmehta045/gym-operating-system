@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AttendanceService } from './services/attendances.service';
+import { AttendanceService } from './services/attendances.service.js';
 import { JwtService } from '@nestjs/jwt';
 
 // Minimal mocked PrismaService with only used methods

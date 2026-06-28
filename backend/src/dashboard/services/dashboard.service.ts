@@ -34,6 +34,9 @@ export class DashboardService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    const sevenDaysFromNow = new Date(today);
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
     const [
       memberGroups,
@@ -42,6 +45,7 @@ export class DashboardService {
       monthlyAttendances,
       totalRevenueAgg,
       monthlyRevenueAgg,
+      expiringMemberships
     ] = await this.prisma.$transaction([
       this.prisma.member.groupBy({
         by: ['status'],
@@ -88,6 +92,14 @@ export class DashboardService {
         },
         _sum: { amount: true },
       }),
+      this.prisma.subscription.count({
+        where: {
+          tenantId,
+          deletedAt: null,
+          status: SubscriptionStatus.ACTIVE,
+          endDate: { gte: today, lte: sevenDaysFromNow },
+        },
+      })
     ]);
 
     let totalMembers = 0;
@@ -127,18 +139,6 @@ export class DashboardService {
 
     const totalRevenue = Number(totalRevenueAgg._sum?.amount || 0);
     const monthlyRevenue = Number(monthlyRevenueAgg._sum?.amount || 0);
-
-    const sevenDaysFromNow = new Date(today);
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-
-    const expiringMemberships = await this.prisma.subscription.count({
-      where: {
-        tenantId,
-        deletedAt: null,
-        status: SubscriptionStatus.ACTIVE,
-        endDate: { gte: today, lte: sevenDaysFromNow },
-      },
-    });
 
     return {
       totalMembers,

@@ -1,4 +1,4 @@
-import { TenantSubscriptionService } from './tenant-subscription.service';
+import { TenantSubscriptionService } from './tenant-subscription.service.js';
 import { NotFoundException } from '@nestjs/common';
 
 const makePrismaMock = (overrides = {}) => {

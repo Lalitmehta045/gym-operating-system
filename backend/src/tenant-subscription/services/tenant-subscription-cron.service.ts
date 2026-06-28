@@ -3,7 +3,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { TenantSubscriptionService } from './tenant-subscription.service.js';
 import { WhatsappService } from '../../whatsapp/services/whatsapp.service.js';
-import { TenantSubscriptionStatus } from '../../../generated/prisma/client.js';
+import {
+  TenantSubscriptionStatus,
+  TenantStatus,
+} from '../../../generated/prisma/client.js';
 
 @Injectable()
 export class TenantSubscriptionCronService {
@@ -22,17 +25,31 @@ export class TenantSubscriptionCronService {
 
     const expiredSubs = await this.prisma.tenantSubscription.findMany({
       where: {
-        status: { in: [TenantSubscriptionStatus.ACTIVE, TenantSubscriptionStatus.TRIAL] },
+        status: {
+          in: [TenantSubscriptionStatus.ACTIVE, TenantSubscriptionStatus.TRIAL],
+        },
         endDate: { lt: today },
       },
-      select: { tenantId: true },
+      select: { id: true, tenantId: true },
     });
 
-    for (const sub of expiredSubs) {
+    if (expiredSubs.length > 0) {
+      const subIds = expiredSubs.map((s) => s.id);
+      const tenantIds = expiredSubs.map((s) => s.tenantId);
+
       try {
-        await this.tenantSubscriptionService.expireSubscription(sub.tenantId);
+        await this.prisma.$transaction([
+          this.prisma.tenantSubscription.updateMany({
+            where: { id: { in: subIds } },
+            data: { status: TenantSubscriptionStatus.EXPIRED },
+          }),
+          this.prisma.tenant.updateMany({
+            where: { id: { in: tenantIds } },
+            data: { status: TenantStatus.EXPIRED },
+          }),
+        ]);
       } catch (err) {
-        this.logger.error(`Failed to expire subscription for tenant ${sub.tenantId}`, err);
+        this.logger.error(`Failed to expire subscriptions`, err);
       }
     }
 
@@ -43,34 +60,62 @@ export class TenantSubscriptionCronService {
   async sendRenewalReminders() {
     const reminderDays = [7, 3, 1, 0];
 
-    for (const days of reminderDays) {
-      const targetDate = new Date();
-      targetDate.setHours(0, 0, 0, 0);
-      targetDate.setDate(targetDate.getDate() + days);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      const nextDay = new Date(targetDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-
-      const subs = await this.prisma.tenantSubscription.findMany({
-        where: {
-          status: { in: [TenantSubscriptionStatus.ACTIVE, TenantSubscriptionStatus.TRIAL] },
-          endDate: {
-            gte: targetDate,
-            lt: nextDay,
-          },
+    const subs = await this.prisma.tenantSubscription.findMany({
+      where: {
+        status: {
+          in: [TenantSubscriptionStatus.ACTIVE, TenantSubscriptionStatus.TRIAL],
         },
-        include: { tenant: true },
-      });
+        OR: reminderDays.map((days) => {
+          const targetDate = new Date(today);
+          targetDate.setDate(targetDate.getDate() + days);
 
-      for (const sub of subs) {
-        try {
-          await this.whatsappService.sendTenantRenewalReminder(
-            sub.tenantId,
-            days,
-          );
-        } catch (err) {
-          this.logger.error(`Failed to send renewal reminder to tenant ${sub.tenantId}`, err);
-        }
+          const nextDay = new Date(targetDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+
+          return {
+            endDate: {
+              gte: targetDate,
+              lt: nextDay,
+            },
+          };
+        }),
+      },
+      select: {
+        tenant: true,
+        id: true,
+        tenantId: true,
+        platformPlanId: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+        autoRenew: true,
+        trialEndsAt: true,
+        cancelledAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    for (const sub of subs) {
+      try {
+        const subEndDate = new Date(sub.endDate);
+        subEndDate.setHours(0, 0, 0, 0);
+
+        const diffTime = subEndDate.getTime() - today.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        await this.whatsappService.sendTenantRenewalReminder(
+          sub.tenantId,
+          diffDays >= 0 ? diffDays : 0,
+        );
+      } catch (err) {
+        this.logger.error(
+          `Failed to send renewal reminder to tenant ${sub.tenantId}`,
+          err,
+        );
       }
     }
 

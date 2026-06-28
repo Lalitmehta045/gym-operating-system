@@ -20,3 +20,4 @@ export type {
 export type { MemberAttendanceReportDto } from './member-report.dto.js';
 export type { DailyAttendanceReportDto } from './daily-report.dto.js';
 export type { MonthlyAttendanceReportDto } from './monthly-report.dto.js';
+export { KioskCheckInDto } from './kiosk-checkin.dto.js';

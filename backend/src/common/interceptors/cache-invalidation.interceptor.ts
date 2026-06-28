@@ -47,31 +47,40 @@ export class CacheInvalidationInterceptor implements NestInterceptor {
     // In cache-manager v5+, use keys() directly on the cacheManager if available.
     // For many stores, you might need to iterate through keys.
     // Note: Memory store in v5+ might not expose keys() directly depending on configuration.
-    
+
     // We try to get keys from the store. In v5, it's often accessible via cacheManager.
     // However, the types for v5/v6 are notoriously difficult.
-    
+
     try {
       // Try to get keys. This works for many stores including memory-cache-v5
       const keys = await (this.cacheManager as any).store.keys();
-      
+
       if (!keys || !Array.isArray(keys)) return;
 
       for (const pattern of patterns) {
-        const resolvedPattern = tenantId 
+        const resolvedPattern = tenantId
           ? pattern.replace(':tenantId', tenantId)
           : pattern.replace(':tenantId:', '');
 
-        const regex = new RegExp('^' + resolvedPattern.replace(/\*/g, '.*') + '$');
-        
-        const keysToDelete = keys.filter(key => typeof key === 'string' && regex.test(key));
-        
+        const regex = new RegExp(
+          '^' + resolvedPattern.replace(/\*/g, '.*') + '$',
+        );
+
+        const keysToDelete = keys.filter(
+          (key) => typeof key === 'string' && regex.test(key),
+        );
+
         if (keysToDelete.length > 0) {
-          await Promise.all(keysToDelete.map(key => this.cacheManager.del(key)));
+          await Promise.all(
+            keysToDelete.map((key) => this.cacheManager.del(key)),
+          );
         }
       }
     } catch (err) {
-      console.warn('Cache invalidation failed: keys() might not be supported by the store.', err);
+      console.warn(
+        'Cache invalidation failed: keys() might not be supported by the store.',
+        err,
+      );
     }
   }
 }

@@ -23,7 +23,8 @@ import { CacheTTL } from '@nestjs/cache-manager';
 import type { Response } from 'express';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
-import { Role } from '../../../generated/prisma/client.js';
+import { Role, AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
+import { AuditLog } from '../../audit/decorators/audit-log.decorator.js';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache.interceptor.js';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 import { CreateMemberDto } from '../dto/create-member.dto.js';
@@ -42,6 +43,7 @@ export class MembersController {
 
   @Post()
   @Roles(Role.OWNER, Role.MANAGER)
+  @AuditLog(AuditEntity.MEMBER, AuditAction.CREATE, '👤 Member Created')
   async createMember(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateMemberDto,
@@ -50,7 +52,7 @@ export class MembersController {
   }
 
   @Get()
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(30000) // 30 seconds
   @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   async listMembers(
     @CurrentUser() user: JwtPayload,
@@ -71,6 +73,7 @@ export class MembersController {
 
   @Patch(':id')
   @Roles(Role.OWNER, Role.MANAGER)
+  @AuditLog(AuditEntity.MEMBER, AuditAction.UPDATE, '✏️ Member Updated')
   async updateMember(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) memberId: string,
@@ -86,6 +89,7 @@ export class MembersController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(Role.OWNER, Role.MANAGER)
+  @AuditLog(AuditEntity.MEMBER, AuditAction.DELETE, '🗑️ Member Deleted')
   async deleteMember(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) memberId: string,

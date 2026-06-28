@@ -32,18 +32,19 @@ enum TenantSubscriptionStatus {
 }
 
 model PlatformPlan {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @db.VarChar(120)
-  description String?  @db.Text
-  price       Decimal  @db.Decimal(10, 2)
-  billingCycle String  @db.VarChar(50) @map("billing_cycle")
-  features    Json?    @db.JsonB
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(120)
+  description  String?  @db.Text
+  price        Decimal  @db.Decimal(10, 2)
+  billingCycle String   @map("billing_cycle") @db.VarChar(50)
+  features     Json?    @db.JsonB
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   tenantSubscriptions TenantSubscription[]
 
+  @@index([isActive, price], name: "idx_platform_plan_active_price")
   @@map("platform_plans")
 }
 
@@ -126,6 +127,26 @@ enum NotificationType {
   SYSTEM
 }
 
+enum MediaType {
+  IMAGE
+  DOCUMENT
+  VIDEO
+  OTHER
+}
+
+enum MediaCategory {
+  GYM_LOGO
+  MEMBER_PROFILE
+  MEMBER_GALLERY
+  OWNER_AVATAR
+  STAFF_AVATAR
+  MEDICAL_DOCUMENT
+  IDENTITY_DOCUMENT
+  PROGRESS_PHOTO
+  INVOICE_ATTACHMENT
+  OTHER
+}
+
 model Tenant {
   id             String  @id @default(uuid()) @db.Uuid
   name           String  @db.VarChar(255)
@@ -143,24 +164,26 @@ model Tenant {
   currency       String  @default("INR") @db.VarChar(3)
   businessHours  Json?   @map("business_hours")
 
-  status    TenantStatus @default(PENDING) @map("status")
-  isActive  Boolean      @default(false)
+  status   TenantStatus @default(PENDING) @map("status")
+  isActive Boolean      @default(false)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  users                User[]
-  membershipPlans      MembershipPlan[]
-  members              Member[]
-  attendances          Attendance[]
-  subscriptions        Subscription[]
-  payments             Payment[]
-  invoices             Invoice[]
-  notifications        Notification[]
-  whatsappLogs         WhatsAppLog[]
-  tenantSubscriptions  TenantSubscription[]
-  tenantInvoices       TenantInvoice[]
+  users               User[]
+  membershipPlans     MembershipPlan[]
+  members             Member[]
+  attendances         Attendance[]
+  subscriptions       Subscription[]
+  payments            Payment[]
+  invoices            Invoice[]
+  notifications       Notification[]
+  whatsappLogs        WhatsAppLog[]
+  tenantSubscriptions TenantSubscription[]
+  tenantInvoices      TenantInvoice[]
+  media               Media[]
+  tenantStorage       TenantStorage?
 
   @@index([deletedAt], name: "idx_tenant_deleted_at")
   @@index([isActive, deletedAt], name: "idx_tenant_active_status")
@@ -193,11 +216,13 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  refreshTokens RefreshToken[]
-  attendancesMarked Attendance[] @relation("AttendanceMarkedBy")
+  tenant            Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  refreshTokens     RefreshToken[]
+  attendancesMarked Attendance[]   @relation("AttendanceMarkedBy")
+  mediaUploaded     Media[]
 
   @@unique([tenantId, email], name: "uq_user_tenant_email")
+  @@index([passwordResetToken], name: "idx_user_password_reset")
   @@index([tenantId, role, deletedAt], name: "idx_user_tenant_role")
   @@index([tenantId, isActive, deletedAt], name: "idx_user_tenant_active")
   @@index([email, deletedAt], name: "idx_user_email_lookup")
@@ -207,18 +232,19 @@ model User {
 }
 
 model RefreshToken {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  tokenHash  String    @map("token_hash") @db.VarChar(255)
-  familyId   String    @map("family_id") @db.Uuid
-  expiresAt  DateTime  @map("expires_at")
-  revokedAt  DateTime? @map("revoked_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  userAgent  String?   @map("user_agent") @db.VarChar(500)
-  ipAddress  String?   @map("ip_address") @db.VarChar(45)
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash") @db.VarChar(255)
+  familyId  String    @map("family_id") @db.Uuid
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  userAgent String?   @map("user_agent") @db.VarChar(500)
+  ipAddress String?   @map("ip_address") @db.VarChar(45)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([tokenHash], name: "uq_refresh_token_hash")
   @@index([userId, revokedAt], name: "idx_refresh_token_user")
   @@index([expiresAt], name: "idx_refresh_token_expiry")
   @@index([familyId], name: "idx_refresh_token_family")
@@ -240,7 +266,7 @@ model MembershipPlan {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   subscriptions Subscription[]
 
   @@index([tenantId, deletedAt], name: "idx_membership_plan_tenant_deleted")
@@ -259,13 +285,14 @@ model Member {
   tenantId   String @map("tenant_id") @db.Uuid
   memberCode String @db.VarChar(50)
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  attendances  Attendance[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attendances   Attendance[]
   subscriptions Subscription[]
   payments      Payment[]
   invoices      Invoice[]
   notifications Notification[]
   whatsappLogs  WhatsAppLog[]
+  media         Media[]
 
   firstName   String    @map("first_name") @db.VarChar(100)
   lastName    String    @map("last_name") @db.VarChar(100)
@@ -318,23 +345,23 @@ model Member {
 }
 
 model Attendance {
-  id               String          @id @default(uuid()) @db.Uuid
-  tenantId         String          @map("tenant_id") @db.Uuid
-  memberId         String          @map("member_id") @db.Uuid
-  markedByUserId   String?         @map("marked_by_user_id") @db.Uuid
-  checkInAt        DateTime        @map("check_in_at") @db.Timestamptz(6)
-  checkOutAt       DateTime?       @map("check_out_at") @db.Timestamptz(6)
-  attendanceDate   DateTime        @map("attendance_date") @db.Date // Calendar date only, for daily/monthly reporting
-  status           AttendanceStatus
-  notes            String?         @db.Text
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @map("tenant_id") @db.Uuid
+  memberId       String           @map("member_id") @db.Uuid
+  markedByUserId String?          @map("marked_by_user_id") @db.Uuid
+  checkInAt      DateTime         @map("check_in_at") @db.Timestamptz(6)
+  checkOutAt     DateTime?        @map("check_out_at") @db.Timestamptz(6)
+  attendanceDate DateTime         @map("attendance_date") @db.Date // Calendar date only, for daily/monthly reporting
+  status         AttendanceStatus
+  notes          String?          @db.Text
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member   Member  @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
-  markedBy User?   @relation("AttendanceMarkedBy", fields: [markedByUserId], references: [id], onDelete: SetNull)
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member   Member @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+  markedBy User?  @relation("AttendanceMarkedBy", fields: [markedByUserId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, memberId, deletedAt], name: "idx_attendance_tenant_member")
   @@index([tenantId, memberId, checkInAt, deletedAt], name: "idx_attendance_tenant_member_checkin")
@@ -373,6 +400,7 @@ model Subscription {
   payments       Payment[]
   invoices       Invoice[]
 
+  @@index([status, endDate], name: "idx_subscription_global_cron")
   @@index([tenantId, deletedAt], name: "idx_subscription_tenant_deleted")
   @@index([tenantId, memberId, deletedAt], name: "idx_subscription_tenant_member")
   @@index([tenantId, status, deletedAt], name: "idx_subscription_tenant_status")
@@ -392,15 +420,15 @@ model Payment {
   paymentStatus        PaymentStatus @map("payment_status")
   transactionReference String?       @map("transaction_reference") @db.VarChar(100)
 
-  razorpayOrderId      String?       @map("razorpay_order_id") @db.VarChar(100)
-  razorpayPaymentId    String?       @map("razorpay_payment_id") @db.VarChar(100)
-  razorpaySignature    String?       @map("razorpay_signature") @db.VarChar(255)
-  gateway              String?       @db.VarChar(50)
-  gatewayStatus        String?       @map("gateway_status") @db.VarChar(50)
-  gatewayPayload       Json?         @map("gateway_payload") @db.JsonB
+  razorpayOrderId   String? @map("razorpay_order_id") @db.VarChar(100)
+  razorpayPaymentId String? @map("razorpay_payment_id") @db.VarChar(100)
+  razorpaySignature String? @map("razorpay_signature") @db.VarChar(255)
+  gateway           String? @db.VarChar(50)
+  gatewayStatus     String? @map("gateway_status") @db.VarChar(50)
+  gatewayPayload    Json?   @map("gateway_payload") @db.JsonB
 
-  paidAt               DateTime?     @map("paid_at") @db.Timestamptz(6)
-  notes                String?       @db.Text
+  paidAt DateTime? @map("paid_at") @db.Timestamptz(6)
+  notes  String?   @db.Text
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -411,6 +439,8 @@ model Payment {
   subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   invoices     Invoice[]
 
+  @@index([razorpayOrderId], name: "idx_payment_razorpay_order")
+  @@index([paymentStatus], name: "idx_payment_global_cron")
   @@index([tenantId, deletedAt], name: "idx_payment_tenant_deleted")
   @@index([tenantId, memberId, deletedAt], name: "idx_payment_tenant_member")
   @@index([tenantId, paymentStatus, deletedAt], name: "idx_payment_tenant_status")
@@ -448,20 +478,20 @@ model Invoice {
 }
 
 model Notification {
-  id        String           @id @default(uuid()) @db.Uuid
-  tenantId  String           @map("tenant_id") @db.Uuid
-  memberId  String           @map("member_id") @db.Uuid
-  type      NotificationType
-  title     String           @db.VarChar(255)
-  message   String           @db.Text
-  isRead    Boolean          @default(false) @map("is_read")
-  metadata  Json?            @db.JsonB
-  
-  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id       String           @id @default(uuid()) @db.Uuid
+  tenantId String           @map("tenant_id") @db.Uuid
+  memberId String?          @map("member_id") @db.Uuid
+  type     NotificationType
+  title    String           @db.VarChar(255)
+  message  String           @db.Text
+  isRead   Boolean          @default(false) @map("is_read")
+  metadata Json?            @db.JsonB
 
-  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member    Member           @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
 
   @@index([tenantId], name: "idx_notification_tenant")
   @@index([tenantId, memberId], name: "idx_notification_tenant_member")
@@ -472,22 +502,23 @@ model Notification {
 }
 
 model TenantSubscription {
-  id              String                   @id @default(uuid()) @db.Uuid
-  tenantId        String                   @map("tenant_id") @db.Uuid
-  platformPlanId  String                   @map("platform_plan_id") @db.Uuid
-  status          TenantSubscriptionStatus   @default(PENDING)
-  startDate       DateTime                 @map("start_date") @db.Date
-  endDate         DateTime                 @map("end_date") @db.Date
-  autoRenew       Boolean                  @default(false) @map("auto_renew")
-  trialEndsAt     DateTime?                @map("trial_ends_at") @db.Date
-  cancelledAt     DateTime?                @map("cancelled_at") @db.Timestamptz(6)
-  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id             String                   @id @default(uuid()) @db.Uuid
+  tenantId       String                   @map("tenant_id") @db.Uuid
+  platformPlanId String                   @map("platform_plan_id") @db.Uuid
+  status         TenantSubscriptionStatus @default(PENDING)
+  startDate      DateTime                 @map("start_date") @db.Date
+  endDate        DateTime                 @map("end_date") @db.Date
+  autoRenew      Boolean                  @default(false) @map("auto_renew")
+  trialEndsAt    DateTime?                @map("trial_ends_at") @db.Date
+  cancelledAt    DateTime?                @map("cancelled_at") @db.Timestamptz(6)
+  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  platformPlan PlatformPlan @relation(fields: [platformPlanId], references: [id], onDelete: Restrict)
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  platformPlan PlatformPlan    @relation(fields: [platformPlanId], references: [id], onDelete: Restrict)
   invoices     TenantInvoice[]
 
+  @@index([status, endDate], name: "idx_tenant_sub_global_cron")
   @@index([tenantId, status], name: "idx_tenant_sub_tenant_status")
   @@index([tenantId, endDate], name: "idx_tenant_sub_tenant_end_date")
   @@index([status], name: "idx_tenant_sub_global_status")
@@ -518,6 +549,8 @@ model TenantInvoice {
   tenantSubscription TenantSubscription? @relation(fields: [tenantSubscriptionId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, invoiceNumber], name: "uq_tenant_invoice_number")
+  @@index([invoiceNumber], name: "idx_tenant_invoice_number")
+  @@index([tenantId, issuedAt], name: "idx_tenant_invoice_tenant_issued")
   @@index([tenantId, status], name: "idx_tenant_invoice_tenant_status")
   @@index([razorpayOrderId], name: "idx_tenant_invoice_order_id")
   @@index([status, paidAt], name: "idx_tenant_invoice_revenue_lookup")
@@ -526,23 +559,127 @@ model TenantInvoice {
 }
 
 model WhatsAppLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  memberId  String?  @map("member_id") @db.Uuid
-  messageId String?  @map("message_id") @db.VarChar(255)
-  type      String   @db.VarChar(50) // e.g. 'EXPIRING_7_DAYS', 'PAYMENT_SUCCESS', 'WELCOME'
-  status    String   @default("SENT") @db.VarChar(50) // 'SENT', 'DELIVERED', 'READ', 'FAILED'
-  metadata  Json?    @db.JsonB
-  
+  id        String  @id @default(uuid()) @db.Uuid
+  tenantId  String  @map("tenant_id") @db.Uuid
+  memberId  String? @map("member_id") @db.Uuid
+  messageId String? @map("message_id") @db.VarChar(255)
+  type      String  @db.VarChar(50) // e.g. 'EXPIRING_7_DAYS', 'PAYMENT_SUCCESS', 'WELCOME'
+  status    String  @default("SENT") @db.VarChar(50) // 'SENT', 'DELIVERED', 'READ', 'FAILED'
+  metadata  Json?   @db.JsonB
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member    Member?  @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
 
   @@index([tenantId, memberId], name: "idx_whatsapp_log_tenant_member")
   @@index([tenantId, type], name: "idx_whatsapp_log_tenant_type")
   @@index([messageId], name: "idx_whatsapp_log_message_id")
   @@index([tenantId, memberId, type, createdAt], name: "idx_whatsapp_log_throttle")
   @@map("whatsapp_logs")
+}
+
+model Media {
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  memberId     String?       @map("member_id") @db.Uuid
+  uploadedById String?       @map("uploaded_by_id") @db.Uuid
+  type         MediaType
+  category     MediaCategory
+  originalName String        @map("original_name") @db.VarChar(255)
+  fileName     String        @map("file_name") @db.VarChar(255)
+  mimeType     String        @map("mime_type") @db.VarChar(100)
+  size         Int
+  width        Int?
+  height       Int?
+  storageKey   String        @map("storage_key") @db.VarChar(1024)
+  publicUrl    String?       @map("public_url") @db.VarChar(2048)
+  thumbnailUrl String?       @map("thumbnail_url") @db.VarChar(2048)
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member     Member? @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+  uploadedBy User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, deletedAt], name: "idx_media_tenant_deleted")
+  @@index([tenantId, memberId, category, deletedAt], name: "idx_media_tenant_member_category")
+  @@index([tenantId, category, deletedAt], name: "idx_media_tenant_category")
+  @@map("media")
+}
+
+enum AuditEntity {
+  MEMBER
+  ATTENDANCE
+  PAYMENT
+  INVOICE
+  SUBSCRIPTION
+  PLAN
+  NOTIFICATION
+  MEDIA
+  GYM
+  PROFILE
+  USER
+  PLATFORM
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  UPLOAD
+  DOWNLOAD
+  LOGIN
+  LOGOUT
+  CHECK_IN
+  CHECK_OUT
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  SUBSCRIPTION_RENEWED
+  SUSPEND
+  ACTIVATE
+}
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  memberId    String?     @map("member_id") @db.Uuid
+  entity      AuditEntity
+  entityId    String      @map("entity_id") @db.Uuid
+  action      AuditAction
+  description String      @db.Text
+  metadata    Json?       @db.JsonB
+  ipAddress   String?     @map("ip_address") @db.VarChar(45)
+  userAgent   String?     @map("user_agent") @db.Text
+
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId], name: "idx_audit_log_tenant")
+  @@index([userId], name: "idx_audit_log_user")
+  @@index([memberId], name: "idx_audit_log_member")
+  @@index([entity], name: "idx_audit_log_entity")
+  @@index([createdAt], name: "idx_audit_log_created_at")
+  @@map("audit_logs")
+}
+
+model TenantStorage {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @unique @map("tenant_id") @db.Uuid
+  usedStorageBytes  Float    @default(0) @map("used_storage_bytes")
+  storageLimitBytes Float    @map("storage_limit_bytes")
+  totalFiles        Int      @default(0) @map("total_files")
+  totalImages       Int      @default(0) @map("total_images")
+  totalDocuments    Int      @default(0) @map("total_documents")
+  lastCalculatedAt  DateTime @default(now()) @map("last_calculated_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([usedStorageBytes], name: "idx_tenant_storage_used")
+  @@map("tenant_storage")
 }

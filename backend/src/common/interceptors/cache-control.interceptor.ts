@@ -23,10 +23,13 @@ export class CacheControlInterceptor implements NestInterceptor {
 
     // Determine default based on authentication
     // If route is public, maybe allow some caching. If authenticated, default to private.
-    const isPublic = this.reflector.get<boolean>('isPublic', context.getHandler()) || 
-                    this.reflector.get<boolean>('isPublic', context.getClass());
+    const isPublic =
+      this.reflector.get<boolean>('isPublic', context.getHandler()) ||
+      this.reflector.get<boolean>('isPublic', context.getClass());
 
-    let cacheHeader = isPublic ? CACHE_PRESETS.PUBLIC_API : CACHE_PRESETS.PRIVATE;
+    let cacheHeader = isPublic
+      ? CACHE_PRESETS.PUBLIC_API
+      : CACHE_PRESETS.PRIVATE;
 
     // Check for explicit decorator override
     const options = this.reflector.getAllAndOverride<CacheControlOptions>(

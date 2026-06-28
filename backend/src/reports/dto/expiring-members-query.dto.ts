@@ -1,0 +1,24 @@
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
+
+export class ExpiringMembersQueryDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(90)
+  @IsOptional()
+  days?: number = 30;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  page?: number = 1;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  limit?: number = 20;
+}

@@ -19,6 +19,9 @@ import {
 } from '../../../generated/prisma/client.js';
 import { WhatsappService } from '../../whatsapp/services/whatsapp.service.js';
 import { TenantSubscriptionService } from '../../tenant-subscription/services/tenant-subscription.service.js';
+import { ExternalServiceCall } from '../../common/utils/circuit-breaker.util.js';
+import { AuditService } from '../../audit/audit.service.js';
+import { AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
 
 @Injectable()
 export class RazorpayService {
@@ -29,6 +32,7 @@ export class RazorpayService {
     private readonly prisma: PrismaService,
     private readonly whatsappService: WhatsappService,
     private readonly tenantSubscriptionService: TenantSubscriptionService,
+    private readonly auditService: AuditService,
   ) {
     if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
       this.razorpay = new Razorpay({
@@ -65,15 +69,22 @@ export class RazorpayService {
 
     let order;
     try {
-      order = await this.razorpay.orders.create({
-        amount: amountInPaise,
-        currency: 'INR',
-        receipt: `receipt_${subscription.id.substring(0, 8)}`,
-        notes: {
-          subscriptionId: subscription.id,
-          tenantId,
+      order = await ExternalServiceCall.execute(
+        'razorpay-create-order',
+        () => this.razorpay.orders.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: `receipt_${subscription.id.substring(0, 8)}`,
+          notes: {
+            subscriptionId: subscription.id,
+            tenantId,
+          },
+        }),
+        () => {
+          throw new InternalServerErrorException('Razorpay API is currently slow or unavailable');
         },
-      });
+        { timeout: 6000 }
+      );
     } catch (error) {
       this.logger.error('Failed to create Razorpay order', error);
       throw new InternalServerErrorException(
@@ -127,26 +138,34 @@ export class RazorpayService {
 
     try {
       const amountInPaise = Math.round(Number(subscription.amount) * 100);
-      const paymentLink = await this.razorpay.paymentLink.create({
-        amount: amountInPaise,
-        currency: 'INR',
-        accept_partial: false,
-        description: 'Gym Membership Renewal',
-        customer: {
-          name: `${member.firstName} ${member.lastName}`,
-          email: member.email,
-          contact: member.phone,
+      const paymentLink = await ExternalServiceCall.execute(
+        'razorpay-create-payment-link',
+        () => this.razorpay.paymentLink.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          accept_partial: false,
+          description: 'Gym Membership Renewal',
+          customer: {
+            name: `${member.firstName} ${member.lastName}`,
+            email: member.email,
+            contact: member.phone,
+          },
+          notify: {
+            sms: false,
+            email: false,
+          },
+          reminder_enable: false,
+          notes: {
+            subscriptionId: subscription.id,
+            tenantId,
+          },
+        }),
+        () => {
+          this.logger.error('Razorpay paymentLink.create degraded response (Fallback)');
+          return { short_url: '' } as any;
         },
-        notify: {
-          sms: false,
-          email: false,
-        },
-        reminder_enable: false,
-        notes: {
-          subscriptionId: subscription.id,
-          tenantId,
-        },
-      });
+        { timeout: 6000 }
+      );
 
       return paymentLink.short_url;
     } catch (error) {
@@ -223,7 +242,7 @@ export class RazorpayService {
         const invoiceNumber = `INV-${dateStr}-${uniqueSuffix}`;
 
         // Create Invoice
-        await tx.invoice.create({
+        const invoice = await tx.invoice.create({
           data: {
             tenantId,
             memberId: payment.memberId,
@@ -244,6 +263,26 @@ export class RazorpayService {
             title: 'Payment Successful',
             message: `Your payment of ${payment.amount} has been successfully processed.`,
           },
+        });
+
+        // Audit Log for Payment Success and Invoice
+        await this.auditService.createLog({
+          tenantId,
+          userId: payment.memberId, // Assuming system/member context
+          memberId: payment.memberId,
+          entity: AuditEntity.PAYMENT,
+          entityId: payment.id,
+          action: AuditAction.PAYMENT_SUCCESS,
+          description: '💳 Payment Verification Successful',
+        });
+        await this.auditService.createLog({
+          tenantId,
+          userId: payment.memberId,
+          memberId: payment.memberId,
+          entity: AuditEntity.INVOICE,
+          entityId: invoice.id,
+          action: AuditAction.CREATE,
+          description: '📄 Invoice Generated',
         });
 
         // WhatsApp Notification
@@ -342,7 +381,7 @@ export class RazorpayService {
               .toUpperCase();
             const invoiceNumber = `INV-${dateStr}-${uniqueSuffix}`;
 
-            await tx.invoice.create({
+            const invoice = await tx.invoice.create({
               data: {
                 tenantId: payment.tenantId,
                 memberId: payment.memberId,
@@ -351,6 +390,26 @@ export class RazorpayService {
                 invoiceNumber,
                 amount: payment.amount,
               },
+            });
+
+            // Audit Logs
+            await this.auditService.createLog({
+              tenantId: payment.tenantId,
+              userId: payment.memberId, // system context
+              memberId: payment.memberId,
+              entity: AuditEntity.PAYMENT,
+              entityId: payment.id,
+              action: AuditAction.PAYMENT_SUCCESS,
+              description: '💳 Webhook: Payment Captured',
+            });
+            await this.auditService.createLog({
+              tenantId: payment.tenantId,
+              userId: payment.memberId,
+              memberId: payment.memberId,
+              entity: AuditEntity.INVOICE,
+              entityId: invoice.id,
+              action: AuditAction.CREATE,
+              description: '📄 Invoice Generated',
             });
 
             // WhatsApp Notification
@@ -406,7 +465,8 @@ export class RazorpayService {
       throw new NotFoundException('Platform plan not found');
     }
 
-    const invoiceNumber = await this.tenantSubscriptionService.generateInvoiceNumber();
+    const invoiceNumber =
+      await this.tenantSubscriptionService.generateInvoiceNumber();
 
     const tenantInvoice = await this.prisma.tenantInvoice.create({
       data: {
@@ -424,16 +484,23 @@ export class RazorpayService {
 
     let order;
     try {
-      order = await this.razorpay.orders.create({
-        amount: amountInPaise,
-        currency: 'INR',
-        receipt: invoiceNumber,
-        notes: {
-          tenantId,
-          planId: plan.id,
-          invoiceId: tenantInvoice.id,
+      order = await ExternalServiceCall.execute(
+        'razorpay-create-tenant-order',
+        () => this.razorpay.orders.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: invoiceNumber,
+          notes: {
+            tenantId,
+            planId: plan.id,
+            invoiceId: tenantInvoice.id,
+          },
+        }),
+        () => {
+          throw new InternalServerErrorException('Payment gateway unavailable');
         },
-      });
+        { timeout: 6000 }
+      );
     } catch (error) {
       this.logger.error('Failed to create Razorpay tenant order', error);
       throw new InternalServerErrorException(
@@ -549,7 +616,9 @@ export class RazorpayService {
     });
 
     if (!invoice) {
-      this.logger.warn(`Tenant webhook received for unknown order: ${razorpayOrderId}`);
+      this.logger.warn(
+        `Tenant webhook received for unknown order: ${razorpayOrderId}`,
+      );
       return { status: 'ignored' };
     }
 

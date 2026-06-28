@@ -1,0 +1,252 @@
+﻿
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\app.controller.ts (Line 22) - 3 awaits ===
+    const { PrismaClient, Role } = await import('../generated/prisma/client.js');
+    const bcrypt = await import('bcrypt');
+    const prisma = new PrismaClient();
+    
+    const email = process.env.SUPERADMIN_EMAIL;
+    const password = process.env.SUPERADMIN_PASSWORD;
+    
+    if (!email || !password) {
+      return { error: 'SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set in environment variables' };
+    }
+
+    const existingSuperAdmin = await prisma.user.findFirst({
+      where: { email, tenantId: null, deletedAt: null },
+    });
+
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\auth\services\auth.service.ts (Line 89) - 4 awaits ===
+    const existingTenant = await this.prisma.tenant.findUnique({
+      where: { email: dto.gymEmail },
+    });
+    if (existingTenant) {
+      throw new ConflictException('A gym with this email already exists');
+    }
+
+    // Hash the owner's password
+    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+
+    // Atomic transaction: create tenant + owner user
+    const { tenant, user } = await this.prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({
+        data: {
+          name: dto.gymName,
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\auth\services\auth.service.ts (Line 183) - 3 awaits ===
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
+
+    if (!isPasswordValid) {
+      await this.handleFailedLogin(user.id, user.failedLoginAttempts);
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // ΓöÇΓöÇ Successful login ΓÇö reset security counters ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastLoginAt: new Date(),
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\auth\services\auth.service.ts (Line 460) - 3 awaits ===
+    const isCurrentPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\members\services\members.service.ts (Line 166) - 3 awaits ===
+    await this.assertTenantExists(tenantId);
+    await this.assertMemberCodeUnique(tenantId, dto.memberCode);
+
+    const member = await this.prisma.member.create({
+      data: {
+        tenantId,
+        memberCode: dto.memberCode,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        phone: dto.phone,
+        gender: dto.gender,
+        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
+        photoUrl: dto.photoUrl,
+        emergencyContactName: dto.emergencyContactName,
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\members\services\members.service.ts (Line 211) - 3 awaits ===
+    const existing = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId, deletedAt: null },
+      select: { id: true, memberCode: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Member not found');
+    }
+
+    if (dto.memberCode && dto.memberCode !== existing.memberCode) {
+      await this.assertMemberCodeUnique(tenantId, dto.memberCode);
+    }
+
+    const member = await this.prisma.member.update({
+      where: { id: memberId },
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\notifications\notification-cron.service.ts (Line 98) - 3 awaits ===
+        await this.prisma.notification.createMany({
+          data: notificationsToCreate,
+        });
+      }
+
+      // Parallelize WhatsApp notifications and payment link creation
+      await Promise.all(
+        subscriptions.map(async (sub) => {
+          // WhatsApp Reminder Logic
+          if ([7, 3, 1, 0].includes(days)) {
+            const paymentLink =
+              days > 0
+                ? await this.razorpayService.createPaymentLink(
+                    sub.tenantId,
+                    sub.id,
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\razorpay\services\razorpay.service.ts (Line 401) - 3 awaits ===
+    const plan = await this.prisma.platformPlan.findUnique({
+      where: { id: dto.planId, isActive: true },
+    });
+
+    if (!plan) {
+      throw new NotFoundException('Platform plan not found');
+    }
+
+    const invoiceNumber = await this.tenantSubscriptionService.generateInvoiceNumber();
+
+    const tenantInvoice = await this.prisma.tenantInvoice.create({
+      data: {
+        tenantId,
+        platformPlanId: plan.id,
+        invoiceNumber,
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\superadmin\services\superadmin.service.ts (Line 29) - 4 awaits ===
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const updatedTenantResult = await this.prisma.$transaction(async (tx) => {
+      const updatedTenant = await tx.tenant.update({
+        where: { id: tenantId },
+        data: { status: 'TRIAL', isActive: true },
+      });
+
+      await tx.user.updateMany({
+        where: { tenantId, role: 'OWNER' },
+        data: { isActive: true },
+      });
+
+      return updatedTenant;
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\superadmin\services\superadmin.service.ts (Line 46) - 3 awaits ===
+    await this.tenantSubscriptionService.createTrialSubscription(tenantId);
+
+    return updatedTenantResult;
+  }
+
+  async rejectTenant(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    // Soft delete or completely remove depending on logic.
+    // We will hard delete for rejected applications to keep DB clean.
+    await this.prisma.tenant.delete({
+      where: { id: tenantId },
+    });
+
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\tenant-subscription\services\tenant-subscription.service.ts (Line 56) - 3 awaits ===
+    const currentSub = await this.getCurrentSubscription(tenantId);
+
+    const subscription = await this.prisma.tenantSubscription.create({
+      data: {
+        tenantId,
+        platformPlanId: planId,
+        status: TenantSubscriptionStatus.ACTIVE,
+        startDate: now,
+        endDate,
+      },
+    });
+
+    await this.prisma.tenantInvoice.update({
+      where: { id: invoiceId },
+      data: { tenantSubscriptionId: subscription.id },
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\tenant-subscription\services\tenant-subscription.service.ts (Line 123) - 3 awaits ===
+    const currentSub = await this.getCurrentSubscription(tenantId);
+    if (!currentSub) {
+      this.logger.warn(`No subscription found to expire for tenant ${tenantId}`);
+      return null;
+    }
+
+    const subscription = await this.prisma.tenantSubscription.update({
+      where: { id: currentSub.id },
+      data: {
+        status: TenantSubscriptionStatus.EXPIRED,
+      },
+    });
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\whatsapp\services\whatsapp.service.ts (Line 208) - 3 awaits ===
+    const canSend = await this.canSendMessage(tenantId, memberId, type, 30);
+    if (!canSend) {
+      this.logger.log(
+        `Skipping duplicate WhatsApp reminder of type ${type} for member ${memberId}`,
+      );
+      return;
+    }
+
+    await this.sendMessage(member.phone, text, tenantId, memberId, type);
+  }
+
+  async sendPaymentSuccess(tenantId: string, memberId: string, amount: number) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+
+
+=== File: C:\Users\HP-PC\OneDrive\Desktop\Gym Operating System\backend\src\whatsapp\services\whatsapp.service.ts (Line 228) - 3 awaits ===
+    await this.sendMessage(member.phone, text, tenantId, memberId, type);
+  }
+
+  async sendWelcomeMessage(tenantId: string, memberId: string) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!member || !member.phone) return;
+
+    const type = 'WELCOME';
+    const text = `Hi ${member.firstName}, welcome to the gym! We are excited to have you onboard.`;
+
+    const canSend = await this.canSendMessage(tenantId, memberId, type);
+    if (!canSend) return;
+

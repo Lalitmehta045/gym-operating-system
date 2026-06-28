@@ -5,13 +5,14 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { User, Shield, Building2, Plug } from "lucide-react";
+import { User, Shield, Building2, Plug, Activity } from "lucide-react";
 
 const settingsNavigation = [
   { name: "Profile", href: "/settings/profile", icon: User },
   { name: "Account", href: "/settings/account", icon: Shield },
   { name: "Gym", href: "/settings/gym", icon: Building2 },
   { name: "Integrations", href: "/settings/integrations", icon: Plug },
+  { name: "Audit Logs", href: "/settings/audit", icon: Activity },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

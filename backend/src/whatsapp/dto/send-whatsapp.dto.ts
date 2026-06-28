@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 import {
   PHONE_PATTERN,
   PHONE_VALIDATION_MESSAGE,

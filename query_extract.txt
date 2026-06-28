@@ -1,0 +1,1518 @@
+=== attendances.service.ts ===
+56: const member = await this.prisma.member.findFirst({
+57: where: { id: memberId, tenantId, deletedAt: null },
+58: select: { id: true, isActive: true, status: true },
+59: });
+60: if (!member) throw new NotFoundException('Member not found');
+61: 
+62: if (!member.isActive) {
+71: const existing = await this.prisma.attendance.findFirst({
+72: where: {
+73: tenantId,
+74: memberId,
+75: attendanceDate,
+76: deletedAt: null,
+77: },
+84: const attendance = await this.prisma.attendance.create({
+146: const attendance = await this.prisma.attendance.findFirst({
+147: where: { id: attendanceId, tenantId, deletedAt: null },
+148: });
+149: if (!attendance) throw new NotFoundException('Attendance not found');
+150: 
+151: if (attendance.checkOutAt) {
+152: throw new BadRequestException('Attendance already checked-out');
+162: const updated = await this.prisma.attendance.update({
+163: where: { id: attendanceId },
+164: data: {
+165: checkOutAt: now,
+166: markedByUserId: markedByUserId ?? attendance.markedByUserId,
+167: },
+168: });
+183: const member = await this.prisma.member.findFirst({
+184: where: { id: dto.memberId, tenantId, deletedAt: null },
+185: select: { id: true, isActive: true, status: true },
+186: });
+187: if (!member) throw new NotFoundException('Member not found');
+188: 
+189: if (!member.isActive) {
+201: const existing = await this.prisma.attendance.findFirst({
+202: where: {
+203: tenantId,
+204: memberId: dto.memberId,
+205: attendanceDate,
+206: deletedAt: null,
+207: },
+220: const attendance = await this.prisma.attendance.create({
+245: const member = await this.prisma.member.findFirst({
+246: where: { id: dto.memberId, tenantId, deletedAt: null },
+247: select: { id: true, isActive: true, status: true },
+248: });
+249: if (!member) throw new NotFoundException('Member not found');
+250: 
+251: if (!member.isActive) throw new BadRequestException('Member is not active');
+258: const existing = await this.prisma.attendance.findFirst({
+259: where: {
+260: tenantId,
+261: memberId: dto.memberId,
+262: attendanceDate,
+263: deletedAt: null,
+264: },
+270: const attendance = await this.prisma.attendance.create({
+289: const attendance = await this.prisma.attendance.findFirst({
+290: where: { id: attendanceId, tenantId },
+291: });
+292: if (!attendance) throw new NotFoundException('Attendance not found');
+293: return this.toDto(attendance);
+294: }
+295: 
+305: const where: Prisma.AttendanceWhereInput = {
+306: tenantId,
+307: ...(query?.memberId ? { memberId: query.memberId } : {}),
+308: ...(query?.status ? { status: query.status } : {}),
+309: ...(query?.dateFrom && query?.dateTo
+310: ? {
+332: const orderBy: any = {};
+333: if (allowedSortFields.includes(String(sortBy))) {
+334: orderBy[String(sortBy)] = sortOrder;
+335: } else {
+336: orderBy.attendanceDate = 'desc';
+337: }
+339: const [data, total] = await this.prisma.$transaction([
+340: this.prisma.attendance.findMany({ where, skip, take: limit, orderBy }),
+341: this.prisma.attendance.count({ where }),
+363: const attendance = await this.prisma.attendance.findFirst({
+364: where: { id: attendanceId, tenantId, deletedAt: null },
+365: });
+366: if (!attendance) throw new NotFoundException('Attendance not found');
+367: 
+368: if (dto.checkOutAt && attendance.checkOutAt) {
+369: throw new BadRequestException('Attendance already checked-out');
+372: const updated = await this.prisma.attendance.update({
+373: where: { id: attendanceId },
+374: data: {
+375: ...(dto.checkOutAt !== undefined && {
+376: checkOutAt: new Date(dto.checkOutAt),
+377: }),
+378: ...(dto.markedByUserId !== undefined && {
+393: const existing = await this.prisma.attendance.findFirst({
+394: where: { id: attendanceId, tenantId, deletedAt: null },
+395: select: { id: true },
+396: });
+397: if (!existing) throw new NotFoundException('Attendance not found');
+398: 
+399: await this.prisma.attendance.update({
+399: await this.prisma.attendance.update({
+400: where: { id: attendanceId },
+401: data: { deletedAt: new Date() },
+402: });
+403: }
+404: 
+405: async restoreAttendance(
+409: const existing = await this.prisma.attendance.findFirst({
+410: where: { id: attendanceId, tenantId },
+411: select: { id: true },
+412: });
+413: if (!existing) throw new NotFoundException('Attendance not found');
+414: 
+415: const attendance = await this.prisma.attendance.update({
+415: const attendance = await this.prisma.attendance.update({
+416: where: { id: attendanceId },
+417: data: { deletedAt: null },
+418: });
+419: return this.toDto(attendance);
+420: }
+421: 
+434: const attendance = await this.prisma.attendance.findFirst({
+435: where: {
+436: tenantId,
+437: memberId,
+438: checkOutAt: null,
+439: deletedAt: null,
+440: attendanceDate: {
+445: orderBy: { checkInAt: 'desc' },
+446: });
+447: return attendance ? this.toDto(attendance) : null;
+448: }
+449: 
+450: async memberReport(
+457: const member = await this.prisma.member.findFirst({
+458: where: { id: memberId, tenantId, deletedAt: null },
+459: select: { id: true, firstName: true, lastName: true },
+460: });
+461: if (!member) throw new NotFoundException('Member not found');
+462: 
+463: const [attGroups, last] = await Promise.all([
+464: this.prisma.attendance.groupBy({
+466: where: { tenantId, memberId, deletedAt: null },
+467: _count: true,
+468: }),
+469: this.prisma.attendance.findFirst({
+470: where: { tenantId, memberId, deletedAt: null },
+471: orderBy: { attendanceDate: 'desc' },
+469: this.prisma.attendance.findFirst({
+470: where: { tenantId, memberId, deletedAt: null },
+471: orderBy: { attendanceDate: 'desc' },
+472: select: { attendanceDate: true },
+473: }),
+474: ]);
+475: 
+471: orderBy: { attendanceDate: 'desc' },
+472: select: { attendanceDate: true },
+473: }),
+474: ]);
+475: 
+476: let totalPresent = 0;
+531: this.prisma.member.count({
+532: where: { tenantId, deletedAt: null, isActive: true },
+533: }),
+534: this.prisma.attendance.groupBy({
+535: by: ['status'],
+536: where: {
+537: tenantId,
+534: this.prisma.attendance.groupBy({
+536: where: {
+537: tenantId,
+538: attendanceDate: { gte: start, lte: end },
+539: deletedAt: null,
+540: },
+541: _count: true,
+584: const attGroups = await this.prisma.attendance.groupBy({
+586: where: {
+587: tenantId,
+588: attendanceDate: { gte: firstDay, lte: lastDay },
+589: deletedAt: null,
+590: },
+591: _count: true,
+
+=== auth-cron.service.ts ===
+16: const result = await this.prisma.refreshToken.deleteMany({
+17: where: {
+18: OR: [{ expiresAt: { lt: new Date() } }, { revokedAt: { not: null } }],
+19: },
+20: });
+21: this.logger.log(
+22: `Cleanup complete. Deleted ${result.count} refresh tokens.`,
+33: const result = await this.prisma.refreshToken.deleteMany({
+34: where: {
+35: AND: [
+36: { revokedAt: { not: null } },
+37: { expiresAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+38: ],
+39: },
+
+=== auth.service.ts ===
+89: this.prisma.tenant.findUnique({
+90: where: { email: dto.gymEmail },
+91: }),
+92: bcrypt.hash(dto.password, SALT_ROUNDS),
+93: ]);
+94: 
+95: if (existingTenant) {
+100: const { tenant, user } = await this.prisma.$transaction(async (tx) => {
+150: const user = await this.prisma.user.findFirst({
+151: where: {
+152: email: dto.email,
+153: deletedAt: null,
+154: },
+155: include: {
+156: tenant: true,
+155: include: {
+156: tenant: true,
+157: },
+158: });
+159: 
+160: // Always run the same generic error to prevent user-enumeration
+194: await this.prisma.user.update({
+195: where: { id: user.id },
+196: data: {
+197: lastLoginAt: new Date(),
+198: failedLoginAttempts: 0,
+199: lockedUntil: null,
+200: },
+232: const matchedToken = await this.prisma.refreshToken.findFirst({
+233: where: {
+234: tokenHash,
+235: },
+236: include: {
+237: user: true,
+238: },
+236: include: {
+237: user: true,
+238: },
+239: });
+240: 
+241: if (!matchedToken) {
+253: await this.prisma.refreshToken.updateMany({
+254: where: { familyId: matchedToken.familyId },
+255: data: { revokedAt: new Date() },
+256: });
+257: 
+258: throw new UnauthorizedException(
+259: 'Token reuse detected. Please log in again.',
+273: await this.prisma.refreshToken.update({
+274: where: { id: matchedToken.id },
+275: data: { revokedAt: new Date() },
+276: });
+277: 
+278: const userAgent = request.headers['user-agent'] || undefined;
+279: const ipAddress = request.ip;
+296: await this.prisma.refreshToken.updateMany({
+297: where: {
+298: userId,
+299: revokedAt: null,
+300: },
+301: data: { revokedAt: new Date() },
+302: });
+318: const user = await this.prisma.user.findUnique({
+319: where: { id: userId },
+320: select: {
+321: id: true,
+322: email: true,
+323: firstName: true,
+324: lastName: true,
+351: const user = await this.prisma.user.update({
+352: where: { id: userId },
+353: data: {
+354: firstName: dto.firstName,
+355: lastName: dto.lastName,
+356: },
+357: select: {
+399: const user = await this.prisma.user.findFirst({
+400: where: {
+401: email: dto.email,
+402: deletedAt: null,
+403: isActive: true,
+404: },
+405: });
+425: await this.prisma.user.update({
+426: where: { id: user.id },
+427: data: {
+428: passwordResetToken: tokenHash,
+429: passwordResetExpiresAt: expiresAt,
+430: },
+431: });
+451: const user = await this.prisma.user.findUnique({
+452: where: { id: userId },
+453: select: { id: true, email: true, passwordHash: true, deletedAt: true },
+454: });
+455: 
+456: if (!user || user.deletedAt) {
+457: throw new UnauthorizedException('User not found');
+471: await this.prisma.$transaction([
+472: this.prisma.user.update({
+473: where: { id: user.id },
+474: data: {
+475: passwordHash: newPasswordHash,
+476: failedLoginAttempts: 0,
+477: lockedUntil: null,
+478: },
+480: this.prisma.refreshToken.updateMany({
+481: where: { userId: user.id, revokedAt: null },
+482: data: { revokedAt: new Date() },
+483: }),
+484: ]);
+485: 
+486: this.logger.log(
+512: const user = await this.prisma.user.findFirst({
+513: where: {
+514: passwordResetToken: tokenHash,
+515: passwordResetExpiresAt: { gt: new Date() },
+516: deletedAt: null,
+517: },
+518: });
+529: await this.prisma.$transaction([
+530: this.prisma.user.update({
+531: where: { id: user.id },
+532: data: {
+533: passwordHash: newPasswordHash,
+534: passwordResetToken: null,
+535: passwordResetExpiresAt: null,
+536: // Also reset any account-lock state
+542: this.prisma.refreshToken.updateMany({
+543: where: { userId: user.id, revokedAt: null },
+544: data: { revokedAt: new Date() },
+545: }),
+546: ]);
+547: 
+548: this.logger.log(
+572: await this.prisma.user.update({
+573: where: { id: userId },
+574: data: {
+575: failedLoginAttempts: newAttempts,
+576: ...(lockedUntil !== undefined && { lockedUntil }),
+577: },
+578: });
+666: await this.prisma.refreshToken.create({
+
+=== jwt.strategy.ts ===
+34: const user = await this.prisma.user.findUnique({
+35: where: { id: payload.sub },
+36: select: { id: true, isActive: true, deletedAt: true },
+37: });
+38: 
+39: if (!user || !user.isActive || user.deletedAt) {
+40: throw new UnauthorizedException('User account is deactivated or deleted');
+
+=== tenant-subscription.guard.ts ===
+37: const tenant = await this.prisma.tenant.findUnique({
+38: where: { id: user.tenantId },
+39: select: { status: true },
+40: });
+41: 
+42: if (!tenant) return true;
+43: 
+
+=== billing.service.ts ===
+35: return this.prisma.platformPlan.findMany({
+36: where: { isActive: true },
+37: orderBy: { price: 'asc' },
+38: });
+39: }
+40: 
+41: async getInvoices(tenantId: string, query: ListInvoicesQueryDto) {
+37: orderBy: { price: 'asc' },
+38: });
+39: }
+40: 
+41: async getInvoices(tenantId: string, query: ListInvoicesQueryDto) {
+42: const { page = 1, limit = 20 } = query;
+45: const [invoices, total] = await this.prisma.$transaction([
+46: this.prisma.tenantInvoice.findMany({
+47: where: { tenantId },
+48: skip,
+49: take: limit,
+50: orderBy: { issuedAt: 'desc' },
+51: }),
+52: this.prisma.tenantInvoice.count({ where: { tenantId } }),
+50: orderBy: { issuedAt: 'desc' },
+51: }),
+52: this.prisma.tenantInvoice.count({ where: { tenantId } }),
+53: ]);
+54: 
+55: const totalPages = Math.ceil(total / limit);
+52: this.prisma.tenantInvoice.count({ where: { tenantId } }),
+53: ]);
+54: 
+55: const totalPages = Math.ceil(total / limit);
+56: 
+57: return {
+71: const plan = await this.prisma.platformPlan.findUnique({
+72: where: { id: dto.planId },
+73: });
+74: if (!plan) {
+75: throw new NotFoundException('Plan not found');
+76: }
+77: 
+
+=== dashboard.service.ts ===
+44: ] = await this.prisma.$transaction([
+45: this.prisma.member.groupBy({
+47: where: { tenantId, deletedAt: null, ...dateFilter },
+48: _count: { _all: true },
+49: orderBy: { status: 'asc' },
+50: }),
+51: this.prisma.subscription.groupBy({
+52: by: ['status'],
+49: orderBy: { status: 'asc' },
+50: }),
+51: this.prisma.subscription.groupBy({
+52: by: ['status'],
+53: where: { tenantId, deletedAt: null, ...dateFilter },
+54: _count: { _all: true },
+51: this.prisma.subscription.groupBy({
+53: where: { tenantId, deletedAt: null, ...dateFilter },
+54: _count: { _all: true },
+55: orderBy: { status: 'asc' },
+56: }),
+57: this.prisma.attendance.count({
+58: where: {
+55: orderBy: { status: 'asc' },
+56: }),
+57: this.prisma.attendance.count({
+58: where: {
+59: tenantId,
+60: deletedAt: null,
+57: this.prisma.attendance.count({
+58: where: {
+59: tenantId,
+60: deletedAt: null,
+61: attendanceDate: { gte: today, lt: tomorrow },
+62: },
+63: }),
+64: this.prisma.attendance.count({
+65: where: {
+66: tenantId,
+67: deletedAt: null,
+68: attendanceDate: { gte: startOfMonth },
+69: },
+70: }),
+71: this.prisma.payment.aggregate({
+72: where: {
+73: tenantId,
+74: deletedAt: null,
+75: paymentStatus: PaymentStatus.PAID,
+76: ...dateFilter,
+77: },
+80: this.prisma.payment.aggregate({
+81: where: {
+82: tenantId,
+83: deletedAt: null,
+84: paymentStatus: PaymentStatus.PAID,
+85: paidAt: { gte: startOfMonth },
+86: ...dateFilter,
+133: const expiringMemberships = await this.prisma.subscription.count({
+134: where: {
+135: tenantId,
+136: deletedAt: null,
+137: status: SubscriptionStatus.ACTIVE,
+138: endDate: { gte: today, lte: sevenDaysFromNow },
+139: },
+167: const [memberGroups, newMembersThisMonth] = await this.prisma.$transaction([
+168: this.prisma.member.groupBy({
+170: where: { tenantId, deletedAt: null, ...dateFilter },
+171: _count: { _all: true },
+172: orderBy: { status: 'asc' },
+173: }),
+174: this.prisma.member.count({
+175: where: {
+172: orderBy: { status: 'asc' },
+173: }),
+174: this.prisma.member.count({
+175: where: {
+176: tenantId,
+177: deletedAt: null,
+174: this.prisma.member.count({
+175: where: {
+176: tenantId,
+177: deletedAt: null,
+178: joinedAt: { gte: startOfMonth },
+179: ...dateFilter,
+180: },
+222: const attGroups = await this.prisma.attendance.groupBy({
+224: where: {
+225: tenantId,
+226: deletedAt: null,
+227: attendanceDate: { gte: today, lt: tomorrow },
+228: },
+229: _count: { _all: true },
+230: orderBy: { status: 'asc' },
+231: });
+232: 
+233: let todayPresent = 0;
+234: let todayAbsent = 0;
+235: let todayLate = 0;
+280: await this.prisma.$transaction([
+281: this.prisma.payment.aggregate({
+282: where: {
+283: tenantId,
+284: deletedAt: null,
+285: paymentStatus: PaymentStatus.PAID,
+286: ...dateFilter,
+287: },
+290: this.prisma.payment.aggregate({
+291: where: {
+292: tenantId,
+293: deletedAt: null,
+294: paymentStatus: PaymentStatus.PAID,
+295: paidAt: { gte: startOfMonth },
+296: ...dateFilter,
+300: this.prisma.payment.aggregate({
+301: where: {
+302: tenantId,
+303: deletedAt: null,
+304: paymentStatus: PaymentStatus.PAID,
+305: paidAt: { gte: startOfWeek },
+306: ...dateFilter,
+310: this.prisma.payment.groupBy({
+312: where: {
+313: tenantId,
+314: deletedAt: null,
+315: paymentStatus: PaymentStatus.PAID,
+316: ...dateFilter,
+317: },
+319: orderBy: { paymentMethod: 'asc' },
+320: }),
+321: ]);
+322: 
+323: const totalRevenue = Number(totalRevenueAgg._sum?.amount || 0);
+324: const monthlyRevenue = Number(monthlyRevenueAgg._sum?.amount || 0);
+368: return this.prisma.subscription.count({
+369: where: {
+370: tenantId,
+371: deletedAt: null,
+372: status: SubscriptionStatus.ACTIVE,
+373: endDate: { gte: today, lte: futureDate },
+374: ...dateFilter,
+380: await this.prisma.$transaction([
+381: this.prisma.subscription.groupBy({
+383: where: { tenantId, deletedAt: null, ...dateFilter },
+384: _count: { _all: true },
+385: orderBy: { status: 'asc' },
+386: }),
+387: getExpiringCount(7),
+388: getExpiringCount(15),
+385: orderBy: { status: 'asc' },
+386: }),
+387: getExpiringCount(7),
+388: getExpiringCount(15),
+389: getExpiringCount(30),
+390: ]);
+437: const topMembers = await this.prisma.$queryRaw<any[]>`
+
+=== invoices.service.ts ===
+18: const [invoices, total] = await this.prisma.$transaction([
+19: this.prisma.invoice.findMany({
+20: where: { tenantId },
+21: orderBy: { issuedAt: 'desc' },
+22: skip,
+23: take: limit,
+24: }),
+25: this.prisma.invoice.count({ where: { tenantId } }),
+21: orderBy: { issuedAt: 'desc' },
+22: skip,
+23: take: limit,
+24: }),
+25: this.prisma.invoice.count({ where: { tenantId } }),
+26: ]);
+25: this.prisma.invoice.count({ where: { tenantId } }),
+26: ]);
+27: 
+28: return {
+29: data: invoices.map((invoice) => this.mapToDto(invoice)),
+30: meta: {
+42: const invoice = await this.prisma.invoice.findFirst({
+43: where: { id, tenantId },
+44: });
+45: if (!invoice) throw new NotFoundException('Invoice not found');
+46: return this.mapToDto(invoice);
+47: }
+48: 
+
+=== members.service.ts ===
+65: const orderBy: Record<string, 'asc' | 'desc'> = {
+66: [sortBy]: sortOrder,
+67: };
+68: 
+69: const where: Prisma.MemberWhereInput = {
+70: tenantId,
+69: const where: Prisma.MemberWhereInput = {
+70: tenantId,
+71: ...(query?.status ? { status: query.status } : {}),
+72: ...(query?.gender ? { gender: query.gender } : {}),
+73: ...(query?.source ? { source: query.source } : {}),
+74: ...(query?.memberCode
+109: const [members, total] = await this.prisma.$transaction([
+110: this.prisma.member.findMany({
+132: this.prisma.member.count({ where }),
+150: const member = await this.prisma.member.findFirst({
+151: where: { id: memberId, tenantId, deletedAt: null },
+152: });
+153: 
+154: if (!member) {
+155: throw new NotFoundException('Member not found');
+156: }
+170: const member = await this.prisma.member.create({
+212: const existing = await this.prisma.member.findFirst({
+213: where: { id: memberId, tenantId, deletedAt: null },
+214: select: { id: true, memberCode: true },
+215: });
+216: 
+217: if (!existing) {
+218: throw new NotFoundException('Member not found');
+225: const member = await this.prisma.member.update({
+226: where: { id: memberId },
+227: data: {
+228: ...(dto.memberCode !== undefined && { memberCode: dto.memberCode }),
+229: ...(dto.firstName !== undefined && { firstName: dto.firstName }),
+230: ...(dto.lastName !== undefined && { lastName: dto.lastName }),
+231: ...(dto.email !== undefined && { email: dto.email }),
+271: const existing = await this.prisma.member.findFirst({
+272: where: { id: memberId, tenantId, deletedAt: null },
+273: select: { id: true },
+274: });
+275: 
+276: if (!existing) {
+277: throw new NotFoundException('Member not found');
+280: await this.prisma.member.update({
+281: where: { id: memberId },
+282: data: {
+283: deletedAt: new Date(),
+284: isActive: false,
+285: },
+286: });
+292: const existing = await this.prisma.member.findFirst({
+293: where: { id: memberId, tenantId },
+294: select: { id: true },
+295: });
+296: 
+297: if (!existing) {
+298: throw new NotFoundException('Member not found');
+301: const member = await this.prisma.member.update({
+302: where: { id: memberId },
+303: data: {
+304: deletedAt: null,
+305: isActive: true,
+306: },
+307: });
+317: const member = await this.prisma.member.findFirst({
+318: where: {
+319: memberCode,
+320: tenantId,
+321: deletedAt: null,
+322: },
+323: });
+369: const tenant = await this.prisma.tenant.findFirst({
+370: where: { id: tenantId, deletedAt: null, isActive: true },
+371: select: { id: true },
+372: });
+373: 
+374: if (!tenant) {
+375: throw new ForbiddenException('Active tenant access is required');
+383: const exists = await this.prisma.member.findFirst({
+384: where: {
+385: tenantId,
+386: memberCode,
+387: deletedAt: null,
+388: },
+389: select: { id: true },
+
+=== membership-plans.service.ts ===
+32: const plan = await this.prisma.membershipPlan.create({
+54: const plan = await this.prisma.membershipPlan.findFirst({
+55: where: {
+56: id: planId,
+57: tenantId,
+58: deletedAt: null,
+59: },
+60: });
+79: const where: Prisma.MembershipPlanWhereInput = {
+80: tenantId,
+81: ...(query.isActive !== undefined
+82: ? { isActive: query.isActive }
+83: : query.includeInactive
+84: ? {}
+98: const [plans, total] = await this.prisma.$transaction([
+99: this.prisma.membershipPlan.findMany({
+101: orderBy: [
+102: { displayOrder: 'asc' },
+103: { createdAt: 'desc' },
+104: { id: 'asc' },
+105: ],
+106: skip,
+109: this.prisma.membershipPlan.count({ where }),
+130: const existingPlan = await this.prisma.membershipPlan.findFirst({
+131: where: {
+132: id: planId,
+133: tenantId,
+134: deletedAt: null,
+135: },
+136: select: { id: true },
+143: const plan = await this.prisma.membershipPlan.update({
+144: where: { id: planId },
+145: data: {
+146: ...(dto.name !== undefined && { name: dto.name }),
+147: ...(dto.description !== undefined && { description: dto.description }),
+148: ...(dto.planType !== undefined && {
+149: planType: dto.planType,
+170: const existingPlan = await this.prisma.membershipPlan.findFirst({
+171: where: {
+172: id: planId,
+173: tenantId,
+174: deletedAt: null,
+175: },
+176: select: { id: true },
+183: await this.prisma.membershipPlan.update({
+184: where: { id: planId },
+185: data: {
+186: deletedAt: new Date(),
+187: isActive: false,
+188: },
+189: });
+198: const existingPlan = await this.prisma.membershipPlan.findFirst({
+199: where: {
+200: id: planId,
+201: tenantId,
+202: },
+203: select: { id: true },
+204: });
+210: const plan = await this.prisma.membershipPlan.update({
+211: where: { id: planId },
+212: data: {
+213: deletedAt: null,
+214: isActive: true,
+215: },
+216: });
+230: const tenant = await this.prisma.tenant.findFirst({
+231: where: {
+232: id: tenantId,
+233: deletedAt: null,
+234: isActive: true,
+235: },
+236: select: { id: true },
+
+=== notification-cron.service.ts ===
+63: const subscriptions = await this.prisma.subscription.findMany({
+64: where: {
+65: endDate: {
+66: gte: targetDate,
+67: lt: nextDay,
+68: },
+69: status: 'ACTIVE',
+101: await this.prisma.notification.createMany({
+139: const pendingPayments = await this.prisma.payment.findMany({
+140: where: {
+141: paymentStatus: 'PENDING',
+142: },
+143: select: {
+144: id: true,
+145: tenantId: true,
+168: await this.prisma.notification.createMany({
+
+=== notifications.service.ts ===
+18: return this.prisma.notification.create({
+34: const where: any = {
+35: tenantId,
+36: ...(type && { type }),
+37: ...(isRead !== undefined && { isRead: isRead === 'true' }),
+38: };
+39: 
+41: this.prisma.notification.findMany({
+45: orderBy: [{ createdAt: 'desc' }, { type: 'asc' }],
+46: }),
+47: this.prisma.notification.count({ where }),
+48: ]);
+49: 
+50: return {
+47: this.prisma.notification.count({ where }),
+62: const count = await this.prisma.notification.count({
+63: where: {
+64: tenantId,
+65: isRead: false,
+66: },
+67: });
+68: 
+73: const notification = await this.prisma.notification.findFirst({
+74: where: { id, tenantId },
+75: });
+76: 
+77: if (!notification) {
+78: throw new NotFoundException(`Notification with ID ${id} not found`);
+79: }
+85: const result = await this.prisma.notification.updateMany({
+86: where: { id, tenantId },
+87: data: { isRead: true },
+88: });
+89: 
+90: if (result.count === 0) {
+91: throw new NotFoundException(`Notification with ID ${id} not found`);
+98: const result = await this.prisma.notification.updateMany({
+99: where: {
+100: tenantId,
+101: isRead: false,
+102: },
+103: data: { isRead: true },
+104: });
+
+=== payments.service.ts ===
+24: this.prisma.member.findFirst({
+25: where: { id: dto.memberId, tenantId, deletedAt: null },
+26: }),
+27: dto.subscriptionId
+28: ? this.prisma.subscription.findFirst({
+29: where: { id: dto.subscriptionId, tenantId, deletedAt: null },
+30: })
+28: ? this.prisma.subscription.findFirst({
+29: where: { id: dto.subscriptionId, tenantId, deletedAt: null },
+30: })
+31: : Promise.resolve(null),
+32: ]);
+33: 
+34: if (!member) throw new NotFoundException('Member not found');
+40: const payment = await this.prisma.payment.create({
+74: const [payments, total] = await this.prisma.$transaction([
+75: this.prisma.payment.findMany({
+76: where: { tenantId, deletedAt: null },
+77: orderBy: { createdAt: 'desc' },
+78: skip,
+79: take: limit,
+80: }),
+81: this.prisma.payment.count({ where: { tenantId, deletedAt: null } }),
+77: orderBy: { createdAt: 'desc' },
+78: skip,
+79: take: limit,
+80: }),
+81: this.prisma.payment.count({ where: { tenantId, deletedAt: null } }),
+82: ]);
+81: this.prisma.payment.count({ where: { tenantId, deletedAt: null } }),
+82: ]);
+83: 
+84: return {
+85: data: payments.map((payment) => this.mapToDto(payment)),
+86: meta: {
+98: const payment = await this.prisma.payment.findFirst({
+99: where: { id, tenantId, deletedAt: null },
+100: });
+101: if (!payment) throw new NotFoundException('Payment not found');
+102: return this.mapToDto(payment);
+103: }
+104: 
+
+=== platform.service.ts ===
+28: ] = await this.prisma.$transaction([
+29: this.prisma.tenant.count({ where: { deletedAt: null } }),
+30: this.prisma.tenant.count({
+31: where: { deletedAt: null, status: TenantStatus.ACTIVE },
+32: }),
+33: this.prisma.tenant.count({
+34: where: { deletedAt: null, status: TenantStatus.TRIAL },
+30: this.prisma.tenant.count({
+31: where: { deletedAt: null, status: TenantStatus.ACTIVE },
+32: }),
+33: this.prisma.tenant.count({
+34: where: { deletedAt: null, status: TenantStatus.TRIAL },
+35: }),
+36: this.prisma.tenant.count({
+33: this.prisma.tenant.count({
+34: where: { deletedAt: null, status: TenantStatus.TRIAL },
+35: }),
+36: this.prisma.tenant.count({
+37: where: { deletedAt: null, status: TenantStatus.EXPIRED },
+38: }),
+39: this.prisma.tenant.count({
+36: this.prisma.tenant.count({
+37: where: { deletedAt: null, status: TenantStatus.EXPIRED },
+38: }),
+39: this.prisma.tenant.count({
+40: where: { deletedAt: null, status: TenantStatus.SUSPENDED },
+41: }),
+42: ]);
+39: this.prisma.tenant.count({
+40: where: { deletedAt: null, status: TenantStatus.SUSPENDED },
+41: }),
+42: ]);
+43: 
+44: return {
+45: totalGyms,
+57: const where: any = { deletedAt: null };
+58: 
+59: if (status) {
+60: where.status = status;
+61: }
+62: 
+72: const [tenants, total] = await this.prisma.$transaction([
+73: this.prisma.tenant.findMany({
+77: orderBy: { createdAt: sortOrder },
+78: include: {
+79: _count: {
+80: select: {
+81: users: true,
+82: members: true,
+78: include: {
+79: _count: {
+80: select: {
+81: users: true,
+82: members: true,
+83: subscriptions: true,
+88: this.prisma.tenant.count({ where }),
+120: const tenant = await this.prisma.tenant.findFirst({
+121: where: { id: tenantId, deletedAt: null },
+122: include: {
+123: users: {
+124: where: { role: 'OWNER', deletedAt: null },
+125: select: {
+126: id: true,
+122: include: {
+123: users: {
+124: where: { role: 'OWNER', deletedAt: null },
+125: select: {
+126: id: true,
+127: firstName: true,
+124: where: { role: 'OWNER', deletedAt: null },
+125: select: {
+126: id: true,
+127: firstName: true,
+128: lastName: true,
+129: email: true,
+183: const tenant = await this.prisma.tenant.findFirst({
+184: where: { id: tenantId, deletedAt: null },
+185: });
+186: 
+187: if (!tenant) {
+188: throw new NotFoundException(`Tenant with id ${tenantId} not found`);
+189: }
+191: await this.prisma.tenant.update({
+192: where: { id: tenantId },
+193: data: { status: TenantStatus.SUSPENDED },
+194: });
+195: 
+196: return this.getTenantById(tenantId);
+197: }
+200: const tenant = await this.prisma.tenant.findFirst({
+201: where: { id: tenantId, deletedAt: null },
+202: });
+203: 
+204: if (!tenant) {
+205: throw new NotFoundException(`Tenant with id ${tenantId} not found`);
+206: }
+208: await this.prisma.tenant.update({
+209: where: { id: tenantId },
+210: data: { status: TenantStatus.ACTIVE },
+211: });
+212: 
+213: return this.getTenantById(tenantId);
+214: }
+221: const activeSubs = await this.prisma.tenantSubscription.findMany({
+222: where: {
+223: status: 'ACTIVE',
+224: tenant: { isActive: true, deletedAt: null },
+225: },
+226: select: {
+227: platformPlan: {
+237: const revenueThisMonthAgg = await this.prisma.tenantInvoice.aggregate({
+239: where: {
+240: status: 'PAID',
+241: paidAt: { gte: startOfMonth, lt: endOfMonth },
+242: },
+243: });
+244: 
+247: const revenueByPlanRaw = await this.prisma.tenantInvoice.groupBy({
+249: where: { status: 'PAID' },
+250: _sum: { amount: true },
+251: });
+252: 
+253: const planIds = revenueByPlanRaw.map((r) => r.platformPlanId).filter(Boolean) as string[];
+254: const plans = await this.prisma.platformPlan.findMany({
+254: const plans = await this.prisma.platformPlan.findMany({
+255: where: { id: { in: planIds } },
+256: select: { id: true, name: true },
+257: });
+258: 
+259: const revenueByPlan = revenueByPlanRaw.map((r) => {
+260: const plan = plans.find((p) => p.id === r.platformPlanId);
+
+=== razorpay.service.ts ===
+49: const subscription = await this.prisma.subscription.findFirst({
+50: where: { id: dto.subscriptionId, tenantId, deletedAt: null },
+51: include: { membershipPlan: true },
+52: });
+53: 
+54: if (!subscription) {
+55: throw new NotFoundException('Subscription not found');
+51: include: { membershipPlan: true },
+52: });
+53: 
+54: if (!subscription) {
+55: throw new NotFoundException('Subscription not found');
+56: }
+84: await this.prisma.payment.create({
+117: this.prisma.subscription.findFirst({
+118: where: { id: subscriptionId, tenantId, deletedAt: null },
+119: }),
+120: this.prisma.member.findFirst({
+121: where: { id: memberId, tenantId, deletedAt: null },
+122: }),
+123: ]);
+120: this.prisma.member.findFirst({
+121: where: { id: memberId, tenantId, deletedAt: null },
+122: }),
+123: ]);
+124: 
+125: if (!subscription || !member) return null;
+126: 
+173: const payment = await this.prisma.payment.findFirst({
+174: where: {
+175: tenantId,
+176: razorpayOrderId: dto.razorpay_order_id,
+177: deletedAt: null,
+178: },
+179: });
+191: await this.prisma.$transaction(async (tx) => {
+194: where: { id: payment.id, paymentStatus: PaymentStatus.PENDING },
+195: data: {
+196: paymentStatus: PaymentStatus.PAID,
+197: razorpayPaymentId: dto.razorpay_payment_id,
+198: razorpaySignature: dto.razorpay_signature,
+199: gatewayStatus: 'captured',
+210: where: { id: payment.subscriptionId! },
+211: data: {
+212: status: SubscriptionStatus.ACTIVE,
+213: },
+214: });
+215: 
+296: const payment = await this.prisma.payment.findFirst({
+297: where: { razorpayOrderId },
+298: });
+299: 
+300: if (!payment) {
+301: this.logger.warn(
+302: `Webhook received for unknown order: ${razorpayOrderId}`,
+313: await this.prisma.$transaction(async (tx) => {
+315: where: { id: payment.id, paymentStatus: PaymentStatus.PENDING },
+316: data: {
+317: paymentStatus: PaymentStatus.PAID,
+318: razorpayPaymentId,
+319: gatewayStatus: 'captured',
+320: paidAt: new Date(),
+330: where: { id: payment.subscriptionId },
+331: data: { status: SubscriptionStatus.ACTIVE },
+332: });
+333: 
+334: const dateStr = new Date()
+335: .toISOString()
+370: await this.prisma.payment.update({
+371: where: { id: payment.id },
+372: data: {
+373: paymentStatus: PaymentStatus.FAILED,
+374: razorpayPaymentId,
+375: gatewayStatus: 'failed',
+376: },
+379: await this.prisma.payment.update({
+380: where: { id: payment.id },
+381: data: {
+382: paymentStatus: PaymentStatus.REFUNDED,
+383: gatewayStatus: 'refunded',
+384: },
+385: });
+400: const plan = await this.prisma.platformPlan.findUnique({
+401: where: { id: dto.planId, isActive: true },
+402: });
+403: 
+404: if (!plan) {
+405: throw new NotFoundException('Platform plan not found');
+406: }
+410: const tenantInvoice = await this.prisma.tenantInvoice.create({
+443: await this.prisma.tenantInvoice.update({
+444: where: { id: tenantInvoice.id },
+445: data: { razorpayOrderId: order.id },
+446: });
+447: 
+448: return {
+449: orderId: order.id,
+470: const invoice = await this.prisma.tenantInvoice.findFirst({
+471: where: {
+472: tenantId,
+473: razorpayOrderId: dto.razorpay_order_id,
+474: },
+475: });
+476: 
+486: await this.prisma.$transaction(async (tx) => {
+488: where: { id: invoice.id, status: PaymentStatus.PENDING },
+489: data: {
+490: status: PaymentStatus.PAID,
+491: razorpayPaymentId: dto.razorpay_payment_id,
+492: razorpaySignature: dto.razorpay_signature,
+493: gatewayStatus: 'captured',
+546: const invoice = await this.prisma.tenantInvoice.findFirst({
+547: where: { razorpayOrderId },
+548: });
+549: 
+550: if (!invoice) {
+551: this.logger.warn(`Tenant webhook received for unknown order: ${razorpayOrderId}`);
+552: return { status: 'ignored' };
+561: await this.prisma.$transaction(async (tx) => {
+563: where: { id: invoice.id, status: PaymentStatus.PENDING },
+564: data: {
+565: status: PaymentStatus.PAID,
+566: razorpayPaymentId: paymentEntity.id,
+567: gatewayStatus: 'captured',
+568: paidAt: new Date(),
+589: await this.prisma.tenantInvoice.update({
+590: where: { id: invoice.id },
+591: data: {
+592: status: PaymentStatus.FAILED,
+593: gatewayStatus: 'failed',
+594: },
+595: });
+
+=== reports.service.ts ===
+14: this.prisma.payment.aggregate({
+15: where: {
+16: tenantId,
+17: paymentStatus: PaymentStatus.PAID,
+18: deletedAt: null,
+19: },
+20: _sum: { amount: true },
+22: this.prisma.payment.groupBy({
+24: where: {
+25: tenantId,
+26: paymentStatus: PaymentStatus.PAID,
+27: deletedAt: null,
+28: },
+29: _sum: { amount: true },
+75: const subGroups = await this.prisma.subscription.groupBy({
+77: where: { tenantId, deletedAt: null },
+78: _count: true,
+79: });
+80: 
+81: let activeSubscriptions = 0;
+82: let expiredSubscriptions = 0;
+117: const subscriptions = await this.prisma.subscription.findMany({
+118: where: {
+119: tenantId,
+120: deletedAt: null,
+121: status: SubscriptionStatus.ACTIVE,
+122: endDate: {
+123: gte: now,
+144: orderBy: { endDate: 'asc' },
+145: });
+146: 
+147: return subscriptions.map((sub: any) => {
+148: const diffTime = new Date(sub.endDate).getTime() - now.getTime();
+149: const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+=== subscriptions.service.ts ===
+28: this.prisma.member.findFirst({
+29: where: { id: dto.memberId, tenantId, deletedAt: null },
+30: }),
+31: this.prisma.membershipPlan.findFirst({
+32: where: { id: dto.membershipPlanId, tenantId, deletedAt: null },
+33: }),
+34: this.prisma.subscription.findFirst({
+31: this.prisma.membershipPlan.findFirst({
+32: where: { id: dto.membershipPlanId, tenantId, deletedAt: null },
+33: }),
+34: this.prisma.subscription.findFirst({
+35: where: {
+36: memberId: dto.memberId,
+37: tenantId,
+34: this.prisma.subscription.findFirst({
+35: where: {
+36: memberId: dto.memberId,
+37: tenantId,
+38: status: SubscriptionStatus.ACTIVE,
+39: deletedAt: null,
+40: },
+52: const subscription = await this.prisma.subscription.create({
+77: const [subscriptions, total] = await this.prisma.$transaction([
+78: this.prisma.subscription.findMany({
+79: where: { tenantId, deletedAt: null },
+80: orderBy: { createdAt: 'desc' },
+81: skip,
+82: take: limit,
+83: include: {
+84: member: {
+80: orderBy: { createdAt: 'desc' },
+81: skip,
+82: take: limit,
+83: include: {
+84: member: {
+85: select: {
+83: include: {
+84: member: {
+85: select: {
+86: id: true,
+87: firstName: true,
+88: lastName: true,
+101: this.prisma.subscription.count({ where: { tenantId, deletedAt: null } }),
+102: ]);
+103: 
+104: return {
+105: data: subscriptions.map((sub) => this.mapToDto(sub)),
+106: meta: {
+121: const subscription = await this.prisma.subscription.findFirst({
+122: where: { id, tenantId, deletedAt: null },
+123: });
+124: if (!subscription) throw new NotFoundException('Subscription not found');
+125: return this.mapToDto(subscription);
+126: }
+127: 
+133: const subscription = await this.prisma.subscription.findFirst({
+134: where: { id, tenantId, deletedAt: null },
+135: });
+136: if (!subscription) throw new NotFoundException('Subscription not found');
+137: 
+138: const updated = await this.prisma.subscription.update({
+139: where: { id },
+138: const updated = await this.prisma.subscription.update({
+139: where: { id },
+140: data: {
+141: ...dto,
+142: startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+143: endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+144: },
+150: const subscription = await this.prisma.subscription.findFirst({
+151: where: { id, tenantId, deletedAt: null },
+152: });
+153: if (!subscription) throw new NotFoundException('Subscription not found');
+154: 
+155: await this.prisma.subscription.update({
+156: where: { id },
+155: await this.prisma.subscription.update({
+156: where: { id },
+157: data: { deletedAt: new Date() },
+158: });
+159: }
+160: 
+161: async getExpiringSubscriptions(
+169: const subscriptions = await this.prisma.subscription.findMany({
+170: where: {
+171: tenantId,
+172: deletedAt: null,
+173: status: SubscriptionStatus.ACTIVE,
+174: endDate: {
+175: gte: now,
+179: orderBy: { endDate: 'asc' },
+180: include: {
+181: member: {
+182: select: {
+183: id: true,
+184: firstName: true,
+180: include: {
+181: member: {
+182: select: {
+183: id: true,
+184: firstName: true,
+185: lastName: true,
+207: const oldSubscription = await this.prisma.subscription.findFirst({
+208: where: { id, tenantId, deletedAt: null },
+209: include: { membershipPlan: true },
+210: });
+211: if (!oldSubscription) throw new NotFoundException('Subscription not found');
+212: 
+213: const planDuration = oldSubscription.membershipPlan.durationDays;
+209: include: { membershipPlan: true },
+210: });
+211: if (!oldSubscription) throw new NotFoundException('Subscription not found');
+212: 
+213: const planDuration = oldSubscription.membershipPlan.durationDays;
+214: 
+222: const result = await this.prisma.$transaction(async (tx) => {
+239: where: { id: oldSubscription.id },
+240: data: { status: SubscriptionStatus.EXPIRED },
+241: });
+242: 
+243: // Generate invoice number
+244: const invoiceNumber = `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${randomUUID().slice(-8).toUpperCase()}`;
+
+=== superadmin.service.ts ===
+13: return this.prisma.tenant.findMany({
+14: where: {
+15: status: 'PENDING',
+16: deletedAt: null,
+17: },
+18: skip,
+19: take: limit,
+31: where: { role: 'OWNER' },
+32: select: { firstName: true, lastName: true, email: true },
+33: },
+34: },
+35: orderBy: { createdAt: 'desc' },
+36: });
+35: orderBy: { createdAt: 'desc' },
+36: });
+37: }
+38: 
+39: async approveTenant(tenantId: string) {
+40: const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+40: const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+41: if (!tenant) throw new NotFoundException('Tenant not found');
+42: 
+43: const updatedTenantResult = await this.prisma.$transaction(async (tx) => {
+44: const [updatedTenant] = await Promise.all([
+45: tx.tenant.update({
+43: const updatedTenantResult = await this.prisma.$transaction(async (tx) => {
+46: where: { id: tenantId },
+47: data: { status: 'TRIAL', isActive: true },
+48: }),
+49: tx.user.updateMany({
+50: where: { tenantId, role: 'OWNER' },
+51: data: { isActive: true },
+50: where: { tenantId, role: 'OWNER' },
+51: data: { isActive: true },
+52: }),
+53: ]);
+54: 
+55: return updatedTenant;
+64: const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+65: if (!tenant) throw new NotFoundException('Tenant not found');
+66: 
+67: // Soft delete or completely remove depending on logic.
+68: // We will hard delete for rejected applications to keep DB clean.
+69: await this.prisma.tenant.delete({
+69: await this.prisma.tenant.delete({
+70: where: { id: tenantId },
+71: });
+72: 
+73: return { message: 'Tenant application rejected and deleted' };
+74: }
+75: }
+
+=== tenant-subscription-cron.service.ts ===
+22: const expiredSubs = await this.prisma.tenantSubscription.findMany({
+23: where: {
+24: status: { in: [TenantSubscriptionStatus.ACTIVE, TenantSubscriptionStatus.TRIAL] },
+25: endDate: { lt: today },
+26: },
+27: select: { tenantId: true },
+28: });
+53: const subs = await this.prisma.tenantSubscription.findMany({
+54: where: {
+55: status: { in: [TenantSubscriptionStatus.ACTIVE, TenantSubscriptionStatus.TRIAL] },
+56: endDate: {
+57: gte: targetDate,
+58: lt: nextDay,
+59: },
+61: include: { tenant: true },
+62: });
+63: 
+64: for (const sub of subs) {
+65: try {
+66: await this.whatsappService.sendTenantRenewalReminder(
+
+=== tenant-subscription.service.ts ===
+22: const starterPlan = await this.prisma.platformPlan.findFirst({
+23: where: { name: 'Starter', isActive: true },
+24: });
+25: 
+26: if (!starterPlan) {
+27: this.logger.warn('Starter plan not found, trial subscription created without plan reference');
+28: }
+30: const subscription = await this.prisma.tenantSubscription.create({
+41: await this.prisma.tenant.update({
+42: where: { id: tenantId },
+43: data: { status: TenantStatus.TRIAL },
+44: });
+45: 
+46: this.logger.log(`Trial subscription created for tenant ${tenantId} until ${endDate.toISOString()}`);
+47: return subscription;
+57: const subscription = await this.prisma.tenantSubscription.create({
+67: await this.prisma.tenantInvoice.update({
+68: where: { id: invoiceId },
+69: data: { tenantSubscriptionId: subscription.id },
+70: });
+71: 
+72: await this.prisma.tenant.update({
+73: where: { id: tenantId },
+72: await this.prisma.tenant.update({
+73: where: { id: tenantId },
+74: data: { status: TenantStatus.ACTIVE },
+75: });
+76: 
+77: this.logger.log(`Subscription activated for tenant ${tenantId} on plan ${planId} until ${endDate.toISOString()}`);
+78: return subscription;
+90: const subscription = await this.prisma.tenantSubscription.update({
+91: where: { id: currentSub.id },
+92: data: {
+93: endDate: newEndDate,
+94: status: TenantSubscriptionStatus.ACTIVE,
+95: },
+96: });
+108: const subscription = await this.prisma.tenantSubscription.update({
+109: where: { id: currentSub.id },
+110: data: {
+111: status: TenantSubscriptionStatus.CANCELLED,
+112: cancelledAt: new Date(),
+113: autoRenew: false,
+114: },
+129: this.prisma.tenantSubscription.update({
+130: where: { id: currentSub.id },
+131: data: {
+132: status: TenantSubscriptionStatus.EXPIRED,
+133: },
+134: }),
+135: this.prisma.tenant.update({
+135: this.prisma.tenant.update({
+136: where: { id: tenantId },
+137: data: { status: TenantStatus.EXPIRED },
+138: }),
+139: ]);
+140: 
+141: this.logger.log(`Subscription expired for tenant ${tenantId}`);
+146: return this.prisma.tenantSubscription.findFirst({
+147: where: {
+148: tenantId,
+149: status: { not: TenantSubscriptionStatus.CANCELLED },
+150: },
+151: orderBy: { createdAt: 'desc' },
+152: include: { platformPlan: true },
+151: orderBy: { createdAt: 'desc' },
+152: include: { platformPlan: true },
+153: });
+154: }
+155: 
+156: async generateInvoiceNumber(): Promise<string> {
+152: include: { platformPlan: true },
+153: });
+154: }
+155: 
+156: async generateInvoiceNumber(): Promise<string> {
+157: const year = new Date().getFullYear();
+158: const count = await this.prisma.tenantInvoice.count({
+159: where: {
+160: invoiceNumber: { startsWith: `INV-SAAS-${year}-` },
+161: },
+162: });
+163: const seq = String(count + 1).padStart(4, '0');
+164: return `INV-SAAS-${year}-${seq}`;
+
+=== tenant-profile.service.ts ===
+22: const tenant = await this.prisma.tenant.findFirst({
+23: where: {
+24: id: tenantId,
+25: deletedAt: null,
+26: },
+27: });
+28: 
+42: const existingTenant = await this.prisma.tenant.findFirst({
+43: where: {
+44: id: tenantId,
+45: deletedAt: null,
+46: },
+47: select: { id: true },
+48: });
+54: const tenant = await this.prisma.tenant.update({
+55: where: { id: tenantId },
+56: data: {
+57: ...(dto.country !== undefined && { country: dto.country }),
+58: ...(dto.state !== undefined && { state: dto.state }),
+59: ...(dto.city !== undefined && { city: dto.city }),
+60: ...(dto.gymLogoUrl !== undefined && { gymLogoUrl: dto.gymLogoUrl }),
+
+=== whatsapp.service.ts ===
+49: await this.prisma.whatsAppLog.create({
+68: await this.prisma.whatsAppLog.create({
+120: await this.prisma.whatsAppLog.create({
+139: await this.prisma.whatsAppLog.create({
+171: const existingLog = await this.prisma.whatsAppLog.findFirst({
+172: where: whereClause,
+173: });
+174: 
+175: return !existingLog;
+176: }
+177: 
+184: const member = await this.prisma.member.findFirst({
+185: where: { id: memberId, tenantId },
+186: });
+187: if (!member || !member.phone) return;
+188: 
+189: let type = '';
+190: let text = '';
+219: const member = await this.prisma.member.findFirst({
+220: where: { id: memberId, tenantId },
+221: });
+222: if (!member || !member.phone) return;
+223: 
+224: const type = 'PAYMENT_SUCCESS';
+225: const text = `Hi ${member.firstName}, we have successfully received your payment of ${amount}. Thank you!`;
+233: this.prisma.member.findFirst({
+234: where: { id: memberId, tenantId },
+235: }),
+236: this.canSendMessage(tenantId, memberId, type),
+237: ]);
+238: 
+239: if (!member || !member.phone || !canSend) return;
+251: const tenant = await this.prisma.tenant.findUnique({
+252: where: { id: tenantId },
+253: });
+254: if (!tenant || !tenant.phone) return;
+255: 
+256: let type = '';
+257: let text = '';
+287: await this.prisma.whatsAppLog.updateMany({
+288: where: { messageId },
+289: data: { status: deliveryStatus.toUpperCase() },
+290: });
+291: }
+292: }
+293: }
+

@@ -163,8 +163,10 @@ export class MembersService implements MemberServiceInterface {
     dto: CreateMemberDto,
   ): Promise<MemberDto> {
     this.assertTenantScope(tenantId);
-    await this.assertTenantExists(tenantId);
-    await this.assertMemberCodeUnique(tenantId, dto.memberCode);
+    await Promise.all([
+      this.assertTenantExists(tenantId),
+      this.assertMemberCodeUnique(tenantId, dto.memberCode),
+    ]);
 
     const member = await this.prisma.member.create({
       data: {

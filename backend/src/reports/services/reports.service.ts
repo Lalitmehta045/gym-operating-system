@@ -5,6 +5,7 @@ import {
   PaymentMethod,
   SubscriptionStatus,
 } from '../../../generated/prisma/client.js';
+import { ExpiringMembersQueryDto } from '../dto/expiring-members-query.dto.js';
 
 @Injectable()
 export class ReportsService {
@@ -110,41 +111,56 @@ export class ReportsService {
     };
   }
 
-  async getExpiringMembersReport(tenantId: string) {
+  async getExpiringMembersReport(
+    tenantId: string,
+    query: ExpiringMembersQueryDto,
+  ) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
     const now = new Date();
     const targetDate = new Date();
-    targetDate.setDate(now.getDate() + 30); // Up to 30 days default
+    targetDate.setDate(now.getDate() + (query.days ?? 30));
 
-    const subscriptions = await this.prisma.subscription.findMany({
-      where: {
-        tenantId,
-        deletedAt: null,
-        status: SubscriptionStatus.ACTIVE,
-        endDate: {
-          gte: now,
-          lte: targetDate,
-        },
+    const where = {
+      tenantId,
+      deletedAt: null,
+      status: SubscriptionStatus.ACTIVE,
+      endDate: {
+        gte: now,
+        lte: targetDate,
       },
-      include: {
-        member: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
+    };
+
+    const [subscriptions, total] = await this.prisma.$transaction([
+      this.prisma.subscription.findMany({
+        where,
+        select: {
+          endDate: true,
+          member: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+            },
+          },
+          membershipPlan: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-        membershipPlan: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: { endDate: 'asc' },
-    });
+        orderBy: { endDate: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.subscription.count({ where }),
+    ]);
 
-    return subscriptions.map((sub: any) => {
+    const data = subscriptions.map((sub: any) => {
       const diffTime = new Date(sub.endDate).getTime() - now.getTime();
       const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -162,5 +178,17 @@ export class ReportsService {
         daysRemaining,
       };
     });
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPreviousPage: page > 1,
+      },
+    };
   }
 }

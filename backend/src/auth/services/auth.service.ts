@@ -86,15 +86,16 @@ export class AuthService {
     ipAddress?: string,
   ): Promise<{ message: string }> {
     // Check for existing tenant with same email
-    const existingTenant = await this.prisma.tenant.findUnique({
-      where: { email: dto.gymEmail },
-    });
+    const [existingTenant, passwordHash] = await Promise.all([
+      this.prisma.tenant.findUnique({
+        where: { email: dto.gymEmail },
+      }),
+      bcrypt.hash(dto.password, SALT_ROUNDS),
+    ]);
+
     if (existingTenant) {
       throw new ConflictException('A gym with this email already exists');
     }
-
-    // Hash the owner's password
-    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     // Atomic transaction: create tenant + owner user
     const { tenant, user } = await this.prisma.$transaction(async (tx) => {
@@ -126,7 +127,10 @@ export class AuthService {
 
     this.logger.log(`Gym "${tenant.name}" registered with owner ${user.email}`);
 
-    return { message: 'Registration successful. Your account is pending superadmin approval.' };
+    return {
+      message:
+        'Registration successful. Your account is pending superadmin approval.',
+    };
   }
 
   // ─── Login (with account-lock protection) ─────────────────────────────────
@@ -163,7 +167,9 @@ export class AuthService {
     }
 
     if (user.tenant && user.tenant.status === 'PENDING') {
-      throw new UnauthorizedException('Your account is currently under review by the superadmin.');
+      throw new UnauthorizedException(
+        'Your account is currently under review by the superadmin.',
+      );
     }
 
     if (!user.isActive) {
@@ -292,7 +298,10 @@ export class AuthService {
   /**
    * Revokes all active refresh tokens for the given user and clears the cookie.
    */
-  async logout(userId: string, response: Response): Promise<{ message: string }> {
+  async logout(
+    userId: string,
+    response: Response,
+  ): Promise<{ message: string }> {
     await this.prisma.refreshToken.updateMany({
       where: {
         userId,
@@ -388,9 +397,7 @@ export class AuthService {
    * Security: always returns a 200 with the same message regardless of whether
    * the email exists, to prevent user enumeration.
    */
-  async forgotPassword(
-    dto: ForgotPasswordDto,
-  ): Promise<{ message: string }> {
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
     const genericResponse = {
       message:
         'If an account with that email exists, a password reset link has been sent.',
@@ -611,7 +618,12 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.generateAccessToken(payload),
-      this.generateRefreshToken(user.id, userAgent, ipAddress, existingFamilyId),
+      this.generateRefreshToken(
+        user.id,
+        userAgent,
+        ipAddress,
+        existingFamilyId,
+      ),
     ]);
 
     // Set refresh token as HttpOnly cookie

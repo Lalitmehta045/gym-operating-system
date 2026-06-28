@@ -15,7 +15,8 @@ import { CreatePaymentDto } from '../dto/create-payment.dto.js';
 import { ListPaymentsQueryDto } from '../dto/list-payments-query.dto.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
-import { Role } from '../../../generated/prisma/client.js';
+import { Role, AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
+import { AuditLog } from '../../audit/decorators/audit-log.decorator.js';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache.interceptor.js';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 
@@ -33,6 +34,7 @@ export class PaymentsController {
   }
 
   @Post()
+  @AuditLog(AuditEntity.PAYMENT, AuditAction.CREATE, '💳 Payment Created')
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreatePaymentDto) {
     return this.paymentsService.createPayment(this.getTenantId(user), dto);
   }

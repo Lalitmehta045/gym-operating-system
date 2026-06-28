@@ -1,4 +1,4 @@
-import { RazorpayService } from './razorpay.service';
+import { RazorpayService } from './razorpay.service.js';
 import {
   BadRequestException,
   InternalServerErrorException,
@@ -70,9 +70,9 @@ describe('RazorpayService SaaS Tenant Billing', () => {
   test('createTenantOrder throws when Razorpay not configured', async () => {
     (svc as any).razorpay = null;
 
-    await expect(
-      svc.createTenantOrder(tenantId, { planId }),
-    ).rejects.toThrow(InternalServerErrorException);
+    await expect(svc.createTenantOrder(tenantId, { planId })).rejects.toThrow(
+      InternalServerErrorException,
+    );
   });
 
   test('createTenantOrder throws when plan not found', async () => {
@@ -89,7 +89,9 @@ describe('RazorpayService SaaS Tenant Billing', () => {
       name: 'Starter',
       price: 999,
     });
-    tenantSubService.generateInvoiceNumber.mockResolvedValue('INV-SAAS-2026-0001');
+    tenantSubService.generateInvoiceNumber.mockResolvedValue(
+      'INV-SAAS-2026-0001',
+    );
     prisma.tenantInvoice.create.mockResolvedValue({
       id: 'inv-1',
       invoiceNumber: 'INV-SAAS-2026-0001',
@@ -199,11 +201,10 @@ describe('RazorpayService SaaS Tenant Billing', () => {
       digest: jest.fn().mockReturnValue('sig'),
     } as any);
 
-    const result = await svc.handleTenantWebhook(
-      'sig',
-      Buffer.from('body'),
-      { event: 'payment.captured', payload: { payment: { entity: {} } } },
-    );
+    const result = await svc.handleTenantWebhook('sig', Buffer.from('body'), {
+      event: 'payment.captured',
+      payload: { payment: { entity: {} } },
+    });
 
     expect(result.status).toBe('ignored');
     jest.restoreAllMocks();
@@ -225,16 +226,12 @@ describe('RazorpayService SaaS Tenant Billing', () => {
     prisma.tenantInvoice.updateMany.mockResolvedValue({ count: 1 });
     tenantSubService.activateSubscription.mockResolvedValue({ id: 'sub-1' });
 
-    const result = await svc.handleTenantWebhook(
-      'sig',
-      Buffer.from('body'),
-      {
-        event: 'payment.captured',
-        payload: {
-          payment: { entity: { id: 'pay-1', order_id: 'order-1' } },
-        },
+    const result = await svc.handleTenantWebhook('sig', Buffer.from('body'), {
+      event: 'payment.captured',
+      payload: {
+        payment: { entity: { id: 'pay-1', order_id: 'order-1' } },
       },
-    );
+    });
 
     expect(result.status).toBe('ok');
     jest.restoreAllMocks();
@@ -254,16 +251,12 @@ describe('RazorpayService SaaS Tenant Billing', () => {
       platformPlanId: planId,
     });
 
-    const result = await svc.handleTenantWebhook(
-      'sig',
-      Buffer.from('body'),
-      {
-        event: 'payment.captured',
-        payload: {
-          payment: { entity: { id: 'pay-1', order_id: 'order-1' } },
-        },
+    const result = await svc.handleTenantWebhook('sig', Buffer.from('body'), {
+      event: 'payment.captured',
+      payload: {
+        payment: { entity: { id: 'pay-1', order_id: 'order-1' } },
       },
-    );
+    });
 
     expect(result.status).toBe('already_processed');
     jest.restoreAllMocks();

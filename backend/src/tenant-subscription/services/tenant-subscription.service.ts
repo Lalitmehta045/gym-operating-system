@@ -25,13 +25,16 @@ export class TenantSubscriptionService {
     });
 
     if (!starterPlan) {
-      this.logger.warn('Starter plan not found, trial subscription created without plan reference');
+      this.logger.warn(
+        'Starter plan not found, trial subscription created without plan reference',
+      );
     }
 
     const subscription = await this.prisma.tenantSubscription.create({
       data: {
         tenantId,
-        platformPlanId: starterPlan?.id ?? '00000000-0000-0000-0000-000000000000',
+        platformPlanId:
+          starterPlan?.id ?? '00000000-0000-0000-0000-000000000000',
         status: TenantSubscriptionStatus.TRIAL,
         startDate: now,
         endDate,
@@ -44,11 +47,17 @@ export class TenantSubscriptionService {
       data: { status: TenantStatus.TRIAL },
     });
 
-    this.logger.log(`Trial subscription created for tenant ${tenantId} until ${endDate.toISOString()}`);
+    this.logger.log(
+      `Trial subscription created for tenant ${tenantId} until ${endDate.toISOString()}`,
+    );
     return subscription;
   }
 
-  async activateSubscription(tenantId: string, planId: string, invoiceId: string) {
+  async activateSubscription(
+    tenantId: string,
+    planId: string,
+    invoiceId: string,
+  ) {
     const now = new Date();
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + SUBSCRIPTION_DAYS);
@@ -75,7 +84,9 @@ export class TenantSubscriptionService {
       data: { status: TenantStatus.ACTIVE },
     });
 
-    this.logger.log(`Subscription activated for tenant ${tenantId} on plan ${planId} until ${endDate.toISOString()}`);
+    this.logger.log(
+      `Subscription activated for tenant ${tenantId} on plan ${planId} until ${endDate.toISOString()}`,
+    );
     return subscription;
   }
 
@@ -96,7 +107,9 @@ export class TenantSubscriptionService {
       },
     });
 
-    this.logger.log(`Subscription renewed for tenant ${tenantId} until ${newEndDate.toISOString()}`);
+    this.logger.log(
+      `Subscription renewed for tenant ${tenantId} until ${newEndDate.toISOString()}`,
+    );
     return subscription;
   }
 
@@ -122,21 +135,24 @@ export class TenantSubscriptionService {
   async expireSubscription(tenantId: string) {
     const currentSub = await this.getCurrentSubscription(tenantId);
     if (!currentSub) {
-      this.logger.warn(`No subscription found to expire for tenant ${tenantId}`);
+      this.logger.warn(
+        `No subscription found to expire for tenant ${tenantId}`,
+      );
       return null;
     }
 
-    const subscription = await this.prisma.tenantSubscription.update({
-      where: { id: currentSub.id },
-      data: {
-        status: TenantSubscriptionStatus.EXPIRED,
-      },
-    });
-
-    await this.prisma.tenant.update({
-      where: { id: tenantId },
-      data: { status: TenantStatus.EXPIRED },
-    });
+    const [subscription] = await Promise.all([
+      this.prisma.tenantSubscription.update({
+        where: { id: currentSub.id },
+        data: {
+          status: TenantSubscriptionStatus.EXPIRED,
+        },
+      }),
+      this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { status: TenantStatus.EXPIRED },
+      }),
+    ]);
 
     this.logger.log(`Subscription expired for tenant ${tenantId}`);
     return subscription;

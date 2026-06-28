@@ -1,4 +1,4 @@
-import { TenantSubscriptionGuard } from './tenant-subscription.guard';
+import { TenantSubscriptionGuard } from './tenant-subscription.guard.js';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 

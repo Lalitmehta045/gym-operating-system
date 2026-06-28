@@ -10,7 +10,7 @@ export class NotificationsService {
 
   async createNotification(data: {
     tenantId: string;
-    memberId: string;
+    memberId?: string;
     type: NotificationType;
     title: string;
     message: string;
@@ -44,6 +44,18 @@ export class NotificationsService {
         skip,
         take: limit,
         orderBy: [{ createdAt: 'desc' }, { type: 'asc' }],
+        select: {
+          id: true,
+          tenantId: true,
+          memberId: true,
+          type: true,
+          title: true,
+          message: true,
+          isRead: true,
+          metadata: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       }),
       this.prisma.notification.count({ where }),
     ]);

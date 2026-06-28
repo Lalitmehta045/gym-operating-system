@@ -10,6 +10,7 @@ import { UpdateSubscriptionDto } from '../dto/update-subscription.dto.js';
 import { RenewSubscriptionDto } from '../dto/renew-subscription.dto.js';
 import { SubscriptionDto } from '../dto/subscription.dto.js';
 import { ListSubscriptionsQueryDto } from '../dto/list-subscriptions-query.dto.js';
+import { ExpiringSubscriptionsQueryDto } from '../dto/expiring-subscriptions-query.dto.js';
 import { PaginatedSubscriptionsDto } from '../dto/paginated-subscriptions.dto.js';
 import {
   SubscriptionStatus,
@@ -81,7 +82,36 @@ export class SubscriptionsService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        include: { member: true, membershipPlan: true },
+        select: {
+          member: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          membershipPlan: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          id: true,
+          tenantId: true,
+          memberId: true,
+          membershipPlanId: true,
+          startDate: true,
+          endDate: true,
+          amount: true,
+          status: true,
+          autoRenew: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+        },
       }),
       this.prisma.subscription.count({ where: { tenantId, deletedAt: null } }),
     ]);
@@ -145,27 +175,77 @@ export class SubscriptionsService {
 
   async getExpiringSubscriptions(
     tenantId: string,
-    days: number,
-  ): Promise<SubscriptionDto[]> {
+    query: ExpiringSubscriptionsQueryDto,
+  ): Promise<PaginatedSubscriptionsDto> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
     const now = new Date();
     const targetDate = new Date();
-    targetDate.setDate(now.getDate() + days);
+    targetDate.setDate(now.getDate() + query.days);
 
-    const subscriptions = await this.prisma.subscription.findMany({
-      where: {
-        tenantId,
-        deletedAt: null,
-        status: SubscriptionStatus.ACTIVE,
-        endDate: {
-          gte: now,
-          lte: targetDate,
-        },
+    const where = {
+      tenantId,
+      deletedAt: null,
+      status: SubscriptionStatus.ACTIVE,
+      endDate: {
+        gte: now,
+        lte: targetDate,
       },
-      orderBy: { endDate: 'asc' },
-      include: { member: true, membershipPlan: true },
-    });
+    };
 
-    return subscriptions.map(this.mapToDto);
+    const [subscriptions, total] = await this.prisma.$transaction([
+      this.prisma.subscription.findMany({
+        where,
+        orderBy: { endDate: 'asc' },
+        skip,
+        take: limit,
+        select: {
+          member: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          membershipPlan: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          id: true,
+          tenantId: true,
+          memberId: true,
+          membershipPlanId: true,
+          startDate: true,
+          endDate: true,
+          amount: true,
+          status: true,
+          autoRenew: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+        },
+      }),
+      this.prisma.subscription.count({ where }),
+    ]);
+
+    return {
+      data: subscriptions.map((sub) => this.mapToDto(sub)),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPreviousPage: page > 1,
+      },
+    };
   }
 
   async renewSubscription(
@@ -258,17 +338,21 @@ export class SubscriptionsService {
       notes: sub.notes,
       createdAt: sub.createdAt,
       updatedAt: sub.updatedAt,
-      member: sub.member ? {
-        id: sub.member.id,
-        firstName: sub.member.firstName,
-        lastName: sub.member.lastName,
-        email: sub.member.email,
-        phone: sub.member.phone,
-      } : undefined,
-      membershipPlan: sub.membershipPlan ? {
-        id: sub.membershipPlan.id,
-        name: sub.membershipPlan.name,
-      } : undefined,
+      member: sub.member
+        ? {
+            id: sub.member.id,
+            firstName: sub.member.firstName,
+            lastName: sub.member.lastName,
+            email: sub.member.email,
+            phone: sub.member.phone,
+          }
+        : undefined,
+      membershipPlan: sub.membershipPlan
+        ? {
+            id: sub.membershipPlan.id,
+            name: sub.membershipPlan.name,
+          }
+        : undefined,
     };
   }
 }

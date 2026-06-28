@@ -49,6 +49,10 @@ export class RazorpayController {
     @Headers('x-razorpay-signature') signature: string,
     @Req() req: any,
   ) {
-    return this.razorpayService.handleTenantWebhook(signature, req.rawBody, req.body);
+    return this.razorpayService.handleTenantWebhook(
+      signature,
+      req.rawBody,
+      req.body,
+    );
   }
 }

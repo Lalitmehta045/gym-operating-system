@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -20,15 +21,28 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const ctx = host.switchToHttp();
 
-    const httpStatus =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    let httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+
+    if (exception instanceof HttpException) {
+      httpStatus = exception.getStatus();
+    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      switch (exception.code) {
+        case 'P2002':
+          httpStatus = HttpStatus.CONFLICT;
+          break;
+        case 'P2025':
+          httpStatus = HttpStatus.NOT_FOUND;
+          break;
+        default:
+          httpStatus = HttpStatus.BAD_REQUEST;
+      }
+    }
 
     const isProduction = process.env.NODE_ENV === 'production';
 
     // Log the error for internal tracking
-    const message = exception instanceof Error ? exception.message : 'Unknown exception';
+    const message =
+      exception instanceof Error ? exception.message : 'Unknown exception';
     const stack = exception instanceof Error ? exception.stack : '';
 
     if (httpStatus >= 500) {
@@ -48,7 +62,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
   }
 
-  private getSafeMessage(exception: unknown, status: number, isProduction: boolean): string | object {
+  private getSafeMessage(
+    exception: unknown,
+    status: number,
+    isProduction: boolean,
+  ): string | object {
     if (exception instanceof HttpException) {
       const response = exception.getResponse();
       // If it's a validation error or specifically crafted HttpException, we might want to pass it through
@@ -60,6 +78,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     }
 
-    return isProduction ? 'Internal server error' : (exception as any)?.message || 'Internal server error';
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      if (status === 409) return 'This record already exists or conflicts with another.';
+      if (status === 404) return 'Requested resource was not found.';
+      if (!isProduction) return exception.message;
+      return 'Database operation failed.';
+    }
+
+    return isProduction
+      ? 'Internal server error'
+      : (exception as any)?.message || 'Internal server error';
   }
 }

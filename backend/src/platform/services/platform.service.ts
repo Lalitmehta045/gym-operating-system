@@ -20,27 +20,22 @@ export class PlatformService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getPlatformDashboard(): Promise<PlatformDashboardDto> {
-    const [
-      totalGyms,
-      activeGyms,
-      trialGyms,
-      expiredGyms,
-      suspendedGyms,
-    ] = await this.prisma.$transaction([
-      this.prisma.tenant.count({ where: { deletedAt: null } }),
-      this.prisma.tenant.count({
-        where: { deletedAt: null, status: TenantStatus.ACTIVE },
-      }),
-      this.prisma.tenant.count({
-        where: { deletedAt: null, status: TenantStatus.TRIAL },
-      }),
-      this.prisma.tenant.count({
-        where: { deletedAt: null, status: TenantStatus.EXPIRED },
-      }),
-      this.prisma.tenant.count({
-        where: { deletedAt: null, status: TenantStatus.SUSPENDED },
-      }),
-    ]);
+    const [totalGyms, activeGyms, trialGyms, expiredGyms, suspendedGyms] =
+      await this.prisma.$transaction([
+        this.prisma.tenant.count({ where: { deletedAt: null } }),
+        this.prisma.tenant.count({
+          where: { deletedAt: null, status: TenantStatus.ACTIVE },
+        }),
+        this.prisma.tenant.count({
+          where: { deletedAt: null, status: TenantStatus.TRIAL },
+        }),
+        this.prisma.tenant.count({
+          where: { deletedAt: null, status: TenantStatus.EXPIRED },
+        }),
+        this.prisma.tenant.count({
+          where: { deletedAt: null, status: TenantStatus.SUSPENDED },
+        }),
+      ]);
 
     return {
       totalGyms,
@@ -224,7 +219,11 @@ export class PlatformService {
         status: 'ACTIVE',
         tenant: { isActive: true, deletedAt: null },
       },
-      include: { platformPlan: true },
+      select: {
+        platformPlan: {
+          select: { price: true },
+        },
+      },
     });
 
     const mrr = activeSubs.reduce((sum, sub) => {
@@ -247,9 +246,12 @@ export class PlatformService {
       _sum: { amount: true },
     });
 
-    const planIds = revenueByPlanRaw.map((r) => r.platformPlanId).filter(Boolean) as string[];
+    const planIds = revenueByPlanRaw
+      .map((r) => r.platformPlanId)
+      .filter(Boolean) as string[];
     const plans = await this.prisma.platformPlan.findMany({
       where: { id: { in: planIds } },
+      select: { id: true, name: true },
     });
 
     const revenueByPlan = revenueByPlanRaw.map((r) => {

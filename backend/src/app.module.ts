@@ -19,6 +19,7 @@ import { RolesGuard } from './auth/guards/roles.guard.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 import { CacheControlInterceptor } from './common/interceptors/cache-control.interceptor.js';
 import { CacheInvalidationInterceptor } from './common/interceptors/cache-invalidation.interceptor.js';
+import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor.js';
 
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
@@ -28,13 +29,18 @@ import { ReportsModule } from './reports/reports.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module.js';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard.js';
 import { RazorpayModule } from './razorpay/razorpay.module.js';
 import { WhatsappModule } from './whatsapp/whatsapp.module.js';
 import { PlatformModule } from './platform/platform.module.js';
 import { TenantSubscriptionModule } from './tenant-subscription/tenant-subscription.module.js';
 import { BillingModule } from './billing/billing.module.js';
 import { TenantSubscriptionGuard } from './billing/guards/tenant-subscription.guard.js';
+import { MediaModule } from './media/media.module.js';
+import { AuditModule } from './audit/audit.module.js';
+import { AuditLogInterceptor } from './audit/interceptors/audit-log.interceptor.js';
+import { TenantStorageModule } from './storage/tenant-storage.module.js';
 
 @Module({
   imports: [
@@ -63,10 +69,13 @@ import { TenantSubscriptionGuard } from './billing/guards/tenant-subscription.gu
     PlatformModule,
     TenantSubscriptionModule,
     BillingModule,
+    MediaModule,
+    AuditModule,
+    TenantStorageModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 100,
+        limit: 100, // Standard API rate limit: 100 req/min
       },
     ]),
   ],
@@ -79,8 +88,12 @@ import { TenantSubscriptionGuard } from './billing/guards/tenant-subscription.gu
     { provide: APP_INTERCEPTOR, useClass: CacheControlInterceptor },
     // Global Cache Invalidation interceptor
     { provide: APP_INTERCEPTOR, useClass: CacheInvalidationInterceptor },
-    // Global Throttler guard for rate limiting
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Global Audit Logging interceptor
+    { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
+    // Global Timeout interceptor to gracefully fail slow requests including database calls
+    { provide: APP_INTERCEPTOR, useClass: TimeoutInterceptor },
+    // Global Throttler guard for rate limiting (per-user/per-IP)
+    { provide: APP_GUARD, useClass: CustomThrottlerGuard },
     // Global JWT authentication — all routes require auth unless @Public()
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     // Global RBAC — enforces @Roles() when specified

@@ -13,9 +13,11 @@ import {
 } from '@nestjs/common';
 import { CacheTTL } from '@nestjs/cache-manager';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
-import { Role } from '../../../generated/prisma/client.js';
+import { Role, AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
+import { AuditLog } from '../../audit/decorators/audit-log.decorator.js';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache.interceptor.js';
 import { PlatformService } from '../services/platform.service.js';
+import { TenantStorageService } from '../../storage/tenant-storage.service.js';
 import {
   ListTenantsQueryDto,
   PlatformDashboardDto,
@@ -28,7 +30,10 @@ import {
 @Roles(Role.SUPER_ADMIN)
 @UseInterceptors(HttpCacheInterceptor)
 export class PlatformController {
-  constructor(private readonly platformService: PlatformService) {}
+  constructor(
+    private readonly platformService: PlatformService,
+    private readonly storageService: TenantStorageService,
+  ) {}
 
   @Get('dashboard')
   @CacheTTL(600) // 10 minutes
@@ -53,6 +58,7 @@ export class PlatformController {
   }
 
   @Patch('tenants/:id/suspend')
+  @AuditLog(AuditEntity.GYM, AuditAction.SUSPEND, '🚫 Tenant Suspended')
   async suspendTenant(
     @Param('id', new ParseUUIDPipe({ version: '4' })) tenantId: string,
   ): Promise<TenantDetailDto> {
@@ -60,6 +66,7 @@ export class PlatformController {
   }
 
   @Patch('tenants/:id/activate')
+  @AuditLog(AuditEntity.GYM, AuditAction.ACTIVATE, '✅ Tenant Activated')
   async activateTenant(
     @Param('id', new ParseUUIDPipe({ version: '4' })) tenantId: string,
   ): Promise<TenantDetailDto> {
@@ -70,5 +77,11 @@ export class PlatformController {
   @CacheTTL(600) // 10 minutes
   async getRevenueMetrics(): Promise<RevenueMetricsDto> {
     return this.platformService.getRevenueMetrics();
+  }
+
+  @Get('storage')
+  @CacheTTL(600) // 10 minutes
+  async getStorageMetrics() {
+    return this.storageService.getPlatformStorage();
   }
 }

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button"
 import { MemberProfile } from "@/components/members/MemberProfile"
 import { useMember } from "@/hooks/api/useMembers"
 import { LoadingState, ErrorState } from "@/components/ui/States"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs"
+import { ActivityTimeline } from "@/components/audit/ActivityTimeline"
 
 export default function MemberDetailsPage() {
   const params = useParams()
@@ -47,7 +49,18 @@ export default function MemberDetailsPage() {
         </div>
       </div>
 
-      <MemberProfile member={member} />
+      <Tabs defaultValue="profile">
+        <TabsList className="mb-6">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="timeline">Activity Timeline</TabsTrigger>
+        </TabsList>
+        <TabsContent value="profile">
+          <MemberProfile member={member} />
+        </TabsContent>
+        <TabsContent value="timeline">
+          <ActivityTimeline memberId={member.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import axios from 'axios';
 
 describe('WhatsappService', () => {
   let service: WhatsappService;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: any;
   let axiosPostSpy: jest.SpyInstance;
 
   beforeEach(async () => {
@@ -155,7 +155,7 @@ describe('WhatsappService', () => {
       await service.processWebhook(mockBody);
 
       expect(prismaService.whatsAppLog.updateMany).toHaveBeenCalledWith({
-        where: { messageId: 'msg-123' },
+        where: { messageId: { in: ['msg-123'] } },
         data: { status: 'DELIVERED' },
       });
     });

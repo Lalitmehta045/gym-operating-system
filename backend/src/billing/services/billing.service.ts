@@ -14,15 +14,24 @@ export class BillingService {
   ) {}
 
   async getCurrent(tenantId: string) {
-    const subscription = await this.tenantSubscriptionService.getCurrentSubscription(tenantId);
+    const subscription =
+      await this.tenantSubscriptionService.getCurrentSubscription(tenantId);
     if (!subscription) {
-      return { subscription: null, plan: null, daysRemaining: 0, isTrial: false };
+      return {
+        subscription: null,
+        plan: null,
+        daysRemaining: 0,
+        isTrial: false,
+      };
     }
 
     const now = new Date();
     const endDate = new Date(subscription.endDate);
     const diffMs = endDate.getTime() - now.getTime();
-    const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    const daysRemaining = Math.max(
+      0,
+      Math.ceil(diffMs / (1000 * 60 * 60 * 24)),
+    );
 
     return {
       subscription,
@@ -36,6 +45,17 @@ export class BillingService {
     return this.prisma.platformPlan.findMany({
       where: { isActive: true },
       orderBy: { price: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        billingCycle: true,
+        features: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 
@@ -49,6 +69,26 @@ export class BillingService {
         skip,
         take: limit,
         orderBy: { issuedAt: 'desc' },
+        select: {
+          id: true,
+          tenantId: true,
+          tenantSubscriptionId: true,
+          platformPlanId: true,
+          invoiceNumber: true,
+          amount: true,
+          status: true,
+          razorpayOrderId: true,
+          razorpayPaymentId: true,
+          razorpaySignature: true,
+          gateway: true,
+          gatewayStatus: true,
+          gatewayPayload: true,
+          paidAt: true,
+          notes: true,
+          issuedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       }),
       this.prisma.tenantInvoice.count({ where: { tenantId } }),
     ]);
@@ -80,7 +120,8 @@ export class BillingService {
   }
 
   async renew(tenantId: string) {
-    const currentSub = await this.tenantSubscriptionService.getCurrentSubscription(tenantId);
+    const currentSub =
+      await this.tenantSubscriptionService.getCurrentSubscription(tenantId);
     if (!currentSub) {
       throw new NotFoundException('No active subscription found to renew');
     }

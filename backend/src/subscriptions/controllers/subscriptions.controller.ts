@@ -22,7 +22,8 @@ import { ListSubscriptionsQueryDto } from '../dto/list-subscriptions-query.dto.j
 import { ExpiringSubscriptionsQueryDto } from '../dto/expiring-subscriptions-query.dto.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
-import { Role } from '../../../generated/prisma/client.js';
+import { Role, AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
+import { AuditLogs } from '../../audit/decorators/audit-log.decorator.js';
 import { HttpCacheInterceptor } from '../../common/interceptors/http-cache.interceptor.js';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 
@@ -67,7 +68,7 @@ export class SubscriptionsController {
   ) {
     return this.subscriptionsService.getExpiringSubscriptions(
       this.getTenantId(user),
-      query.days,
+      query,
     );
   }
 
@@ -109,6 +110,10 @@ export class SubscriptionsController {
   }
 
   @Post(':id/renew')
+  @AuditLogs(
+    { entity: AuditEntity.SUBSCRIPTION, action: AuditAction.SUBSCRIPTION_RENEWED, descriptionPattern: '🔄 Subscription Renewed' },
+    { entity: AuditEntity.INVOICE, action: AuditAction.CREATE, descriptionPattern: '📄 Invoice Generated' }
+  )
   renew(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,

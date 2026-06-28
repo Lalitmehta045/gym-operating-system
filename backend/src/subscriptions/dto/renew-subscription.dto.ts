@@ -1,5 +1,11 @@
 import { PaymentMethod } from '../../../generated/prisma/client.js';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class RenewSubscriptionDto {
   @IsEnum(PaymentMethod)

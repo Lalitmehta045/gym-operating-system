@@ -19,7 +19,8 @@ export class HttpCacheInterceptor extends CacheInterceptor {
 
     if (
       !isGetRequest ||
-      (isGetRequest && excludePaths.includes(httpAdapter.getRequestUrl(request)))
+      (isGetRequest &&
+        excludePaths.includes(httpAdapter.getRequestUrl(request)))
     ) {
       return undefined;
     }

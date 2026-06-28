@@ -1,5 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
-import { AttendanceService } from './services/attendances.service';
+import { AttendanceService } from './services/attendances.service.js';
 
 // lightweight mocks for Prisma
 const makePrisma = () => ({
@@ -19,9 +19,11 @@ describe('Attendance Reports (unit)', () => {
   const tenantId = 't-local';
   const memberId = 'm-local';
 
+  const makeJwt = () => ({ verify: jest.fn() });
+
   beforeEach(() => {
     prisma = makePrisma();
-    svc = new AttendanceService(prisma);
+    svc = new AttendanceService(prisma, makeJwt() as any);
   });
 
   test('listAttendances pagination', async () => {

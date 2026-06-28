@@ -27,6 +27,8 @@ import { AuthResponseDto, AuthUserDto } from '../dto/auth-response.dto.js';
 import { Public } from '../decorators/public.decorator.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 import { SkipSubscriptionCheck } from '../../common/decorators/skip-subscription.decorator.js';
+import { AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
+import { AuditLog } from '../../audit/decorators/audit-log.decorator.js';
 import * as crypto from 'crypto';
 
 @Controller('auth')
@@ -93,6 +95,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @AuditLog(AuditEntity.USER, AuditAction.LOGIN, '🔓 User Logged In')
   async login(
     @Body() dto: LoginDto,
     @Req() request: Request,
@@ -130,6 +133,7 @@ export class AuthController {
   @SkipSubscriptionCheck()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @AuditLog(AuditEntity.USER, AuditAction.LOGOUT, '🔒 User Logged Out')
   async logout(
     @CurrentUser('sub') userId: string,
     @Res({ passthrough: true }) response: Response,
@@ -146,6 +150,7 @@ export class AuthController {
   @SkipSubscriptionCheck()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @AuditLog(AuditEntity.USER, AuditAction.LOGOUT, '🔒 User Logged Out (All Devices)')
   async logoutAll(
     @CurrentUser('sub') userId: string,
     @Res({ passthrough: true }) response: Response,

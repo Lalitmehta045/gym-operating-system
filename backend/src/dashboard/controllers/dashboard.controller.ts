@@ -1,4 +1,10 @@
-import { Controller, Get, Query, ForbiddenException, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  ForbiddenException,
+  UseInterceptors,
+} from '@nestjs/common';
 import { CacheTTL } from '@nestjs/cache-manager';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
@@ -22,7 +28,7 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('overview')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(60000) // 60 seconds
   @Roles(Role.OWNER, Role.MANAGER)
   async getOverview(
     @CurrentUser() user: JwtPayload,
@@ -32,7 +38,7 @@ export class DashboardController {
   }
 
   @Get('members')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(60000) // 60 seconds
   @Roles(Role.OWNER, Role.MANAGER)
   async getMembersAnalytics(
     @CurrentUser() user: JwtPayload,
@@ -45,7 +51,7 @@ export class DashboardController {
   }
 
   @Get('attendance')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(60000) // 60 seconds
   @Roles(Role.OWNER, Role.MANAGER)
   async getAttendanceAnalytics(
     @CurrentUser() user: JwtPayload,
@@ -58,7 +64,7 @@ export class DashboardController {
   }
 
   @Get('revenue')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(60000) // 60 seconds
   @Roles(Role.OWNER, Role.MANAGER)
   async getRevenueAnalytics(
     @CurrentUser() user: JwtPayload,
@@ -71,7 +77,7 @@ export class DashboardController {
   }
 
   @Get('subscriptions')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(60000) // 60 seconds
   @Roles(Role.OWNER, Role.MANAGER)
   async getSubscriptionsAnalytics(
     @CurrentUser() user: JwtPayload,
@@ -84,7 +90,7 @@ export class DashboardController {
   }
 
   @Get('top-members')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(60000) // 60 seconds
   @Roles(Role.OWNER, Role.MANAGER)
   async getTopMembers(
     @CurrentUser() user: JwtPayload,

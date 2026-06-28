@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationCronService } from './notification-cron.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from './notifications.service';
+import { NotificationCronService } from './notification-cron.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { NotificationsService } from './notifications.service.js';
 import { WhatsappService } from '../whatsapp/services/whatsapp.service.js';
 import { RazorpayService } from '../razorpay/services/razorpay.service.js';
 import { NotificationType } from './dto/notification-type.enum.js';
@@ -37,7 +37,12 @@ describe('NotificationCronService', () => {
           provide: WhatsappService,
           useValue: { sendRenewalReminder: jest.fn().mockResolvedValue(true) },
         },
-        { provide: RazorpayService, useValue: { createPaymentLink: jest.fn().mockResolvedValue('http://pay') } },
+        {
+          provide: RazorpayService,
+          useValue: {
+            createPaymentLink: jest.fn().mockResolvedValue('http://pay'),
+          },
+        },
       ],
     }).compile();
 
