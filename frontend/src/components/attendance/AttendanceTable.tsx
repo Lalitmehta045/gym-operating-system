@@ -59,8 +59,8 @@ export function AttendanceTable({ attendances, isLoading, onCheckOut, onMemberCl
                   className="font-medium text-blue-600 hover:underline"
                   onClick={() => onMemberClick(record.memberId)}
                 >
-                  {record.member?.firstName} {record.member?.lastName}
-                  <div className="text-xs text-[#888888] font-normal">{record.member?.memberCode}</div>
+                  {record.memberName || `${record.member?.firstName ?? ''} ${record.member?.lastName ?? ''}`.trim() || 'Unknown'}
+                  <div className="text-xs text-[#888888] font-normal">{record.member?.memberCode || '-'}</div>
                 </button>
               </TableCell>
               <TableCell>{format(new Date(record.attendanceDate), 'MMM d, yyyy')}</TableCell>

@@ -22,6 +22,7 @@ export interface AttendanceDto {
     lastName: string;
     memberCode: string;
   };
+  memberName?: string;
 }
 
 export interface AttendanceWithMemberDto extends AttendanceDto {

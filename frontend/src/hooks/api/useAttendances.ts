@@ -15,6 +15,7 @@ export interface Attendance {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  memberName?: string;
   member?: Member;
   markedBy?: {
     id: string;

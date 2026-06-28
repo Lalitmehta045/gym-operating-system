@@ -211,6 +211,7 @@ export class AttendanceService implements AttendanceServiceInterface {
       },
       select: {
         id: true,
+        tenantId: true,
         firstName: true,
         lastName: true,
         status: true,
@@ -244,7 +245,7 @@ export class AttendanceService implements AttendanceServiceInterface {
 
     const existing = await this.prisma.attendance.findFirst({
       where: {
-        tenantId: gymId,
+        tenantId: member.tenantId,
         memberId: member.id,
         attendanceDate,
         deletedAt: null,
@@ -258,7 +259,7 @@ export class AttendanceService implements AttendanceServiceInterface {
 
     const attendance = await this.prisma.attendance.create({
       data: {
-        tenantId: gymId,
+        tenantId: member.tenantId,
         memberId: member.id,
         markedByUserId: null,
         checkInAt: new Date(), // UTC time
@@ -484,24 +485,19 @@ export class AttendanceService implements AttendanceServiceInterface {
         skip,
         take: limit,
         orderBy,
-        select: {
-          id: true,
-          tenantId: true,
-          memberId: true,
-          markedByUserId: true,
-          checkInAt: true,
-          checkOutAt: true,
-          attendanceDate: true,
-          status: true,
-          notes: true,
-          createdAt: true,
-          updatedAt: true,
-          deletedAt: true,
+        include: {
           member: {
             select: {
+              id: true,
               firstName: true,
               lastName: true,
               memberCode: true
+            }
+          },
+          markedBy: {
+            select: {
+              firstName: true,
+              lastName: true
             }
           }
         },
@@ -509,8 +505,12 @@ export class AttendanceService implements AttendanceServiceInterface {
       this.prisma.attendance.count({ where }),
     ]);
 
+    const resultDto = data.map((a) => this.toDto(a));
+    console.log('First record member:', data[0]?.member);
+    console.log('Backend listAttendances first record DTO:', JSON.stringify(resultDto[0], null, 2));
+
     return {
-      data: data.map((a) => this.toDto(a)),
+      data: resultDto,
       meta: {
         page,
         limit,
@@ -809,7 +809,14 @@ export class AttendanceService implements AttendanceServiceInterface {
       createdAt: a.createdAt,
       updatedAt: a.updatedAt,
       deletedAt: a.deletedAt ?? null,
-      member: a.member,
+      member: a.member ? {
+        firstName: a.member.firstName,
+        lastName: a.member.lastName,
+        memberCode: a.member.memberCode,
+      } : undefined,
+      memberName: a.member 
+        ? `${a.member.firstName} ${a.member.lastName}`.trim()
+        : 'Unknown',
     };
   }
 }
