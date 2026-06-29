@@ -17,6 +17,8 @@ export interface Payment {
   createdAt: string;
   updatedAt: string;
 
+  memberName?: string;
+  memberCode?: string | null;
   member?: Member;
   subscription?: Subscription;
 }

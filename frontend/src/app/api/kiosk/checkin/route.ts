@@ -1,26 +1,46 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
   try {
-    const body = await req.json();
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-    const response = await fetch(`${apiUrl}/attendances/kiosk-checkin`, {
+    const res = await fetch(`${apiUrl}/attendances/kiosk-checkin`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify(body),
+      cache: 'no-store',
     });
 
-    const data = await response.json();
-
-    return NextResponse.json(data, { status: response.status });
+    const data = await res.json();
+    
+    return NextResponse.json(data, { 
+      status: res.status,
+      headers: {
+        'Cache-Control': 'no-store, no-cache',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Accept',
+      }
+    });
   } catch (error) {
-    console.error('Kiosk API error:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { error: 'Failed to process checkin' },
       { status: 500 }
     );
   }
+}
+
+// Handle iOS Safari preflight OPTIONS request
+export async function OPTIONS() {
+  return NextResponse.json({}, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Accept',
+    }
+  });
 }

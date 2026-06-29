@@ -46,7 +46,17 @@ export default function KioskCheckInPage() {
       }
       setIsSearching(true);
       try {
-        const res = await fetch(`/api/kiosk/search?gymId=${gymId}&query=${encodeURIComponent(debouncedSearch.trim())}`);
+        const res = await fetch(
+          `/api/kiosk/search?gymId=${encodeURIComponent(gymId)}&query=${encodeURIComponent(debouncedSearch.trim())}`,
+          {
+            method: 'GET',
+            headers: { 
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            cache: 'no-store',
+          }
+        );
         if (res.ok) {
           const data = await res.json();
           setSearchResults(data || []);
@@ -121,12 +131,16 @@ export default function KioskCheckInPage() {
     try {
       const res = await fetch("/api/kiosk/checkin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          memberId: selectedMember.memberId,
-          phoneLast4,
-          gymId,
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ 
+          memberId: selectedMember.memberId.trim(), 
+          phoneLast4: phoneLast4.trim(), 
+          gymId: gymId 
         }),
+        cache: 'no-store',
       });
 
       const data = await res.json();

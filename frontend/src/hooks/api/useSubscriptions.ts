@@ -157,7 +157,7 @@ export const useExpiringSubscriptions = (days: number = 7) => {
   return useQuery({
     queryKey: ['subscriptions', 'expiring', days],
     queryFn: async () => {
-      const { data } = await api.get<Subscription[]>(`/subscriptions/expiring`, { params: { days } });
+      const { data } = await api.get<SubscriptionsResponse>(`/subscriptions/expiring`, { params: { days } });
       return data;
     },
   });

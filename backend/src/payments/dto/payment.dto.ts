@@ -16,4 +16,12 @@ export class PaymentDto {
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
+  member?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+    memberCode: string;
+  } | null;
 }

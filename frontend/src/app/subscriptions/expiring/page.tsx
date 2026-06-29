@@ -40,7 +40,7 @@ export default function ExpiringSubscriptionsPage() {
       </div>
 
       <ExpiringMembersTable
-        subscriptions={subscriptions || []}
+        subscriptions={subscriptions?.data || []}
         isLoading={isLoading}
       />
     </div>

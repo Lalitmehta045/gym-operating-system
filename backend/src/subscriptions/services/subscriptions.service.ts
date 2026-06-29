@@ -76,9 +76,22 @@ export class SubscriptionsService {
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
+    const whereClause: any = { 
+      tenantId, 
+      deletedAt: null 
+    };
+
+    if (query.memberId) {
+      whereClause.memberId = query.memberId;
+    }
+
+    if (query.status) {
+      whereClause.status = query.status;
+    }
+
     const [subscriptions, total] = await this.prisma.$transaction([
       this.prisma.subscription.findMany({
-        where: { tenantId, deletedAt: null },
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -113,7 +126,7 @@ export class SubscriptionsService {
           deletedAt: true,
         },
       }),
-      this.prisma.subscription.count({ where: { tenantId, deletedAt: null } }),
+      this.prisma.subscription.count({ where: whereClause }),
     ]);
 
     return {
@@ -135,6 +148,23 @@ export class SubscriptionsService {
   ): Promise<SubscriptionDto> {
     const subscription = await this.prisma.subscription.findFirst({
       where: { id, tenantId, deletedAt: null },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          }
+        },
+        membershipPlan: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      }
     });
     if (!subscription) throw new NotFoundException('Subscription not found');
     return this.mapToDto(subscription);

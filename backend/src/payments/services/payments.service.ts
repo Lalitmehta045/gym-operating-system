@@ -4,8 +4,9 @@ import { CreatePaymentDto } from '../dto/create-payment.dto.js';
 import { PaymentDto } from '../dto/payment.dto.js';
 import { ListPaymentsQueryDto } from '../dto/list-payments-query.dto.js';
 import { PaginatedPaymentsDto } from '../dto/paginated-payments.dto.js';
-import { PaymentStatus } from '../../../generated/prisma/client.js';
+import { PaymentStatus, SubscriptionStatus } from '../../../generated/prisma/client.js';
 import { WhatsappService } from '../../whatsapp/services/whatsapp.service.js';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class PaymentsService {
@@ -38,18 +39,50 @@ export class PaymentsService {
     }
 
     const status = dto.paymentStatus || PaymentStatus.PENDING;
-    const payment = await this.prisma.payment.create({
-      data: {
-        tenantId,
-        memberId: dto.memberId,
-        subscriptionId: dto.subscriptionId,
-        amount: dto.amount,
-        paymentMethod: dto.paymentMethod,
-        paymentStatus: status,
-        transactionReference: dto.transactionReference,
-        paidAt: status === PaymentStatus.PAID ? new Date() : null,
-        notes: dto.notes,
-      },
+
+    // Generate invoice number (same pattern as renewSubscription)
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${randomUUID().slice(-8).toUpperCase()}`;
+
+    const payment = await this.prisma.$transaction(async (tx) => {
+      // Step 1: Create payment
+      const newPayment = await tx.payment.create({
+        data: {
+          tenantId,
+          memberId: dto.memberId,
+          subscriptionId: dto.subscriptionId ?? null,
+          amount: dto.amount,
+          paymentMethod: dto.paymentMethod,
+          paymentStatus: status,
+          transactionReference: dto.transactionReference ?? null,
+          paidAt: status === PaymentStatus.PAID ? new Date() : null,
+          notes: dto.notes ?? null,
+        },
+      });
+
+      // Step 2: If payment is PAID and has subscriptionId,
+      // activate the subscription
+      if (status === PaymentStatus.PAID && dto.subscriptionId) {
+        await tx.subscription.update({
+          where: { id: dto.subscriptionId },
+          data: { status: SubscriptionStatus.ACTIVE },
+        });
+      }
+
+      // Step 3: If payment is PAID, generate invoice
+      if (status === PaymentStatus.PAID) {
+        await tx.invoice.create({
+          data: {
+            tenantId,
+            memberId: dto.memberId,
+            subscriptionId: dto.subscriptionId ?? null,
+            paymentId: newPayment.id,
+            invoiceNumber,
+            amount: newPayment.amount,
+          },
+        });
+      }
+
+      return newPayment;
     });
 
     // Fire-and-forget WhatsApp notification
@@ -78,26 +111,17 @@ export class PaymentsService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        select: {
-          id: true,
-          tenantId: true,
-          memberId: true,
-          subscriptionId: true,
-          amount: true,
-          paymentMethod: true,
-          paymentStatus: true,
-          transactionReference: true,
-          razorpayOrderId: true,
-          razorpayPaymentId: true,
-          razorpaySignature: true,
-          gateway: true,
-          gatewayStatus: true,
-          gatewayPayload: true,
-          paidAt: true,
-          notes: true,
-          createdAt: true,
-          updatedAt: true,
-          deletedAt: true,
+        include: {
+          member: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              memberCode: true,
+            },
+          },
         },
       }),
       this.prisma.payment.count({ where: { tenantId, deletedAt: null } }),
@@ -119,6 +143,18 @@ export class PaymentsService {
   async getPaymentById(tenantId: string, id: string): Promise<PaymentDto> {
     const payment = await this.prisma.payment.findFirst({
       where: { id, tenantId, deletedAt: null },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            memberCode: true,
+          }
+        }
+      }
     });
     if (!payment) throw new NotFoundException('Payment not found');
     return this.mapToDto(payment);
@@ -138,6 +174,14 @@ export class PaymentsService {
       notes: payment.notes,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
+      member: payment.member ? {
+        id: payment.member.id,
+        firstName: payment.member.firstName,
+        lastName: payment.member.lastName,
+        email: payment.member.email,
+        phone: payment.member.phone,
+        memberCode: payment.member.memberCode,
+      } : null,
     };
   }
 }

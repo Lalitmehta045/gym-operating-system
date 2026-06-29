@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCreatePayment } from '@/hooks/api/usePayments';
 import { useMembers } from '@/hooks/api/useMembers';
-import { useSubscriptions } from '@/hooks/api/useSubscriptions';
+import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -42,9 +42,39 @@ export function PaymentForm() {
   });
 
   const memberId = form.watch('memberId');
-  const { data: subscriptionsData, isLoading: isLoadingSubscriptions } = useSubscriptions(
-    memberId ? { memberId, limit: 100 } : undefined
-  );
+  const [memberSubscriptions, setMemberSubscriptions] = React.useState<any[]>([]);
+
+  const handleMemberChange = async (memberId: string) => {
+    console.log('Member changed:', memberId);
+    form.setValue('memberId', memberId);
+    form.setValue('subscriptionId', '');
+    form.setValue('amount', 0);
+    
+    if (!memberId) {
+      setMemberSubscriptions([]);
+      return;
+    }
+    
+    try {
+      const url = `/api/subscriptions?memberId=${memberId}&status=PENDING`;
+      console.log('Fetching:', url);
+      
+      const token = useAuthStore.getState().accessToken;
+      const res = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      
+      const data = await res.json();
+      console.log('Subscriptions response:', data);
+      setMemberSubscriptions(data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch subscriptions:', err);
+      setMemberSubscriptions([]);
+    }
+  };
 
   const createMutation = useCreatePayment();
 
@@ -72,10 +102,7 @@ export function PaymentForm() {
           <label className="block text-sm font-medium text-[#171717] mb-1">Member *</label>
           <Select
             {...form.register('memberId')}
-            onChange={(e) => {
-              form.setValue('memberId', e.target.value);
-              form.setValue('subscriptionId', '');
-            }}
+            onChange={(e) => handleMemberChange(e.target.value)}
             disabled={isLoadingMembers}
           >
             <option value="">Select a member</option>
@@ -94,13 +121,26 @@ export function PaymentForm() {
           <label className="block text-sm font-medium text-[#171717] mb-1">Subscription</label>
           <Select
             {...form.register('subscriptionId')}
-            disabled={!memberId || isLoadingSubscriptions}
+            onChange={(e) => {
+              const subId = e.target.value;
+              form.setValue('subscriptionId', subId, { shouldValidate: true });
+              
+              if (subId) {
+                const selectedSub = memberSubscriptions.find(s => s.id === subId);
+                if (selectedSub) {
+                  form.setValue('amount', Number(selectedSub.amount), { shouldValidate: true });
+                }
+              } else {
+                form.setValue('amount', 0, { shouldValidate: true });
+              }
+            }}
+            disabled={!memberId}
           >
             <option value="">No specific subscription (General Payment)</option>
-            {subscriptionsData?.data.map((sub) => (
+            {memberSubscriptions.map(sub => (
               <option key={sub.id} value={sub.id}>
-                {sub.membershipPlan?.name} - {new Date(sub.startDate).toLocaleDateString()} to{' '}
-                {new Date(sub.endDate).toLocaleDateString()}
+                {sub.membershipPlan?.name || 'Plan'} — ₹{Number(sub.amount).toLocaleString('en-IN')} 
+                (ends {new Date(sub.endDate).toLocaleDateString('en-IN')})
               </option>
             ))}
           </Select>

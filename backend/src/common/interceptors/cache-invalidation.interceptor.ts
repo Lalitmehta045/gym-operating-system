@@ -53,7 +53,13 @@ export class CacheInvalidationInterceptor implements NestInterceptor {
 
     try {
       // Try to get keys. This works for many stores including memory-cache-v5
-      const keys = await (this.cacheManager as any).store.keys();
+      let keys: string[] = [];
+      const anyCache = this.cacheManager as any;
+      if (typeof anyCache.store?.keys === 'function') {
+        keys = await anyCache.store.keys();
+      } else if (typeof anyCache.keys === 'function') {
+        keys = await anyCache.keys();
+      }
 
       if (!keys || !Array.isArray(keys)) return;
 
