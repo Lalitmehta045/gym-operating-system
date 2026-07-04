@@ -96,14 +96,15 @@ export function PaymentForm() {
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-[#171717] mb-1">Member *</label>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="bg-[var(--canvas-light)] rounded-xl shadow-sm border border-[var(--hairline-soft)] p-8 space-y-6">
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-[var(--ink-soft)]">Member <span className="text-red-500">*</span></label>
           <Select
             {...form.register('memberId')}
             onChange={(e) => handleMemberChange(e.target.value)}
             disabled={isLoadingMembers}
+            className="w-full"
           >
             <option value="">Select a member</option>
             {membersData?.data.map((member) => (
@@ -113,12 +114,12 @@ export function PaymentForm() {
             ))}
           </Select>
           {form.formState.errors.memberId && (
-            <p className="text-red-500 text-sm mt-1">{form.formState.errors.memberId.message}</p>
+            <p className="text-red-500 text-sm">{form.formState.errors.memberId.message}</p>
           )}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[#171717] mb-1">Subscription</label>
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-[var(--ink-soft)]">Subscription</label>
           <Select
             {...form.register('subscriptionId')}
             onChange={(e) => {
@@ -135,6 +136,7 @@ export function PaymentForm() {
               }
             }}
             disabled={!memberId}
+            className="w-full"
           >
             <option value="">No specific subscription (General Payment)</option>
             {memberSubscriptions.map(sub => (
@@ -146,27 +148,30 @@ export function PaymentForm() {
           </Select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[#171717] mb-1">Amount (INR) *</label>
-          <Input type="number" step="0.01" min="0" {...form.register('amount')} placeholder="0.00" />
+        <div className="space-y-1 relative">
+          <label className="block text-sm font-medium text-[var(--ink-soft)]">Amount (INR) <span className="text-red-500">*</span></label>
+          <div className="relative">
+            <span className="absolute left-4 top-4 text-[var(--mute)] text-lg">₹</span>
+            <Input type="number" step="0.01" min="0" {...form.register('amount')} placeholder="0.00" className="pl-9 h-14 text-lg w-full rounded-xl" />
+          </div>
           {form.formState.errors.amount && (
-            <p className="text-red-500 text-sm mt-1">{form.formState.errors.amount.message}</p>
+            <p className="text-red-500 text-sm">{form.formState.errors.amount.message}</p>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-[#171717] mb-1">Payment Method *</label>
-            <Select {...form.register('paymentMethod')}>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-[var(--ink-soft)]">Payment Method <span className="text-red-500">*</span></label>
+            <Select {...form.register('paymentMethod')} className="w-full">
               <option value="CASH">Cash</option>
               <option value="UPI">UPI</option>
               <option value="CARD">Card</option>
               <option value="BANK_TRANSFER">Bank Transfer</option>
             </Select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-[#171717] mb-1">Status *</label>
-            <Select {...form.register('paymentStatus')}>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-[var(--ink-soft)]">Status <span className="text-red-500">*</span></label>
+            <Select {...form.register('paymentStatus')} className="w-full">
               <option value="PENDING">Pending</option>
               <option value="PAID">Paid</option>
               <option value="FAILED">Failed</option>
@@ -175,15 +180,15 @@ export function PaymentForm() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[#171717] mb-1">Transaction Reference</label>
-          <Input {...form.register('transactionReference')} placeholder="e.g., UPI Ref No. or Check No." />
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-[var(--ink-soft)]">Transaction Reference</label>
+          <Input {...form.register('transactionReference')} placeholder="e.g., UPI Ref No. or Check No." className="w-full" />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[#171717] mb-1">Notes</label>
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-[var(--ink-soft)]">Notes</label>
           <textarea
-            className="flex w-full border border-[#ebebeb] bg-[#ffffff] text-[#171717] p-[12px] rounded-[6px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171717]"
+            className="w-full min-h-[120px] rounded-lg border border-[var(--hairline)] px-4 py-2.5 text-[var(--on-primary)] focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 bg-[var(--canvas-light)] resize-y"
             rows={3}
             {...form.register('notes')}
             placeholder="Any additional details..."
@@ -191,7 +196,7 @@ export function PaymentForm() {
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4 border-t border-[#ebebeb]">
+      <div className="flex justify-end gap-4 pt-6 mt-6 border-t border-[var(--hairline-soft)]">
         <Button type="button" variant="secondary" onClick={() => router.back()}>
           Cancel
         </Button>

@@ -26,7 +26,7 @@ export class TenantProfileController {
   constructor(private readonly tenantProfileService: TenantProfileService) {}
 
   @Get()
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   async getProfile(@CurrentUser() user: JwtPayload): Promise<TenantProfileDto> {
     return this.tenantProfileService.getTenantProfile(this.getTenantId(user));

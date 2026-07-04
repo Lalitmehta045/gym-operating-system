@@ -2,12 +2,14 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Param,
   Query,
   ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service.js';
+import { ExpiryNotificationService } from './services/expiry-notification.service.js';
 import { NotificationQueryDto } from './dto/notification-query.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -23,7 +25,18 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.OWNER, Role.MANAGER)
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly expiryNotificationService: ExpiryNotificationService,
+  ) {}
+
+  @Post('trigger-expiry-check')
+  @Roles(Role.OWNER)
+  async triggerExpiryCheck(@TenantId() tenantId: string) {
+    // Manual trigger for testing
+    await this.expiryNotificationService.processExpiringSubscriptions();
+    return { message: 'Expiry check triggered successfully' };
+  }
 
   @Get()
   async listNotifications(

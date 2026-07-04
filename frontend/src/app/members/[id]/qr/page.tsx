@@ -35,7 +35,7 @@ export default function MemberQrPage() {
   if (isLoadingMember || isLoadingQr) {
     return (
       <div className="flex h-[400px] items-center justify-center">
-        <p className="text-sm text-[#888888]">Loading QR code...</p>
+        <p className="text-sm text-[var(--ash)]">Loading QR code...</p>
       </div>
     )
   }
@@ -43,7 +43,7 @@ export default function MemberQrPage() {
   if (!member) {
     return (
       <div className="flex h-[400px] flex-col items-center justify-center space-y-4">
-        <p className="text-sm text-[#888888]">Member not found.</p>
+        <p className="text-sm text-[var(--ash)]">Member not found.</p>
         <Button variant="secondary" onClick={() => router.back()}>
           Go Back
         </Button>
@@ -58,15 +58,15 @@ export default function MemberQrPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717]">Attendance QR Code</h1>
-          <p className="text-sm text-[#888888]">
+          <h1 className="text-2xl font-semibold text-[var(--on-primary)]">Attendance QR Code</h1>
+          <p className="text-sm text-[var(--ash)]">
             {member.firstName} {member.lastName}
           </p>
         </div>
       </div>
 
-      <div className="rounded-lg border border-[#ebebeb] bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto flex aspect-square max-w-[300px] flex-col items-center justify-center rounded-lg border border-[#ebebeb] bg-[#fafafa] p-4">
+      <div className="rounded-lg border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-8 text-center shadow-sm">
+        <div className="mx-auto flex aspect-square max-w-[300px] flex-col items-center justify-center rounded-lg border border-[var(--hairline-soft)] bg-[var(--canvas-soft)] p-4">
           {qrData?.qrCodeUrl ? (
             <img
               src={qrData.qrCodeUrl}
@@ -74,7 +74,7 @@ export default function MemberQrPage() {
               className="h-full w-full object-contain"
             />
           ) : (
-            <p className="text-sm text-[#888888]">QR code not available</p>
+            <p className="text-sm text-[var(--ash)]">QR code not available</p>
           )}
         </div>
 
@@ -93,7 +93,7 @@ export default function MemberQrPage() {
           </Button>
         </div>
         
-        <p className="mt-6 text-xs text-[#888888]">
+        <p className="mt-6 text-xs text-[var(--ash)]">
           This QR code is securely signed and will expire in 24 hours. Provide this to the member for quick check-ins.
         </p>
       </div>

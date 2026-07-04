@@ -3,12 +3,16 @@
 import * as React from "react"
 import Link from "next/link"
 import { Plus } from "lucide-react"
-import { Button } from "@/components/ui/Button"
 import { PlanTable } from "@/components/plans/PlanTable"
 import { PlanFilters } from "@/components/plans/PlanFilters"
+import { PlanDashboardCards } from "@/components/plans/PlanDashboardCards"
 import { usePlans, useDeletePlan } from "@/hooks/api/usePlans"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function PlansPage() {
+  const { user } = useAuth()
+  const isOwner = user?.role === "OWNER"
+
   const [search, setSearch] = React.useState("")
   const [planType, setPlanType] = React.useState("")
   const [isActive, setIsActive] = React.useState("")
@@ -30,20 +34,27 @@ export default function PlansPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#171717]">Membership Plans</h1>
-          <p className="text-sm text-[#888888]">Manage your gym&apos;s membership packages</p>
+    <div className="flex flex-col pb-8 pt-6">
+      {/* PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[32px] font-bold text-[var(--on-primary)] leading-none">Membership Plans</h1>
+          <p className="text-sm text-[var(--mute)]">Manage your gym's membership packages</p>
         </div>
-        <Link href="/plans/new">
-          <Button variant="primary">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Plan
-          </Button>
-        </Link>
+        {isOwner && (
+          <Link href="/plans/new">
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-[#6C47FF] hover:bg-[#5b3ce0] text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+              <Plus className="w-4 h-4" />
+              Add Plan
+            </button>
+          </Link>
+        )}
       </div>
 
+      {/* DASHBOARD CARDS */}
+      <PlanDashboardCards />
+
+      {/* SEARCH/FILTERS */}
       <PlanFilters
         search={search}
         setSearch={setSearch}
@@ -53,6 +64,7 @@ export default function PlansPage() {
         setIsActive={setIsActive}
       />
 
+      {/* TABLE */}
       <PlanTable
         plans={data?.data || []}
         isLoading={isLoading}

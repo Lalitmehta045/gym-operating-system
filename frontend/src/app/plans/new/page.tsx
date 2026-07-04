@@ -23,18 +23,19 @@ export default function CreatePlanPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/plans" className="text-[#888888] hover:text-[#171717] transition-colors">
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
+    <div className="min-h-screen bg-[var(--canvas-soft)] py-8">
+      <div className="max-w-3xl mx-auto space-y-6 px-4">
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717]">Create Membership Plan</h1>
-          <p className="text-sm text-[#888888]">Add a new pricing tier for your members</p>
+          <Link href="/plans" className="inline-flex items-center text-sm text-[var(--mute)] hover:text-[var(--on-primary)] mb-4 transition-colors">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Link>
+          <h1 className="text-3xl font-bold text-[var(--on-primary)]">Create Membership Plan</h1>
+          <p className="text-sm text-[var(--mute)] mt-1">Add a new pricing tier for your members</p>
         </div>
-      </div>
 
-      <PlanForm onSubmit={handleSubmit} isLoading={createPlan.isPending} submitLabel="Create Plan" />
+        <PlanForm onSubmit={handleSubmit} isLoading={createPlan.isPending} submitLabel="Create Plan" />
+      </div>
     </div>
   )
 }

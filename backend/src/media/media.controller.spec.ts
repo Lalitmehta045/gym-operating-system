@@ -83,8 +83,8 @@ describe('MediaController', () => {
       const result = [{ id: 'media-1' }];
       mockMediaService.getMemberGallery.mockResolvedValue(result);
 
-      expect(await controller.getGallery('member-1', mockUser as any)).toEqual(result);
-      expect(service.getMemberGallery).toHaveBeenCalledWith(mockUser.tenantId, 'member-1');
+      expect(await controller.getGallery('member-1', undefined, undefined, mockUser as any)).toEqual(result);
+      expect(service.getMemberGallery).toHaveBeenCalledWith(mockUser.tenantId, 'member-1', undefined, undefined);
     });
 
     it('should soft delete gallery image and call storage cleanup', async () => {

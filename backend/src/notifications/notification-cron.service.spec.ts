@@ -2,9 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationCronService } from './notification-cron.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from './notifications.service.js';
-import { WhatsappService } from '../whatsapp/services/whatsapp.service.js';
-import { RazorpayService } from '../razorpay/services/razorpay.service.js';
 import { NotificationType } from './dto/notification-type.enum.js';
+import { NotificationQueueService } from './notification-queue.service.js';
 
 describe('NotificationCronService', () => {
   let service: NotificationCronService;
@@ -27,6 +26,10 @@ describe('NotificationCronService', () => {
     createNotification: jest.fn(),
   };
 
+  const mockNotificationQueueService = {
+    enqueueRenewalReminders: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -34,14 +37,8 @@ describe('NotificationCronService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationsService, useValue: mockNotificationsService },
         {
-          provide: WhatsappService,
-          useValue: { sendRenewalReminder: jest.fn().mockResolvedValue(true) },
-        },
-        {
-          provide: RazorpayService,
-          useValue: {
-            createPaymentLink: jest.fn().mockResolvedValue('http://pay'),
-          },
+          provide: NotificationQueueService,
+          useValue: mockNotificationQueueService,
         },
       ],
     }).compile();
@@ -67,22 +64,31 @@ describe('NotificationCronService', () => {
           id: 'sub-1',
           tenantId: 'tenant-1',
           memberId: 'member-1',
+          endDate: new Date(),
+          amount: 100,
+          deletedAt: null,
           membershipPlan: { name: 'Gold Plan' },
-          member: {},
+          member: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            phone: '919876543210',
+            deletedAt: null,
+          },
         },
       ]);
       mockPrismaService.notification.createMany.mockResolvedValue({ count: 1 });
+      mockNotificationQueueService.enqueueRenewalReminders.mockResolvedValue(
+        undefined,
+      );
 
       await service.generateExpirationNotifications();
 
-      // Should be called 6 times (30, 15, 7, 3, 1, 0 days)
-      expect(prisma.subscription.findMany).toHaveBeenCalledTimes(6);
+      expect(prisma.subscription.findMany).toHaveBeenCalledTimes(1);
 
-      // createMany should be called 6 times (once for each day-check iteration that has records)
-      expect(prisma.notification.createMany).toHaveBeenCalledTimes(6);
+      expect(prisma.notification.createMany).toHaveBeenCalledTimes(1);
 
-      // Check the last call (expired)
-      expect(prisma.notification.createMany).toHaveBeenLastCalledWith({
+      expect(prisma.notification.createMany).toHaveBeenCalledWith({
         data: [
           {
             tenantId: 'tenant-1',
@@ -94,24 +100,36 @@ describe('NotificationCronService', () => {
           },
         ],
       });
+      expect(
+        mockNotificationQueueService.enqueueRenewalReminders,
+      ).toHaveBeenCalledWith([
+        expect.objectContaining({
+          tenantId: 'tenant-1',
+          subscriptionId: 'sub-1',
+          memberId: 'member-1',
+          daysRemaining: 0,
+        }),
+      ]);
     });
   });
 
   describe('generatePaymentDueNotifications', () => {
     it('should generate notifications for pending payments', async () => {
-      mockPrismaService.payment.findMany.mockResolvedValue([
-        {
-          id: 'pay-1',
-          tenantId: 'tenant-1',
-          memberId: 'member-1',
-          amount: 50,
-        },
-      ]);
+      mockPrismaService.payment.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'pay-1',
+            tenantId: 'tenant-1',
+            memberId: 'member-1',
+            amount: 50,
+          },
+        ])
+        .mockResolvedValueOnce([]);
       mockPrismaService.notification.createMany.mockResolvedValue({ count: 1 });
 
       await service.generatePaymentDueNotifications();
 
-      expect(prisma.payment.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.payment.findMany).toHaveBeenCalledTimes(2);
       expect(prisma.notification.createMany).toHaveBeenCalledWith({
         data: [
           {

@@ -24,20 +24,20 @@ export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
   @Get('current')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   async getCurrentBilling(@Req() req: any) {
     const tenantId = req.tenantId || req.user?.tenantId;
     return this.billingService.getCurrent(tenantId);
   }
 
   @Get('plans')
-  @CacheTTL(86400) // 24 hours
+  @CacheTTL(86400000) // 24 hours
   async getPlans() {
     return this.billingService.getPlans();
   }
 
   @Get('invoices')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(900000) // 15 minutes
   async getInvoices(@Req() req: any, @Query() query: ListInvoicesQueryDto) {
     const tenantId = req.tenantId || req.user?.tenantId;
     return this.billingService.getInvoices(tenantId, query);

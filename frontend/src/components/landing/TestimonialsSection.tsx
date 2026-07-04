@@ -27,18 +27,18 @@ export function TestimonialsSection() {
   ];
 
   return (
-    <section className="marketing-section-paper px-[var(--spacing-lg)]">
+    <section className="bg-[var(--canvas-soft)] py-[var(--spacing-5xl)] px-[var(--spacing-lg)]">
       <div className="mx-auto w-full max-w-[1640px]">
         <div className="mx-auto max-w-xl text-center mb-[var(--spacing-section)]">
           <h2 className="text-mono-eyebrow text-[var(--mute)] mb-[var(--spacing-sm)] uppercase tracking-wider">Testimonials</h2>
-          <p className="text-display-sm text-[var(--ink)]">
+          <p className="text-display-md text-[var(--ink)]">
             Built for gym owners, loved by gym owners
           </p>
         </div>
         <div className="mx-auto mt-[var(--spacing-section)] max-w-6xl">
           <div className="grid grid-cols-1 gap-[var(--spacing-lg)] sm:grid-cols-2 lg:grid-cols-3">
             {testimonials.map((testimonial) => (
-              <div key={testimonial.author.name} className="flex flex-col justify-between feature-card-light">
+              <div key={testimonial.author.name} className="flex flex-col justify-between card-marketing">
                 <blockquote className="text-body text-[var(--ink-soft)] mb-[var(--spacing-lg)]">
                   "{testimonial.body}"
                 </blockquote>

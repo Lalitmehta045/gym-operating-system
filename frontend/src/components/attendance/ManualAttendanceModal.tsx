@@ -62,7 +62,7 @@ export function ManualAttendanceModal({ open, onOpenChange }: ManualAttendanceMo
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Member ID</label>
+            <label className="text-sm font-medium text-[var(--on-primary)]">Member ID</label>
             <Input
               placeholder="Enter Member ID (UUID)..."
               {...form.register("memberId")}
@@ -72,14 +72,14 @@ export function ManualAttendanceModal({ open, onOpenChange }: ManualAttendanceMo
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Date</label>
+            <label className="text-sm font-medium text-[var(--on-primary)]">Date</label>
             <Input type="date" {...form.register("attendanceDate")} />
             {form.formState.errors.attendanceDate && (
               <p className="text-red-500 text-sm">{form.formState.errors.attendanceDate.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Status</label>
+            <label className="text-sm font-medium text-[var(--on-primary)]">Status</label>
             <Select {...form.register("status")}>
               <option value="PRESENT">Present</option>
               <option value="ABSENT">Absent</option>
@@ -88,7 +88,7 @@ export function ManualAttendanceModal({ open, onOpenChange }: ManualAttendanceMo
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Notes (Optional)</label>
+            <label className="text-sm font-medium text-[var(--on-primary)]">Notes (Optional)</label>
             <Input
               placeholder="E.g., System glitch, missed scan"
               {...form.register("notes")}

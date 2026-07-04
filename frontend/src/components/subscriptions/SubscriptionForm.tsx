@@ -75,11 +75,11 @@ export function SubscriptionForm({ initialValues, onSubmit, isLoading, submitLab
   }, [selectedPlanId, startDate, plans, setValue])
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-white p-6 rounded-[6px] border border-[#ebebeb]">
+    <form onSubmit={handleSubmit(onSubmit)} className="bg-[var(--canvas-light)] rounded-xl shadow-sm border border-[var(--hairline-soft)] p-8 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Member *</label>
-          <Select {...register("memberId")} disabled={loadingMembers}>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Member <span className="text-red-500">*</span></label>
+          <Select {...register("memberId")} disabled={loadingMembers} className="w-full">
             <option value="">Select a member...</option>
             {members.map((member) => (
               <option key={member.id} value={member.id}>
@@ -90,9 +90,9 @@ export function SubscriptionForm({ initialValues, onSubmit, isLoading, submitLab
           {errors.memberId && <p className="text-red-500 text-sm">{errors.memberId.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Membership Plan *</label>
-          <Select {...register("membershipPlanId")} disabled={loadingPlans}>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Membership Plan <span className="text-red-500">*</span></label>
+          <Select {...register("membershipPlanId")} disabled={loadingPlans} className="w-full">
             <option value="">Select a plan...</option>
             {plans.map((plan) => (
               <option key={plan.id} value={plan.id}>
@@ -103,36 +103,57 @@ export function SubscriptionForm({ initialValues, onSubmit, isLoading, submitLab
           {errors.membershipPlanId && <p className="text-red-500 text-sm">{errors.membershipPlanId.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Start Date *</label>
-          <Input type="date" {...register("startDate")} />
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Start Date <span className="text-red-500">*</span></label>
+          <Input type="date" {...register("startDate")} className="w-full" />
           {errors.startDate && <p className="text-red-500 text-sm">{errors.startDate.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">End Date *</label>
-          <Input type="date" {...register("endDate")} />
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">End Date <span className="text-red-500">*</span></label>
+          <Input type="date" {...register("endDate")} className="w-full bg-[var(--canvas-paper)]" readOnly />
           {errors.endDate && <p className="text-red-500 text-sm">{errors.endDate.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Amount *</label>
-          <Input type="number" step="0.01" {...register("amount")} />
+        <div className="space-y-1 relative">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Amount <span className="text-red-500">*</span></label>
+          <div className="relative">
+            <span className="absolute left-4 top-2.5 text-[var(--mute)]">₹</span>
+            <Input type="number" step="0.01" {...register("amount")} className="pl-8 w-full" />
+          </div>
           {errors.amount && <p className="text-red-500 text-sm">{errors.amount.message}</p>}
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-medium text-[#171717]">Notes</label>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Payment Method</label>
+          <Select className="w-full">
+            <option value="CASH">Cash</option>
+            <option value="UPI">UPI</option>
+            <option value="CARD">Card</option>
+            <option value="BANK_TRANSFER">Bank Transfer</option>
+          </Select>
+        </div>
+
+        <div className="space-y-1 md:col-span-2">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Notes</label>
           <textarea
             {...register("notes")}
-            className="w-full flex min-h-[80px] rounded-[6px] border border-[#ebebeb] bg-transparent px-[12px] py-[8px] text-[14px] text-[#171717] placeholder:text-[#888888] focus:outline-none focus:border-[#171717] focus:ring-1 focus:ring-[#171717] transition-colors"
+            className="w-full min-h-[120px] rounded-lg border border-[var(--hairline)] px-4 py-2.5 text-[var(--on-primary)] focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 bg-[var(--canvas-light)] resize-y"
             placeholder="Any additional notes..."
           />
           {errors.notes && <p className="text-red-500 text-sm">{errors.notes.message}</p>}
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 pt-4 border-t border-[#ebebeb]">
+      <div className="flex justify-end gap-4 pt-6 mt-6 border-t border-[var(--hairline-soft)]">
+        <Button 
+          type="button" 
+          variant="secondary" 
+          onClick={() => window.history.back()}
+          disabled={isLoading}
+        >
+          Cancel
+        </Button>
         <Button type="submit" variant="primary" disabled={isLoading}>
           {isLoading ? "Saving..." : submitLabel}
         </Button>

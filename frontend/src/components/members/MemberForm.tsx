@@ -88,20 +88,20 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
   }
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="bg-[var(--canvas-light)] rounded-xl shadow-sm border border-[var(--hairline-soft)] p-8">
       {/* Profile & Contact */}
-      <div className="bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-        <h3 className="text-lg font-medium text-[#171717] mb-4">Profile & Contact</h3>
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-[var(--on-primary)] border-l-4 border-[#6C47FF] pl-3 mb-6">Profile & Contact</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Member Code</label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Member Code <span className="text-red-500">*</span></label>
             <Input {...form.register("memberCode")} placeholder="1" disabled={isEdit} />
             {form.formState.errors.memberCode && (
               <p className="text-sm text-red-500">{form.formState.errors.memberCode.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Status</label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Status</label>
             <Select {...form.register("status")} disabled={!isEdit}>
               <option value="ACTIVE">Active</option>
               <option value="PENDING">Pending</option>
@@ -109,36 +109,36 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
               <option value="EXPIRED">Expired</option>
             </Select>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">First Name</label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">First Name <span className="text-red-500">*</span></label>
             <Input {...form.register("firstName")} placeholder="John" />
             {form.formState.errors.firstName && (
               <p className="text-sm text-red-500">{form.formState.errors.firstName.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Last Name</label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Last Name <span className="text-red-500">*</span></label>
             <Input {...form.register("lastName")} placeholder="Doe" />
             {form.formState.errors.lastName && (
               <p className="text-sm text-red-500">{form.formState.errors.lastName.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Email</label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Email <span className="text-red-500">*</span></label>
             <Input type="email" {...form.register("email")} placeholder="john@example.com" />
             {form.formState.errors.email && (
               <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Phone</label>
-            <Input type="tel" {...form.register("phone")} placeholder="+1234567890" />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Phone <span className="text-red-500">*</span></label>
+            <Input type="tel" {...form.register("phone")} placeholder="+91" />
             {form.formState.errors.phone && (
               <p className="text-sm text-red-500">{form.formState.errors.phone.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Gender</label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Gender</label>
             <Select {...form.register("gender")}>
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
@@ -146,34 +146,43 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
               <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
             </Select>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Date of Birth</label>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Date of Birth</label>
             <Input type="date" {...form.register("dateOfBirth")} />
           </div>
         </div>
       </div>
 
+      <div className="border-t border-[var(--hairline-soft)] my-6"></div>
+
       {/* Emergency Contact */}
-      <div className="bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-        <h3 className="text-lg font-medium text-[#171717] mb-4">Emergency Contact</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Name</label>
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-[var(--on-primary)] border-l-4 border-[#6C47FF] pl-3 mb-6">Emergency Contact</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Emergency Contact Name <span className="text-red-500">*</span></label>
             <Input {...form.register("emergencyContactName")} placeholder="Jane Doe" />
             {form.formState.errors.emergencyContactName && (
               <p className="text-sm text-red-500">{form.formState.errors.emergencyContactName.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Phone</label>
-            <Input type="tel" {...form.register("emergencyContactPhone")} placeholder="+1234567890" />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Emergency Contact Phone <span className="text-red-500">*</span></label>
+            <Input type="tel" {...form.register("emergencyContactPhone")} placeholder="+91" />
             {form.formState.errors.emergencyContactPhone && (
               <p className="text-sm text-red-500">{form.formState.errors.emergencyContactPhone.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Relation</label>
-            <Input {...form.register("emergencyContactRelation")} placeholder="Spouse" />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Relationship <span className="text-red-500">*</span></label>
+            <Select {...form.register("emergencyContactRelation")}>
+              <option value="">Select</option>
+              <option value="Spouse">Spouse</option>
+              <option value="Parent">Parent</option>
+              <option value="Sibling">Sibling</option>
+              <option value="Friend">Friend</option>
+              <option value="Other">Other</option>
+            </Select>
             {form.formState.errors.emergencyContactRelation && (
               <p className="text-sm text-red-500">{form.formState.errors.emergencyContactRelation.message}</p>
             )}
@@ -181,72 +190,70 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
         </div>
       </div>
 
-      {/* Fitness & Medical Information */}
-      <div className="bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-        <h3 className="text-lg font-medium text-[#171717] mb-4">Fitness & Medical Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Height (cm)</label>
-            <Input type="number" step="0.01" {...form.register("heightCm")} placeholder="175" />
+      <div className="border-t border-[var(--hairline-soft)] my-6"></div>
+
+      {/* Address */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-[var(--on-primary)] border-l-4 border-[#6C47FF] pl-3 mb-6">Address</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Address Line 1</label>
+            <Input name="addressLine1" placeholder="Street address, apartment, suite, etc." />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Weight (kg)</label>
-            <Input type="number" step="0.01" {...form.register("weightKg")} placeholder="70" />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">City | State</label>
+            <Input name="cityState" placeholder="e.g. Mumbai, Maharashtra" />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Blood Group</label>
-            <Select {...form.register("bloodGroup")}>
-              <option value="">Select Blood Group</option>
-              <option value="A_POSITIVE">A+</option>
-              <option value="A_NEGATIVE">A-</option>
-              <option value="B_POSITIVE">B+</option>
-              <option value="B_NEGATIVE">B-</option>
-              <option value="AB_POSITIVE">AB+</option>
-              <option value="AB_NEGATIVE">AB-</option>
-              <option value="O_POSITIVE">O+</option>
-              <option value="O_NEGATIVE">O-</option>
-            </Select>
-          </div>
-          <div className="space-y-2 md:col-span-3">
-            <label className="text-sm font-medium text-[#171717]">Fitness Goal</label>
-            <Input {...form.register("fitnessGoal")} placeholder="Weight loss, muscle gain, etc." />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Pincode | Country</label>
+            <Input name="pincodeCountry" placeholder="e.g. 400001, India" />
           </div>
         </div>
       </div>
 
-      {/* CRM Information */}
-      <div className="bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-        <h3 className="text-lg font-medium text-[#171717] mb-4">CRM Information</h3>
+      <div className="border-t border-[var(--hairline-soft)] my-6"></div>
+
+      {/* Additional Info */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-[var(--on-primary)] border-l-4 border-[#6C47FF] pl-3 mb-6">Additional Info</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Source</label>
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Profile Photo</label>
+            <div className="border-2 border-dashed border-[var(--hairline)] rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-[var(--canvas-paper)] transition cursor-pointer bg-[var(--canvas-light)]">
+              <svg className="w-8 h-8 text-[var(--ash)] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+              <p className="text-sm font-medium text-[var(--ink-soft)]">Click to upload photo</p>
+              <p className="text-xs text-[var(--mute)] mt-1">PNG, JPG up to 5MB</p>
+            </div>
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Notes</label>
+            <textarea 
+              {...form.register("notes")} 
+              className="w-full min-h-[120px] rounded-lg border border-[var(--hairline)] px-4 py-2.5 text-[var(--on-primary)] focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 bg-[var(--canvas-light)] resize-y"
+              placeholder="Any additional notes..."
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Source</label>
             <Select {...form.register("source")}>
-              <option value="">Select Source</option>
-              <option value="WALK_IN">Walk In</option>
-              <option value="WHATSAPP">WhatsApp</option>
+              <option value="">Select</option>
+              <option value="WALK_IN">Walk-in</option>
+              <option value="REFERRAL">Referral</option>
               <option value="INSTAGRAM">Instagram</option>
               <option value="FACEBOOK">Facebook</option>
-              <option value="REFERRAL">Referral</option>
+              <option value="WHATSAPP">WhatsApp</option>
               <option value="WEBSITE">Website</option>
               <option value="OTHER">Other</option>
             </Select>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#171717]">Occupation</label>
-            <Input {...form.register("occupation")} placeholder="Software Engineer" />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-[#171717]">Notes</label>
-            <textarea 
-              {...form.register("notes")} 
-              className="flex w-full min-h-[100px] border border-[#ebebeb] bg-[#ffffff] text-[#171717] rounded-[6px] px-[12px] py-[8px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171717] resize-y"
-              placeholder="Any additional notes..."
-            />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[var(--ink-soft)] block">Join Date</label>
+            <Input type="date" />
           </div>
         </div>
       </div>
 
-      <div className="flex justify-end gap-4">
+      <div className="mt-8 flex justify-end gap-4">
         <Button 
           type="button" 
           variant="secondary" 

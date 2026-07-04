@@ -37,7 +37,7 @@ export function QRAttendanceSection() {
   }, []);
 
   return (
-    <section className="marketing-section-dark px-[var(--spacing-lg)] relative overflow-hidden">
+    <section className="bg-[var(--primary)] text-[var(--on-primary)] py-[var(--spacing-5xl)] px-[var(--spacing-lg)] relative overflow-hidden">
       <div className="mx-auto w-full max-w-[1640px] relative z-10">
         
         <div className="flex flex-col lg:flex-row items-center gap-[var(--spacing-section)]">
@@ -51,7 +51,7 @@ export function QRAttendanceSection() {
               <h2 className="text-display-md mb-[var(--spacing-md)]">
                 Lightning-Fast Check-ins
               </h2>
-              <p className="text-subtitle text-[var(--ash)] max-w-xl">
+              <p className="text-body-lg text-[var(--ash)] max-w-xl">
                 Eliminate queues at the front desk. Members use their unique dynamic QR codes for secure, contactless entry in under 1 second.
               </p>
             </div>
@@ -83,7 +83,7 @@ export function QRAttendanceSection() {
                     {step > i ? <Check className="w-5 h-5" /> : i + 1}
                   </div>
                   <div className="pt-2">
-                    <h4 className={`text-heading-sm transition-colors duration-500 ${step === i ? 'text-[var(--on-primary)]' : 'text-[var(--ash)]'}`}>
+                    <h4 className={`text-body-md-strong transition-colors duration-500 ${step === i ? 'text-[var(--on-primary)]' : 'text-[var(--ash)]'}`}>
                       {s.title}
                     </h4>
                     <p className={`text-body-sm mt-1 transition-colors duration-500 ${step === i ? 'text-[var(--ash)]' : 'text-[var(--mute)]'}`}>
@@ -150,7 +150,7 @@ export function QRAttendanceSection() {
                         <User className="w-8 h-8 text-[var(--mute)]" />
                       </div>
                       <div>
-                        <div className="text-heading-sm text-[var(--ink)]">Alex Carter</div>
+                        <div className="text-body-md-strong text-[var(--ink)]">Alex Carter</div>
                         <div className="text-meta text-[var(--mute)] font-mono mt-1">ID: 8472-9102</div>
                       </div>
                     </div>
@@ -204,7 +204,7 @@ export function QRAttendanceSection() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="text-heading-sm mb-[var(--spacing-xs)] text-[#ffffff]"
+                      className="text-body-md-strong mb-[var(--spacing-xs)] text-[#ffffff]"
                     >
                       Attendance Recorded
                     </motion.h3>

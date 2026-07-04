@@ -22,18 +22,19 @@ export default function CreateSubscriptionPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/subscriptions" className="text-[#888888] hover:text-[#171717] transition-colors">
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
+    <div className="min-h-screen bg-[var(--canvas-soft)] py-8">
+      <div className="max-w-3xl mx-auto space-y-6 px-4">
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717]">New Subscription</h1>
-          <p className="text-sm text-[#888888]">Enroll a member in a plan</p>
+          <Link href="/subscriptions" className="inline-flex items-center text-sm text-[var(--mute)] hover:text-[var(--on-primary)] mb-4 transition-colors">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Link>
+          <h1 className="text-3xl font-bold text-[var(--on-primary)]">New Subscription</h1>
+          <p className="text-sm text-[var(--mute)] mt-1">Enroll a member in a plan</p>
         </div>
-      </div>
 
-      <SubscriptionForm onSubmit={handleSubmit} isLoading={createSubscription.isPending} submitLabel="Enroll Member" />
+        <SubscriptionForm onSubmit={handleSubmit} isLoading={createSubscription.isPending} submitLabel="Enroll Member" />
+      </div>
     </div>
   )
 }

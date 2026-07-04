@@ -19,15 +19,19 @@ describe('TenantStorageService', () => {
           useValue: {
             tenantSubscription: {
               findFirst: jest.fn(),
+              findMany: jest.fn(),
             },
             media: {
               findMany: jest.fn(),
+              groupBy: jest.fn(),
             },
             tenantStorage: {
               upsert: jest.fn(),
               findUnique: jest.fn(),
               update: jest.fn(),
               findMany: jest.fn(),
+              count: jest.fn(),
+              aggregate: jest.fn(),
             },
             tenant: {
               findUnique: jest.fn(),
@@ -68,9 +72,9 @@ describe('TenantStorageService', () => {
         platformPlan: { name: 'Growth' },
       } as any);
 
-      jest.spyOn(prisma.media, 'findMany').mockResolvedValue([
-        { size: 500, type: 'IMAGE' },
-        { size: 1000, type: 'DOCUMENT' },
+      jest.spyOn(prisma.media, 'groupBy').mockResolvedValue([
+        { type: 'IMAGE', _sum: { size: 500 }, _count: { _all: 1 } },
+        { type: 'DOCUMENT', _sum: { size: 1000 }, _count: { _all: 1 } },
       ] as any);
 
       jest.spyOn(prisma.tenantStorage, 'upsert').mockResolvedValue({
@@ -80,9 +84,11 @@ describe('TenantStorageService', () => {
 
       const result = await service.calculateTenantStorage('tenant_1');
 
-      expect(prisma.media.findMany).toHaveBeenCalledWith({
+      expect(prisma.media.groupBy).toHaveBeenCalledWith({
+        by: ['type'],
         where: { tenantId: 'tenant_1', deletedAt: null },
-        select: { size: true, type: true },
+        _sum: { size: true },
+        _count: { _all: true },
       });
 
       expect(prisma.tenantStorage.upsert).toHaveBeenCalledWith(
@@ -113,7 +119,7 @@ describe('TenantStorageService', () => {
       
       // Override calculateTenantStorage inner mocks because it's called
       jest.spyOn(prisma.tenantSubscription, 'findFirst').mockResolvedValue({} as any);
-      jest.spyOn(prisma.media, 'findMany').mockResolvedValue([] as any);
+      jest.spyOn(prisma.media, 'groupBy').mockResolvedValue([] as any);
 
       await service.calculateTenantStorage('tenant_1');
 
@@ -151,6 +157,9 @@ describe('TenantStorageService', () => {
       jest.spyOn(prisma.tenant, 'findMany').mockResolvedValue([
         { id: 'tenant_1' },
         { id: 'tenant_2' },
+      ] as any).mockResolvedValueOnce([
+        { id: 'tenant_1' },
+        { id: 'tenant_2' },
       ] as any);
 
       const calcSpy = jest.spyOn(service, 'calculateTenantStorage').mockResolvedValue(null as any);
@@ -158,12 +167,80 @@ describe('TenantStorageService', () => {
       await service.recalculateAllTenants();
 
       expect(prisma.tenant.findMany).toHaveBeenCalledWith({
-        where: { isActive: true },
+        where: { isActive: true, deletedAt: null },
         select: { id: true },
+        orderBy: { id: 'asc' },
+        take: 100,
       });
       expect(calcSpy).toHaveBeenCalledTimes(2);
       expect(calcSpy).toHaveBeenCalledWith('tenant_1');
       expect(calcSpy).toHaveBeenCalledWith('tenant_2');
+    });
+  });
+
+  describe('Platform storage analytics', () => {
+    it('should batch tenant subscriptions instead of querying per storage row', async () => {
+      jest.spyOn(prisma.tenantStorage, 'findMany').mockResolvedValue([
+        {
+          tenantId: 'tenant_1',
+          usedStorageBytes: 50,
+          storageLimitBytes: 100,
+          totalFiles: 2,
+          tenant: { name: 'Gym One' },
+        },
+        {
+          tenantId: 'tenant_2',
+          usedStorageBytes: 25,
+          storageLimitBytes: 100,
+          totalFiles: 1,
+          tenant: { name: 'Gym Two' },
+        },
+      ] as any);
+      jest.spyOn(prisma.tenantStorage, 'count').mockResolvedValue(2);
+      jest.spyOn(prisma.tenantStorage, 'aggregate').mockResolvedValue({
+        _sum: {
+          usedStorageBytes: 75,
+          storageLimitBytes: 200,
+          totalFiles: 3,
+        },
+      } as any);
+      jest.spyOn(prisma.tenantSubscription, 'findMany').mockResolvedValue([
+        {
+          tenantId: 'tenant_1',
+          platformPlan: { name: 'Growth' },
+        },
+        {
+          tenantId: 'tenant_2',
+          platformPlan: { name: 'Starter' },
+        },
+      ] as any);
+
+      const result = await service.getPlatformStorage();
+
+      expect(prisma.tenantStorage.findMany).toHaveBeenCalledWith({
+        include: {
+          tenant: {
+            select: { name: true },
+          },
+        },
+        orderBy: { usedStorageBytes: 'desc' },
+        skip: 0,
+        take: 50,
+      });
+      expect(prisma.tenantSubscription.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.tenantSubscription.findMany).toHaveBeenCalledWith({
+        where: {
+          tenantId: { in: ['tenant_1', 'tenant_2'] },
+          status: { in: ['ACTIVE', 'TRIAL'] },
+        },
+        include: { platformPlan: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(result.totalUsed).toBe(75);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(50);
+      expect(result.tenants[0].planName).toBe('Growth');
     });
   });
 });

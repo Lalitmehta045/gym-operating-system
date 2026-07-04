@@ -111,7 +111,19 @@ export class PaymentsService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          tenantId: true,
+          memberId: true,
+          subscriptionId: true,
+          amount: true,
+          paymentMethod: true,
+          paymentStatus: true,
+          transactionReference: true,
+          paidAt: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
           member: {
             select: {
               id: true,

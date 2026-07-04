@@ -59,7 +59,7 @@ describe('PlatformProtectedRoute - Authorization Tests', () => {
       );
 
       // Should show loading state
-      expect(container.firstChild?.className).toContain('bg-[#fafafa]');
+      expect(container.firstChild?.className).toContain('bg-[var(--canvas-soft)]');
       expect(mockRouter.push).toHaveBeenCalledWith('/dashboard');
     });
 
@@ -123,7 +123,7 @@ describe('PlatformProtectedRoute - Authorization Tests', () => {
       );
 
       // Verify loading state is shown before redirect
-      expect(container.firstChild?.className).toContain('bg-[#fafafa]');
+      expect(container.firstChild?.className).toContain('bg-[var(--canvas-soft)]');
     });
   });
 

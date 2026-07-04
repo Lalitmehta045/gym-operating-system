@@ -7,12 +7,12 @@ export function HeroSection() {
   return (
     <section className="bg-[var(--canvas)] text-[var(--on-primary)] pt-[var(--spacing-section-lg)] pb-[var(--spacing-section-lg)] px-[var(--spacing-lg)]">
       <div className="w-full mx-auto flex flex-col items-center text-center">
-        
+
         {/* Mono Eyebrow */}
         <div className="text-mono-eyebrow text-[var(--mute)] mb-[var(--spacing-md)]">
           Gym OS Version 1.0
         </div>
-        
+
         {/* Main Heading */}
         <h1 className="text-display-mega mb-[var(--spacing-lg)] max-w-5xl">
           Structure powers intelligence
@@ -39,7 +39,7 @@ export function HeroSection() {
               <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
               <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
             </div>
-            
+
             <Image
               src="/nexup-fit-hero.png"
               alt="NexUp Fit Dashboard"

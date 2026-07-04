@@ -19,11 +19,11 @@ export default function GymAuditPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-[#171717]">Security & Audit Logs</h2>
-        <p className="text-sm text-[#888888] mt-1">Review activity and security events for your gym.</p>
+        <h2 className="text-xl font-semibold text-[var(--on-primary)]">Security & Audit Logs</h2>
+        <p className="text-sm text-[var(--ash)] mt-1">Review activity and security events for your gym.</p>
       </div>
 
-      <div className="bg-white">
+      <div className="bg-[var(--canvas-light)]">
         <AuditFiltersComponent
           filters={filters}
           onChange={(newFilters) => setFilters({ ...newFilters, skip: 0 })}

@@ -62,7 +62,7 @@ export class MembersController {
   }
 
   @Get(':id')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   async getMemberById(
     @CurrentUser() user: JwtPayload,
@@ -88,7 +88,7 @@ export class MembersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER)
   @AuditLog(AuditEntity.MEMBER, AuditAction.DELETE, '🗑️ Member Deleted')
   async deleteMember(
     @CurrentUser() user: JwtPayload,
@@ -101,7 +101,7 @@ export class MembersController {
   }
 
   @Post(':id/restore')
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER)
   async restoreMember(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) memberId: string,
@@ -110,7 +110,7 @@ export class MembersController {
   }
 
   @Get(':id/qr')
-  @CacheTTL(3600) // 1 hour
+  @CacheTTL(3600000) // 1 hour
   @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   async getQrCode(
     @CurrentUser() user: JwtPayload,
@@ -120,7 +120,7 @@ export class MembersController {
   }
 
   @Get(':id/qr/download')
-  @CacheTTL(3600) // 1 hour
+  @CacheTTL(3600000) // 1 hour
   @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   async downloadQrCode(
     @CurrentUser() user: JwtPayload,

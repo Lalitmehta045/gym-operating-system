@@ -8,10 +8,21 @@ import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import helmet from 'helmet';
 import compression from 'compression';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const logger = new Logger('Bootstrap');
+
+  // ── Raw Body Capture for Webhooks ──
+  app.use(
+    '/api/v1/webhooks/razorpay',
+    express.raw({ type: 'application/json' })
+  );
+  app.use(
+    '/webhooks/razorpay',
+    express.raw({ type: 'application/json' })
+  );
 
   const httpAdapterHost = app.get(HttpAdapterHost);
 

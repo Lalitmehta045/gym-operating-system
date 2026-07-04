@@ -89,15 +89,15 @@ export default function SubscriptionDetailsPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center p-8">
-        <span className="text-[#888888] text-sm">Loading subscription details...</span>
+        <span className="text-[var(--ash)] text-sm">Loading subscription details...</span>
       </div>
     )
   }
 
   if (!subscription) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 border border-[#ebebeb] rounded-[6px] bg-white">
-        <span className="text-[#888888] text-sm mb-4">Subscription not found.</span>
+      <div className="flex flex-col items-center justify-center p-8 border border-[var(--hairline-soft)] rounded-[6px] bg-[var(--canvas-light)]">
+        <span className="text-[var(--ash)] text-sm mb-4">Subscription not found.</span>
         <Link href="/subscriptions">
           <Button variant="secondary">Back to Subscriptions</Button>
         </Link>
@@ -112,12 +112,12 @@ export default function SubscriptionDetailsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Link href="/subscriptions" className="text-[#888888] hover:text-[#171717] transition-colors">
+          <Link href="/subscriptions" className="text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-semibold text-[#171717]">Subscription Details</h1>
-            <p className="text-sm text-[#888888]">{memberName} - {planName}</p>
+            <h1 className="text-2xl font-semibold text-[var(--on-primary)]">Subscription Details</h1>
+            <p className="text-sm text-[var(--ash)]">{memberName} - {planName}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -142,12 +142,12 @@ export default function SubscriptionDetailsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-[6px] border border-[#ebebeb] space-y-4">
-          <h2 className="text-lg font-medium text-[#171717] border-b border-[#ebebeb] pb-2">Member Information</h2>
+        <div className="bg-[var(--canvas-light)] p-6 rounded-[6px] border border-[var(--hairline-soft)] space-y-4">
+          <h2 className="text-lg font-medium text-[var(--on-primary)] border-b border-[var(--hairline-soft)] pb-2">Member Information</h2>
           <div className="grid grid-cols-2 gap-y-4">
             <div>
-              <p className="text-xs text-[#888888] uppercase tracking-wider font-mono">Name</p>
-              <p className="text-sm text-[#171717] font-medium mt-1">
+              <p className="text-xs text-[var(--ash)] uppercase tracking-wider font-mono">Name</p>
+              <p className="text-sm text-[var(--on-primary)] font-medium mt-1">
                 {subscription.member ? (
                   <Link href={`/members/${subscription.member.id}`} className="text-blue-600 hover:underline">
                     {memberName}
@@ -158,18 +158,18 @@ export default function SubscriptionDetailsPage() {
               </p>
             </div>
             <div>
-              <p className="text-xs text-[#888888] uppercase tracking-wider font-mono">Member ID</p>
-              <p className="text-sm text-[#171717] font-medium mt-1">{subscription.member?.memberCode || "-"}</p>
+              <p className="text-xs text-[var(--ash)] uppercase tracking-wider font-mono">Member ID</p>
+              <p className="text-sm text-[var(--on-primary)] font-medium mt-1">{subscription.member?.memberCode || "-"}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-[6px] border border-[#ebebeb] space-y-4">
-          <h2 className="text-lg font-medium text-[#171717] border-b border-[#ebebeb] pb-2">Plan Information</h2>
+        <div className="bg-[var(--canvas-light)] p-6 rounded-[6px] border border-[var(--hairline-soft)] space-y-4">
+          <h2 className="text-lg font-medium text-[var(--on-primary)] border-b border-[var(--hairline-soft)] pb-2">Plan Information</h2>
           <div className="grid grid-cols-2 gap-y-4">
             <div>
-              <p className="text-xs text-[#888888] uppercase tracking-wider font-mono">Plan</p>
-              <p className="text-sm text-[#171717] font-medium mt-1">
+              <p className="text-xs text-[var(--ash)] uppercase tracking-wider font-mono">Plan</p>
+              <p className="text-sm text-[var(--on-primary)] font-medium mt-1">
                 {subscription.membershipPlan ? (
                   <Link href={`/plans/${subscription.membershipPlan.id}`} className="text-blue-600 hover:underline">
                     {planName}
@@ -180,7 +180,7 @@ export default function SubscriptionDetailsPage() {
               </p>
             </div>
             <div>
-              <p className="text-xs text-[#888888] uppercase tracking-wider font-mono">Status</p>
+              <p className="text-xs text-[var(--ash)] uppercase tracking-wider font-mono">Status</p>
               <div className="mt-1">
                 {subscription.status === "ACTIVE" && (
                   <span className="inline-flex items-center px-2 py-1 rounded-[100px] bg-green-50 text-green-700 border border-green-200 text-[12px]">
@@ -193,7 +193,7 @@ export default function SubscriptionDetailsPage() {
                   </span>
                 )}
                 {subscription.status === "CANCELLED" && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-[100px] bg-gray-50 text-gray-700 border border-gray-200 text-[12px]">
+                  <span className="inline-flex items-center px-2 py-1 rounded-[100px] bg-[var(--canvas-paper)] text-[var(--ink-soft)] border border-[var(--hairline)] text-[12px]">
                     Cancelled
                   </span>
                 )}
@@ -205,27 +205,27 @@ export default function SubscriptionDetailsPage() {
               </div>
             </div>
             <div>
-              <p className="text-xs text-[#888888] uppercase tracking-wider font-mono">Start Date</p>
-              <p className="text-sm text-[#171717] font-medium mt-1">{format(new Date(subscription.startDate), "MMM d, yyyy")}</p>
+              <p className="text-xs text-[var(--ash)] uppercase tracking-wider font-mono">Start Date</p>
+              <p className="text-sm text-[var(--on-primary)] font-medium mt-1">{format(new Date(subscription.startDate), "MMM d, yyyy")}</p>
             </div>
             <div>
-              <p className="text-xs text-[#888888] uppercase tracking-wider font-mono">End Date</p>
-              <p className="text-sm text-[#171717] font-medium mt-1">{format(new Date(subscription.endDate), "MMM d, yyyy")}</p>
+              <p className="text-xs text-[var(--ash)] uppercase tracking-wider font-mono">End Date</p>
+              <p className="text-sm text-[var(--on-primary)] font-medium mt-1">{format(new Date(subscription.endDate), "MMM d, yyyy")}</p>
             </div>
             <div>
-              <p className="text-xs text-[#888888] uppercase tracking-wider font-mono">Amount</p>
-              <p className="text-sm text-[#171717] font-medium mt-1">₹{Number(subscription.amount).toLocaleString()}</p>
+              <p className="text-xs text-[var(--ash)] uppercase tracking-wider font-mono">Amount</p>
+              <p className="text-sm text-[var(--on-primary)] font-medium mt-1">₹{Number(subscription.amount).toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-xs text-[#888888] uppercase tracking-wider font-mono">Auto Renew</p>
-              <p className="text-sm text-[#171717] font-medium mt-1">{subscription.autoRenew ? "Yes" : "No"}</p>
+              <p className="text-xs text-[var(--ash)] uppercase tracking-wider font-mono">Auto Renew</p>
+              <p className="text-sm text-[var(--on-primary)] font-medium mt-1">{subscription.autoRenew ? "Yes" : "No"}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-[6px] border border-[#ebebeb] md:col-span-2 space-y-4">
-          <h2 className="text-lg font-medium text-[#171717] border-b border-[#ebebeb] pb-2">Notes</h2>
-          <p className="text-sm text-[#171717] whitespace-pre-wrap">
+        <div className="bg-[var(--canvas-light)] p-6 rounded-[6px] border border-[var(--hairline-soft)] md:col-span-2 space-y-4">
+          <h2 className="text-lg font-medium text-[var(--on-primary)] border-b border-[var(--hairline-soft)] pb-2">Notes</h2>
+          <p className="text-sm text-[var(--on-primary)] whitespace-pre-wrap">
             {subscription.notes || "No notes provided."}
           </p>
         </div>

@@ -119,7 +119,7 @@ function AnalyticsDemo() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.15 }}
-            className="flex-1 bg-white border border-slate-100 rounded-lg p-2.5 shadow-sm"
+            className="flex-1 bg-[var(--canvas-light)] border border-slate-100 rounded-lg p-2.5 shadow-sm"
           >
             <div className="flex justify-between items-start mb-1.5">
               <span className="text-[9px] font-semibold text-slate-500">{kpi.label}</span>
@@ -137,7 +137,7 @@ function AnalyticsDemo() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="flex-[2] bg-white border border-slate-100 rounded-lg p-2.5 shadow-sm flex flex-col relative overflow-hidden"
+          className="flex-[2] bg-[var(--canvas-light)] border border-slate-100 rounded-lg p-2.5 shadow-sm flex flex-col relative overflow-hidden"
         >
           <div className="text-[9px] font-semibold text-slate-700 mb-1">Revenue Growth</div>
           <div className="flex-1 relative w-full mt-1">
@@ -168,7 +168,7 @@ function AnalyticsDemo() {
             </svg>
             
             <motion.div
-              className="absolute w-2.5 h-2.5 bg-white border-2 border-[#2563EB] rounded-full shadow-sm"
+              className="absolute w-2.5 h-2.5 bg-[var(--canvas-light)] border-2 border-[#2563EB] rounded-full shadow-sm"
               style={{ top: '10%', right: '-2px', transformOrigin: 'center' }}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -181,7 +181,7 @@ function AnalyticsDemo() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.8 }}
-          className="flex-1 bg-white border border-slate-100 rounded-lg p-2.5 shadow-sm flex flex-col"
+          className="flex-1 bg-[var(--canvas-light)] border border-slate-100 rounded-lg p-2.5 shadow-sm flex flex-col"
         >
           <div className="text-[9px] font-semibold text-slate-700 mb-1">Traffic</div>
           <div className="flex-1 flex items-end justify-between gap-1 pt-1">
@@ -235,7 +235,7 @@ function ModuleVisual({ moduleId }: { moduleId: string }) {
             </div>
           </div>
           {membersData.map((member, i) => (
-            <div key={i} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            <div key={i} className="flex items-center justify-between p-3 bg-[var(--canvas-light)] border border-slate-100 rounded-lg shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center border border-slate-200">
                   <span className="text-xs font-bold text-slate-500">{member.name.charAt(0)}</span>
@@ -266,7 +266,7 @@ function ModuleVisual({ moduleId }: { moduleId: string }) {
           </div>
           <div className="flex-1 border border-teal-200/60 rounded-xl bg-teal-50/30 flex flex-col items-center justify-center relative overflow-hidden mb-3 group">
             <div className="absolute inset-0 bg-[linear-gradient(rgba(20,184,166,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(20,184,166,0.05)_1px,transparent_1px)] bg-[size:10px_10px]" />
-            <div className="h-16 w-16 border-2 border-teal-400 rounded-xl relative z-10 flex items-center justify-center bg-white shadow-sm overflow-hidden">
+            <div className="h-16 w-16 border-2 border-teal-400 rounded-xl relative z-10 flex items-center justify-center bg-[var(--canvas-light)] shadow-sm overflow-hidden">
               <div className="w-full h-0.5 bg-teal-500 shadow-[0_0_12px_2px_rgba(20,184,166,0.8)] animate-[bounce_2s_infinite]" />
               <div className="absolute inset-2 border-2 border-dashed border-teal-200 rounded-md"></div>
             </div>
@@ -274,7 +274,7 @@ function ModuleVisual({ moduleId }: { moduleId: string }) {
           </div>
           <div className="flex gap-2">
             {scans.map((scan, i) => (
-              <div key={i} className="flex-1 py-2 bg-white border border-slate-100 rounded-lg flex flex-col items-center shadow-sm">
+              <div key={i} className="flex-1 py-2 bg-[var(--canvas-light)] border border-slate-100 rounded-lg flex flex-col items-center shadow-sm">
                  <div className="text-[10px] font-bold text-slate-800">{scan.name}</div>
                  <div className="text-[9px] text-slate-500">{scan.time}</div>
               </div>
@@ -285,7 +285,7 @@ function ModuleVisual({ moduleId }: { moduleId: string }) {
     case 'qr':
       return (
         <div className="flex-1 flex flex-col items-center justify-center h-full gap-4 relative">
-          <div className="relative w-36 h-56 border-[6px] border-slate-800 rounded-[2rem] bg-white flex flex-col items-center py-4 shadow-2xl overflow-hidden z-10">
+          <div className="relative w-36 h-56 border-[6px] border-slate-800 rounded-[2rem] bg-[var(--canvas-light)] flex flex-col items-center py-4 shadow-2xl overflow-hidden z-10">
             <div className="w-12 h-1.5 bg-slate-200 rounded-full mb-6" />
             <div className="w-24 h-24 bg-slate-100 rounded-lg p-2 relative">
               <div className="w-full h-full border-[3px] border-slate-800 border-dashed rounded-sm opacity-60" />
@@ -321,7 +321,7 @@ function ModuleVisual({ moduleId }: { moduleId: string }) {
         <div className="flex-1 flex flex-col h-full gap-3">
           <div className="text-sm font-semibold text-slate-800 mb-1">Plan Management</div>
           {plans.map((plan, i) => (
-            <div key={i} className={`p-4 rounded-xl border ${plan.active ? 'border-blue-500 bg-blue-50/30 shadow-sm' : 'border-slate-100 bg-white'}`}>
+            <div key={i} className={`p-4 rounded-xl border ${plan.active ? 'border-blue-500 bg-blue-50/30 shadow-sm' : 'border-slate-100 bg-[var(--canvas-light)]'}`}>
               <div className="flex justify-between items-center mb-3">
                 <span className="font-bold text-slate-800 text-sm">{plan.name}</span>
                 <span className="font-bold text-blue-600 text-sm">{plan.price}</span>
@@ -359,18 +359,18 @@ function ModuleVisual({ moduleId }: { moduleId: string }) {
       return (
         <div className="flex-1 flex flex-col gap-3 h-full">
           <div className="flex gap-3 mb-1">
-            <div className="flex-1 bg-white border border-slate-100 rounded-lg p-3 shadow-sm relative overflow-hidden">
+            <div className="flex-1 bg-[var(--canvas-light)] border border-slate-100 rounded-lg p-3 shadow-sm relative overflow-hidden">
               <div className="text-[10px] font-medium text-slate-500 mb-1">Monthly Revenue</div>
               <div className="text-lg font-bold text-slate-800">$12,450</div>
               <div className="absolute top-0 right-0 p-2 text-emerald-500 text-[10px] font-bold bg-emerald-50 rounded-bl-lg">+14%</div>
             </div>
-            <div className="flex-1 bg-white border border-slate-100 rounded-lg p-3 shadow-sm relative overflow-hidden">
+            <div className="flex-1 bg-[var(--canvas-light)] border border-slate-100 rounded-lg p-3 shadow-sm relative overflow-hidden">
               <div className="text-[10px] font-medium text-slate-500 mb-1">Outstanding</div>
               <div className="text-lg font-bold text-amber-600">$840</div>
               <div className="absolute top-0 right-0 p-2 text-amber-600 text-[10px] font-bold bg-amber-50 rounded-bl-lg">5 Invoices</div>
             </div>
           </div>
-          <div className="flex-1 bg-white border border-slate-100 rounded-lg shadow-sm flex flex-col overflow-hidden">
+          <div className="flex-1 bg-[var(--canvas-light)] border border-slate-100 rounded-lg shadow-sm flex flex-col overflow-hidden">
             <div className="flex border-b border-slate-100 p-2 gap-2 bg-slate-50/50">
               <div className="text-[9px] font-semibold text-slate-500 w-1/3">INVOICE</div>
               <div className="text-[9px] font-semibold text-slate-500 w-1/3 text-right">AMOUNT</div>
@@ -408,7 +408,7 @@ function ModuleVisual({ moduleId }: { moduleId: string }) {
               initial={{ opacity: 0, x: -10, y: 10 }}
               animate={{ opacity: 1, x: 0, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="relative self-start max-w-[85%] bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none text-[11px] text-slate-700 shadow-sm"
+              className="relative self-start max-w-[85%] bg-[var(--canvas-light)] border border-slate-200 p-3 rounded-2xl rounded-tl-none text-[11px] text-slate-700 shadow-sm"
             >
               Hi Mike, your Pro Annual plan expires in 3 days. Tap to renew! 🚀
             </motion.div>
@@ -456,7 +456,7 @@ function ModuleVisual({ moduleId }: { moduleId: string }) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.15 }}
-                className="flex justify-between items-center p-3.5 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className="flex justify-between items-center p-3.5 bg-[var(--canvas-light)] border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div>
                   <div className="text-xs font-bold text-slate-800">{b.name}</div>
@@ -495,16 +495,16 @@ export function ModulesSection() {
   }, []);
 
   return (
-    <section id="features" className="marketing-section-light px-[var(--spacing-lg)] relative">
+    <section id="features" className="bg-[var(--canvas)] py-[var(--spacing-5xl)] px-[var(--spacing-lg)] relative">
       <div className="mx-auto w-full max-w-[1640px]">
         
         <div className="mb-[var(--spacing-section)] max-w-2xl">
-          <div className="text-mono-eyebrow text-[var(--mute)] mb-[var(--spacing-sm)] uppercase tracking-wider">Features</div>
+          <div className="text-caption-mono text-[var(--mute)] mb-[var(--spacing-sm)] uppercase tracking-wider">Features</div>
           <h2 className="text-display-lg text-[var(--ink)] mb-[var(--spacing-md)]">
             Everything you need.<br/>
             <span className="text-[var(--mute)]">Nothing you don't.</span>
           </h2>
-          <p className="text-subtitle text-[var(--ink-soft)]">
+          <p className="text-body-lg text-[var(--ink-soft)]">
             A comprehensive suite of tools designed to scale your fitness business.
           </p>
         </div>
@@ -521,7 +521,7 @@ export function ModulesSection() {
                   onMouseEnter={() => setActiveFeature(feature.id)}
                   className={`relative p-[var(--spacing-md)] rounded-[var(--radius-marketing)] cursor-pointer transition-all duration-300 ${
                     isActive 
-                      ? 'feature-card-light shadow-md' 
+                      ? 'card-marketing shadow-md' 
                       : 'hover:bg-[var(--canvas-paper)] border border-transparent'
                   }`}
                 >
@@ -540,7 +540,7 @@ export function ModulesSection() {
                         <feature.icon className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className={`text-heading-sm transition-colors ${isActive ? 'text-[var(--ink)]' : 'text-[var(--ink-soft)]'}`}>
+                        <h3 className={`text-body-md-strong transition-colors ${isActive ? 'text-[var(--ink)]' : 'text-[var(--ink-soft)]'}`}>
                           {feature.title}
                         </h3>
                       </div>

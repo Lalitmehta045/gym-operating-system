@@ -7,6 +7,7 @@ import {
   Req,
   Res,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
@@ -17,6 +18,8 @@ import { Role } from '../../../generated/prisma/client.js';
 
 @Controller('api/v1/whatsapp')
 export class WhatsappController {
+  private readonly logger = new Logger(WhatsappController.name);
+
   constructor(private readonly whatsappService: WhatsappService) {}
 
   @SkipThrottle()
@@ -48,7 +51,7 @@ export class WhatsappController {
       await this.whatsappService.processWebhook(body);
     } catch (error) {
       // Log error but don't fail the request since we already responded 200 OK
-      console.error('Error processing WhatsApp webhook:', error);
+      this.logger.error('Error processing WhatsApp webhook:', error);
     }
   }
 

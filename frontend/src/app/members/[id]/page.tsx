@@ -30,7 +30,7 @@ export default function MemberDetailsPage() {
             Back
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold text-[#171717]">Member Details</h1>
+            <h1 className="text-2xl font-semibold text-[var(--on-primary)]">Member Details</h1>
           </div>
         </div>
         <div className="flex items-center gap-3">

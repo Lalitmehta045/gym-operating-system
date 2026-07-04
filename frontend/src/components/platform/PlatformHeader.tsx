@@ -14,10 +14,10 @@ export function PlatformHeader({
   const { user, logout } = useAuth()
 
   return (
-    <header className={cn("sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-[#ebebeb] bg-[#ffffff] px-[24px] sm:gap-x-6", className)}>
+    <header className={cn("sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-[var(--hairline-soft)] bg-[var(--canvas-light)] px-[24px] sm:gap-x-6", className)}>
       <button
         type="button"
-        className="-m-2.5 p-2.5 text-[#171717] md:hidden"
+        className="-m-2.5 p-2.5 text-[var(--on-primary)] md:hidden"
         onClick={onMenuClick}
       >
         <span className="sr-only">Open sidebar</span>
@@ -33,7 +33,7 @@ export function PlatformHeader({
         </div>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           <div className="flex items-center gap-x-4">
-            <span className="hidden text-[14px] font-medium text-[#171717] lg:block">
+            <span className="hidden text-[14px] font-medium text-[var(--on-primary)] lg:block">
               {user?.email || "Platform Admin"}
             </span>
             <Button variant="ghost" size="icon" onClick={() => logout()} title="Logout">

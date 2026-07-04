@@ -35,23 +35,23 @@ export function FAQSection() {
   };
 
   return (
-    <section id="faq" className="marketing-section-paper px-[var(--spacing-lg)]">
+    <section id="faq" className="bg-[var(--canvas-soft)] py-[var(--spacing-5xl)] px-[var(--spacing-lg)]">
       <div className="mx-auto w-full max-w-[1640px]">
         <div className="mx-auto max-w-4xl border-t border-[var(--hairline)] pt-[var(--spacing-section)]">
           <div className="text-center mb-[var(--spacing-section)]">
             <h2 className="text-display-md text-[var(--ink)] mb-[var(--spacing-md)]">Frequently asked questions</h2>
-            <p className="text-subtitle text-[var(--ink-soft)]">Everything you need to know about NexUp Fit.</p>
+            <p className="text-body-lg text-[var(--ink-soft)]">Everything you need to know about NexUp Fit.</p>
           </div>
           
           <dl className="mt-10 space-y-4">
             {faqs.map((faq, index) => (
-              <div key={faq.question} className="feature-card-light">
+              <div key={faq.question} className="card-marketing">
                 <dt>
                   <button
                     onClick={() => toggleFaq(index)}
                     className="flex w-full items-start justify-between text-left text-[var(--ink)]"
                   >
-                    <span className="text-heading-sm">{faq.question}</span>
+                    <span className="text-body-md-strong">{faq.question}</span>
                     <span className="ml-6 flex h-7 items-center">
                       <ChevronDown
                         className={`h-6 w-6 text-[var(--mute)] transform transition-transform duration-200 ${

@@ -45,12 +45,17 @@ export function CheckInForm() {
   }
 
   return (
-    <div className="mx-auto max-w-md w-full space-y-6 rounded-[8px] border border-[#ebebeb] bg-white p-6 shadow-sm">
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-[#171717]">Member Check-In</h2>
+    <div className="mx-auto max-w-[600px] w-full bg-[var(--canvas-light)] rounded-xl shadow-md p-8 border border-[var(--hairline-soft)]">
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="bg-purple-100 p-2 rounded-lg text-[#6C47FF]">
+            <UserCheck className="w-5 h-5" />
+          </div>
+          <h2 className="text-xl font-bold text-[var(--on-primary)]">Member Check-In</h2>
+        </div>
         
         {feedback && (
-          <div className={`p-3 text-sm rounded-[6px] ${feedback.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          <div className={`p-3 text-sm rounded-lg ${feedback.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
             {feedback.message}
           </div>
         )}
@@ -60,43 +65,50 @@ export function CheckInForm() {
             placeholder="Search member by name or code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-11 h-[52px] rounded-xl border-[var(--hairline)] text-base"
           />
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-4 top-4 h-5 w-5 text-[var(--ash)]" />
         </div>
 
         {search.length >= 2 && (
-          <div className="mt-2 rounded-[6px] border border-[#ebebeb] divide-y divide-[#ebebeb] max-h-[200px] overflow-y-auto">
+          <div className="mt-2 rounded-xl border border-[var(--hairline)] divide-y divide-gray-100 max-h-[240px] overflow-y-auto bg-[var(--canvas-light)] shadow-sm">
             {isSearching ? (
-              <div className="p-3 text-sm text-[#888888] text-center">Searching...</div>
+              <div className="p-4 text-sm text-[var(--mute)] text-center">Searching...</div>
             ) : membersData?.data && membersData.data.length > 0 ? (
               membersData.data.map(member => (
                 <div 
                   key={member.id} 
-                  className={`flex cursor-pointer items-center justify-between p-3 transition-colors hover:bg-[#fafafa] ${selectedMemberId === member.id ? 'bg-[#fafafa] border-l-2 border-l-[#171717]' : ''}`}
+                  className={`flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-[var(--canvas-paper)] ${selectedMemberId === member.id ? 'bg-purple-50/50 border-l-4 border-[#6C47FF]' : 'border-l-4 border-transparent'}`}
                   onClick={() => handleSelectMember(member.id)}
                 >
-                  <div>
-                    <p className="font-medium text-[#171717]">{member.firstName} {member.lastName}</p>
-                    <p className="text-xs text-[#888888]">{member.memberCode} • {member.phone}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-purple-100 text-[#6C47FF] flex items-center justify-center font-bold text-sm">
+                      {member.firstName.charAt(0)}{member.lastName.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-[var(--on-primary)]">{member.firstName} {member.lastName}</p>
+                      <p className="text-sm text-[var(--mute)]">{member.email || `${member.memberCode} • ${member.phone}`}</p>
+                    </div>
                   </div>
-                  {selectedMemberId === member.id && (
-                    <UserCheck className="h-5 w-5 text-[#171717]" />
-                  )}
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">Active</span>
+                    <span className="text-xs text-[var(--mute)]">General Plan</span>
+                  </div>
                 </div>
               ))
             ) : (
-              <div className="p-3 text-sm text-[#888888] text-center">No members found.</div>
+              <div className="p-4 text-sm text-[var(--mute)] text-center">No members found.</div>
             )}
           </div>
         )}
 
         <Button 
           variant="primary" 
-          className="w-full" 
+          className={`w-full h-[48px] rounded-xl text-base font-medium flex items-center justify-center gap-2 ${!selectedMemberId ? 'bg-[var(--canvas-paper)] text-[var(--ash)] hover:bg-[var(--canvas-paper)] border-none' : 'bg-[#6C47FF] text-white hover:bg-purple-700'}`}
           disabled={!selectedMemberId || checkInMutation.isPending}
           onClick={handleCheckIn}
         >
+          <UserCheck className="w-5 h-5" />
           {checkInMutation.isPending ? 'Checking in...' : 'Check In'}
         </Button>
       </div>

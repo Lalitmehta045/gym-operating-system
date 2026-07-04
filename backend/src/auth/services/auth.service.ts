@@ -156,8 +156,20 @@ export class AuthService {
         email: dto.email,
         deletedAt: null,
       },
-      include: {
-        tenant: true,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        tenantId: true,
+        passwordHash: true,
+        isActive: true,
+        lockedUntil: true,
+        failedLoginAttempts: true,
+        tenant: {
+          select: { status: true },
+        },
       },
     });
 
@@ -239,8 +251,24 @@ export class AuthService {
       where: {
         tokenHash,
       },
-      include: {
-        user: true,
+      select: {
+        id: true,
+        revokedAt: true,
+        familyId: true,
+        userId: true,
+        expiresAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            tenantId: true,
+            isActive: true,
+            deletedAt: true,
+          },
+        },
       },
     });
 
@@ -409,6 +437,7 @@ export class AuthService {
         deletedAt: null,
         isActive: true,
       },
+      select: { id: true, email: true },
     });
 
     // Always return the same message to prevent email enumeration
@@ -522,6 +551,7 @@ export class AuthService {
         passwordResetExpiresAt: { gt: new Date() },
         deletedAt: null,
       },
+      select: { id: true, email: true },
     });
 
     if (!user) {

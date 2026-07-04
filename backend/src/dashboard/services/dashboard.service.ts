@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { DashboardQueryDto } from '../dto/dashboard-query.dto.js';
 import {
@@ -20,13 +22,29 @@ import {
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  private pendingDashboardQueries = new Map<string, Promise<DashboardOverviewDto>>();
+
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
   async getOverview(
     tenantId: string,
     query: DashboardQueryDto,
   ): Promise<DashboardOverviewDto> {
     const { dateFrom, dateTo } = query;
+    const cacheKey = `dashboard:overview:${tenantId}:${dateFrom || 'all'}:${dateTo || 'all'}`;
+
+    const cached = await this.cacheManager.get<DashboardOverviewDto>(cacheKey);
+    if (cached) return cached;
+
+    if (this.pendingDashboardQueries.has(cacheKey)) {
+      return this.pendingDashboardQueries.get(cacheKey)!;
+    }
+
+    const fetchPromise = (async () => {
+      try {
     const dateFilter = this.getDateFilter(dateFrom, dateTo);
 
     const today = new Date();
@@ -140,7 +158,7 @@ export class DashboardService {
     const totalRevenue = Number(totalRevenueAgg._sum?.amount || 0);
     const monthlyRevenue = Number(monthlyRevenueAgg._sum?.amount || 0);
 
-    return {
+    const result = {
       totalMembers,
       activeMembers,
       inactiveMembers,
@@ -153,6 +171,19 @@ export class DashboardService {
       monthlyRevenue,
       expiringMemberships,
     };
+
+        await this.cacheManager.set(cacheKey, result, 60_000);
+        this.pendingDashboardQueries.delete(cacheKey);
+
+        return result;
+      } catch (error) {
+        this.pendingDashboardQueries.delete(cacheKey);
+        throw error;
+      }
+    })();
+
+    this.pendingDashboardQueries.set(cacheKey, fetchPromise);
+    return fetchPromise;
   }
 
   async getMembersAnalytics(
@@ -220,16 +251,54 @@ export class DashboardService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const attGroups = await this.prisma.attendance.groupBy({
-      by: ['status'],
-      where: {
-        tenantId,
-        deletedAt: null,
-        attendanceDate: { gte: today, lt: tomorrow },
-      },
-      _count: { _all: true },
-      orderBy: { status: 'asc' },
-    });
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+    const [attGroups, todayAttendances, monthAttendances, lastMonthCount] = await Promise.all([
+      this.prisma.attendance.groupBy({
+        by: ['status'],
+        where: {
+          tenantId,
+          deletedAt: null,
+          attendanceDate: { gte: today, lt: tomorrow },
+        },
+        _count: { _all: true },
+        orderBy: { status: 'asc' },
+      }),
+      this.prisma.attendance.findMany({
+        where: {
+          tenantId,
+          deletedAt: null,
+          attendanceDate: { gte: today, lt: tomorrow },
+        },
+        select: { checkInAt: true, checkOutAt: true }
+      }),
+      this.prisma.attendance.findMany({
+        where: {
+          tenantId,
+          deletedAt: null,
+          attendanceDate: { gte: startOfMonth, lt: startOfNextMonth },
+        },
+        include: {
+          member: {
+            include: {
+              subscriptions: {
+                where: { status: 'ACTIVE' },
+                include: { membershipPlan: true }
+              }
+            }
+          }
+        }
+      }),
+      this.prisma.attendance.count({
+        where: {
+          tenantId,
+          deletedAt: null,
+          attendanceDate: { gte: startOfLastMonth, lt: startOfMonth },
+        }
+      })
+    ]);
 
     let todayPresent = 0;
     let todayAbsent = 0;
@@ -254,6 +323,56 @@ export class DashboardService {
     const attendanceRate =
       totalToday > 0 ? ((todayPresent + todayLate) / totalToday) * 100 : 0;
 
+    // Calculate hourly data (cumulative)
+    const timeBuckets = [
+      { label: '6 AM', hour: 6 },
+      { label: '8 AM', hour: 8 },
+      { label: '10 AM', hour: 10 },
+      { label: '12 PM', hour: 12 },
+      { label: '2 PM', hour: 14 },
+      { label: '4 PM', hour: 16 },
+      { label: '6 PM', hour: 18 },
+      { label: '8 PM', hour: 20 },
+      { label: '10 PM', hour: 22 },
+    ];
+
+    const hourlyData = timeBuckets.map(bucket => {
+      const bucketTime = new Date(today);
+      bucketTime.setHours(bucket.hour, 0, 0, 0);
+      
+      const checkIns = todayAttendances.filter(a => a.checkInAt <= bucketTime).length;
+      const checkOuts = todayAttendances.filter(a => a.checkOutAt && a.checkOutAt <= bucketTime).length;
+      
+      return {
+        time: bucket.label,
+        checkIns,
+        checkOuts
+      };
+    });
+
+    // Calculate plan data
+    const planCounts: Record<string, number> = {};
+    for (const att of monthAttendances) {
+      const planName = att.member.subscriptions[0]?.membershipPlan?.name || 'No Plan';
+      planCounts[planName] = (planCounts[planName] || 0) + 1;
+    }
+
+    const colors = ['#6C47FF', '#3B82F6', '#F59E0B', '#22C55E', '#EC4899', '#8B5CF6'];
+    const planData = Object.entries(planCounts).map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length]
+    })).sort((a, b) => b.value - a.value);
+
+    // Calculate growth
+    const totalCheckInsThisMonth = monthAttendances.length;
+    let growthPercentage = 0;
+    if (lastMonthCount > 0) {
+      growthPercentage = ((totalCheckInsThisMonth - lastMonthCount) / lastMonthCount) * 100;
+    } else if (totalCheckInsThisMonth > 0) {
+      growthPercentage = 100;
+    }
+
     return {
       todayPresent,
       todayAbsent,
@@ -261,6 +380,10 @@ export class DashboardService {
       todayMissed,
       attendanceRate: Math.round(attendanceRate * 100) / 100,
       monthlyAttendanceTrend: [],
+      hourlyData,
+      planData,
+      totalCheckInsThisMonth,
+      growthPercentage: Math.round(growthPercentage * 10) / 10,
     };
   }
 
@@ -430,6 +553,11 @@ export class DashboardService {
     query: DashboardQueryDto,
   ): Promise<DashboardTopMemberDto[]> {
     const { dateFrom, dateTo } = query;
+    const cacheKey = `dashboard:top-members:${tenantId}:${dateFrom || 'all'}:${dateTo || 'all'}`;
+
+    const cached = await this.cacheManager.get<DashboardTopMemberDto[]>(cacheKey);
+    if (cached) return cached;
+
     const attendanceDateFilter = this.getAttendanceDateSqlFilter(
       dateFrom,
       dateTo,
@@ -454,6 +582,7 @@ export class DashboardService {
       LIMIT 10
     `;
 
+    await this.cacheManager.set(cacheKey, topMembers, 300_000);
     return topMembers;
   }
 

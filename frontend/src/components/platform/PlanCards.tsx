@@ -11,7 +11,7 @@ export function PlanCards() {
     return (
       <div className="grid gap-6 md:grid-cols-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-[400px] rounded-xl border border-[#ebebeb] bg-white animate-pulse" />
+          <div key={i} className="h-[400px] rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] animate-pulse" />
         ))}
       </div>
     )
@@ -22,17 +22,17 @@ export function PlanCards() {
       {data.map((plan) => (
         <div 
           key={plan.id} 
-          className="relative flex flex-col rounded-xl border border-[#ebebeb] bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+          className="relative flex flex-col rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-6 shadow-sm transition-shadow hover:shadow-md"
         >
           <div className="absolute right-4 top-4">
-            <button className="text-[#888888] hover:text-[#171717]">
+            <button className="text-[var(--ash)] hover:text-[var(--on-primary)]">
               <MoreVertical className="h-5 w-5" />
             </button>
           </div>
           
           <div className="mb-6">
-            <h3 className="text-[18px] font-semibold text-[#171717]">{plan.name}</h3>
-            <div className="mt-4 flex items-baseline text-[36px] font-bold text-[#171717]">
+            <h3 className="text-[18px] font-semibold text-[var(--on-primary)]">{plan.name}</h3>
+            <div className="mt-4 flex items-baseline text-[36px] font-bold text-[var(--on-primary)]">
               ${plan.price}
               <span className="ml-1 text-[14px] font-medium text-[#666666]">/mo</span>
             </div>
@@ -44,7 +44,7 @@ export function PlanCards() {
           <ul className="mb-8 flex-1 space-y-4">
             {plan.features.map((feature, i) => (
               <li key={i} className="flex items-start">
-                <CheckCircle2 className="mr-3 h-5 w-5 flex-shrink-0 text-[#171717]" />
+                <CheckCircle2 className="mr-3 h-5 w-5 flex-shrink-0 text-[var(--on-primary)]" />
                 <span className="text-[14px] text-[#666666]">{feature}</span>
               </li>
             ))}

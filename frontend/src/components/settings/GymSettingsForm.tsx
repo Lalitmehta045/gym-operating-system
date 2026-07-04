@@ -85,7 +85,7 @@ export function GymSettingsForm() {
   };
 
   if (isLoading) {
-    return <div className="text-[14px] text-[#4d4d4d]">Loading gym settings...</div>;
+    return <div className="text-[14px] text-[var(--mute)]">Loading gym settings...</div>;
   }
 
   if (error) {
@@ -101,24 +101,24 @@ export function GymSettingsForm() {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
       <div className="space-y-4">
-        <h3 className="text-[16px] font-medium text-[#171717] border-b border-[#ebebeb] pb-2">
+        <h3 className="text-[16px] font-medium text-[var(--on-primary)] border-b border-[var(--hairline-soft)] pb-2">
           General Information
         </h3>
 
         <div className="space-y-2">
-          <label className="text-[14px] font-medium text-[#171717]">Gym Name</label>
-          <Input value={gymProfile?.name || ""} readOnly className="bg-[#fafafa] cursor-not-allowed" />
+          <label className="text-[14px] font-medium text-[var(--on-primary)]">Gym Name</label>
+          <Input value={gymProfile?.name || ""} readOnly className="bg-[var(--canvas-soft)] cursor-not-allowed" />
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="gymDescription" className="text-[14px] font-medium text-[#171717]">
+          <label htmlFor="gymDescription" className="text-[14px] font-medium text-[var(--on-primary)]">
             Description
           </label>
           <textarea
             id="gymDescription"
             {...form.register("gymDescription")}
             rows={3}
-            className="flex w-full rounded-[6px] border border-[#ebebeb] bg-[#ffffff] px-[12px] py-[8px] text-[14px] text-[#171717] transition-colors placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171717]"
+            className="flex w-full rounded-[6px] border border-[var(--hairline-soft)] bg-[var(--canvas-light)] px-[12px] py-[8px] text-[14px] text-[var(--on-primary)] transition-colors placeholder:text-[var(--ash)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171717]"
             placeholder="A brief description of your gym..."
           />
           {form.formState.errors.gymDescription && (
@@ -128,7 +128,7 @@ export function GymSettingsForm() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label htmlFor="gymWebsite" className="text-[14px] font-medium text-[#171717]">
+            <label htmlFor="gymWebsite" className="text-[14px] font-medium text-[var(--on-primary)]">
               Website
             </label>
             <Input
@@ -142,7 +142,7 @@ export function GymSettingsForm() {
             )}
           </div>
           <div className="space-y-2">
-            <label htmlFor="gstNumber" className="text-[14px] font-medium text-[#171717]">
+            <label htmlFor="gstNumber" className="text-[14px] font-medium text-[var(--on-primary)]">
               GST Number
             </label>
             <Input id="gstNumber" {...form.register("gstNumber")} placeholder="22AAAAA0000A1Z5" />
@@ -154,24 +154,24 @@ export function GymSettingsForm() {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-[16px] font-medium text-[#171717] border-b border-[#ebebeb] pb-2">Location</h3>
+        <h3 className="text-[16px] font-medium text-[var(--on-primary)] border-b border-[var(--hairline-soft)] pb-2">Location</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <label htmlFor="country" className="text-[14px] font-medium text-[#171717]">Country</label>
+            <label htmlFor="country" className="text-[14px] font-medium text-[var(--on-primary)]">Country</label>
             <Input id="country" {...form.register("country")} />
             {form.formState.errors.country && (
               <p className="text-[12px] text-red-600">{form.formState.errors.country.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <label htmlFor="state" className="text-[14px] font-medium text-[#171717]">State / Province</label>
+            <label htmlFor="state" className="text-[14px] font-medium text-[var(--on-primary)]">State / Province</label>
             <Input id="state" {...form.register("state")} />
             {form.formState.errors.state && (
               <p className="text-[12px] text-red-600">{form.formState.errors.state.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <label htmlFor="city" className="text-[14px] font-medium text-[#171717]">City</label>
+            <label htmlFor="city" className="text-[14px] font-medium text-[var(--on-primary)]">City</label>
             <Input id="city" {...form.register("city")} />
             {form.formState.errors.city && (
               <p className="text-[12px] text-red-600">{form.formState.errors.city.message}</p>
@@ -181,14 +181,14 @@ export function GymSettingsForm() {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-[16px] font-medium text-[#171717] border-b border-[#ebebeb] pb-2">Localization</h3>
+        <h3 className="text-[16px] font-medium text-[var(--on-primary)] border-b border-[var(--hairline-soft)] pb-2">Localization</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label htmlFor="currency" className="text-[14px] font-medium text-[#171717]">Currency Code</label>
+            <label htmlFor="currency" className="text-[14px] font-medium text-[var(--on-primary)]">Currency Code</label>
             <select
               id="currency"
               {...form.register("currency")}
-              className="flex w-full rounded-[6px] border border-[#ebebeb] bg-[#ffffff] px-[12px] py-[8px] text-[14px] text-[#171717] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171717]"
+              className="flex w-full rounded-[6px] border border-[var(--hairline-soft)] bg-[var(--canvas-light)] px-[12px] py-[8px] text-[14px] text-[var(--on-primary)] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171717]"
             >
               <option value="INR">INR (₹)</option>
               <option value="USD">USD ($)</option>
@@ -203,7 +203,7 @@ export function GymSettingsForm() {
             )}
           </div>
           <div className="space-y-2">
-            <label htmlFor="timezone" className="text-[14px] font-medium text-[#171717]">Timezone</label>
+            <label htmlFor="timezone" className="text-[14px] font-medium text-[var(--on-primary)]">Timezone</label>
             <Input id="timezone" {...form.register("timezone")} placeholder="Asia/Kolkata" />
             {form.formState.errors.timezone && (
               <p className="text-[12px] text-red-600">{form.formState.errors.timezone.message}</p>
@@ -212,7 +212,7 @@ export function GymSettingsForm() {
         </div>
       </div>
 
-      <div className="pt-4 flex justify-end border-t border-[#ebebeb] mt-8 pt-6">
+      <div className="pt-4 flex justify-end border-t border-[var(--hairline-soft)] mt-8 pt-6">
         <Button type="submit" disabled={updateGymProfile.isPending || isLoading} variant="primary">
           {updateGymProfile.isPending ? "Saving..." : "Save Gym Settings"}
         </Button>

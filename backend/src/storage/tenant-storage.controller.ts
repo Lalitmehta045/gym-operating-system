@@ -13,7 +13,7 @@ export class TenantStorageController {
   @Roles('OWNER', 'MANAGER', 'SUPER_ADMIN')
   async getCurrentStorage(@Req() req: any) {
     const tenantId = req.user.tenantId;
-    return this.storageService.calculateTenantStorage(tenantId);
+    return this.storageService.getTenantStorage(tenantId);
   }
 
   @Get('usage')

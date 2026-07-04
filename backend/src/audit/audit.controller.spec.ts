@@ -15,6 +15,7 @@ describe('AuditController', () => {
 
   const mockUser = {
     id: 'user-1',
+    sub: 'user-1',
     tenantId: 'tenant-1',
     email: 'test@example.com',
     role: Role.OWNER,
@@ -23,7 +24,7 @@ describe('AuditController', () => {
   const mockSuperAdmin = {
     ...mockUser,
     role: Role.SUPER_ADMIN,
-    tenantId: undefined, // Super admin might not have tenantId
+    tenantId: null, // Super admin might not have tenantId
   };
 
   beforeEach(async () => {

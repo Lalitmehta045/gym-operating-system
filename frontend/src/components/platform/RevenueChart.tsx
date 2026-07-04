@@ -7,7 +7,7 @@ export function RevenueChart() {
   const { data, isLoading } = usePlatformRevenue()
 
   if (isLoading || !data) {
-    return <div className="h-[350px] rounded-xl border border-[#ebebeb] bg-white animate-pulse" />
+    return <div className="h-[350px] rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] animate-pulse" />
   }
 
   const formatCurrency = (value: number) => {
@@ -27,9 +27,9 @@ export function RevenueChart() {
   const colors = ['#171717', '#666666', '#a3a3a3']
 
   return (
-    <div className="rounded-xl border border-[#ebebeb] bg-white p-6">
+    <div className="rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-6">
       <div className="mb-6">
-        <h3 className="text-[16px] font-medium text-[#171717]">Revenue By Plan</h3>
+        <h3 className="text-[16px] font-medium text-[var(--on-primary)]">Revenue By Plan</h3>
         <p className="text-[14px] text-[#666666]">MRR: {formatCurrency(data.mrr)} | ARR: {formatCurrency(data.arr)}</p>
       </div>
 

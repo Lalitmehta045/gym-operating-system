@@ -2,9 +2,10 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Plus, AlertCircle } from "lucide-react"
+import { Plus, Clock } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { SubscriptionTable } from "@/components/subscriptions/SubscriptionTable"
+import { SubscriptionDashboardCards } from "@/components/subscriptions/SubscriptionDashboardCards"
 import { useSubscriptions, useRenewSubscription, useDeleteSubscription } from "@/hooks/api/useSubscriptions"
 import { useRazorpay } from "@/hooks/api/useRazorpay"
 
@@ -81,28 +82,33 @@ export default function SubscriptionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6 pb-8">
+      {/* PAGE HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#171717]">Subscriptions</h1>
-          <p className="text-sm text-[#888888]">Manage active, pending, and expired subscriptions</p>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[32px] font-bold text-[var(--on-primary)] leading-none">Subscriptions</h1>
+          <p className="text-sm text-[var(--mute)]">Manage active, pending, and expired subscriptions</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           <Link href="/subscriptions/expiring">
-            <Button variant="secondary" className="text-yellow-600 border-yellow-200 hover:bg-yellow-50">
-              <AlertCircle className="mr-2 h-4 w-4" />
+            <button className="flex items-center gap-2 px-4 py-2 bg-[var(--canvas-light)] border border-orange-200 text-orange-500 hover:bg-orange-50 rounded-lg text-sm font-medium transition-colors shadow-sm">
+              <Clock className="w-4 h-4" />
               Expiring Soon
-            </Button>
+            </button>
           </Link>
           <Link href="/subscriptions/new">
-            <Button variant="primary">
-              <Plus className="mr-2 h-4 w-4" />
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-[#6C47FF] hover:bg-[#5b3ce0] text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+              <Plus className="w-4 h-4" />
               New Subscription
-            </Button>
+            </button>
           </Link>
         </div>
       </div>
 
+      {/* METRIC CARDS */}
+      <SubscriptionDashboardCards />
+
+      {/* SEARCH/FILTER BAR & TABLE */}
       <SubscriptionTable
         subscriptions={data?.data || []}
         isLoading={isLoading}

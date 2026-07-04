@@ -3,8 +3,11 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Inject,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { Role, TenantStatus } from '../../../generated/prisma/client.js';
 
@@ -13,6 +16,7 @@ export class TenantSubscriptionGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -35,14 +39,24 @@ export class TenantSubscriptionGuard implements CanActivate {
       return true;
     }
 
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: user.tenantId },
-      select: { status: true },
-    });
+    const cacheKey = `tenant-sub-guard:${user.tenantId}`;
+    let cachedStatus = await this.cacheManager.get<TenantStatus | null>(cacheKey);
 
-    if (!tenant) return true;
+    if (cachedStatus === undefined || cachedStatus === null) {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: user.tenantId },
+        select: { status: true },
+      });
 
-    if (tenant.status === TenantStatus.EXPIRED) {
+      if (tenant) {
+        cachedStatus = tenant.status;
+        await this.cacheManager.set(cacheKey, cachedStatus, 60000);
+      } else {
+        return true;
+      }
+    }
+
+    if (cachedStatus === TenantStatus.EXPIRED) {
       throw new ForbiddenException(
         'Tenant subscription expired. Please renew.',
       );

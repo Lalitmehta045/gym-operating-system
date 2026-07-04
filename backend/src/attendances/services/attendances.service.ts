@@ -506,8 +506,6 @@ export class AttendanceService implements AttendanceServiceInterface {
     ]);
 
     const resultDto = data.map((a) => this.toDto(a));
-    console.log('First record member:', data[0]?.member);
-    console.log('Backend listAttendances first record DTO:', JSON.stringify(resultDto[0], null, 2));
 
     return {
       data: resultDto,

@@ -63,6 +63,7 @@ export class TenantSubscriptionCronService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // 1. Fetch all subscriptions needing renewal reminders
     const subs = await this.prisma.tenantSubscription.findMany({
       where: {
         status: {
@@ -99,26 +100,54 @@ export class TenantSubscriptionCronService {
       },
     });
 
+    if (subs.length === 0) {
+      this.logger.log('No tenant subscriptions need renewal reminders today.');
+      return;
+    }
+
+    // 2. Batch fetch existing WhatsApp logs for all relevant subscriptions
+    const logTypes = reminderDays.map((d) => `TENANT_EXPIRING_${d}_DAYS`);
+    const existingLogs = await this.prisma.whatsAppLog.findMany({
+      where: {
+        tenantId: { in: subs.map((s) => s.tenantId) },
+        type: { in: logTypes },
+        createdAt: { gte: today },
+      },
+      select: { tenantId: true, type: true },
+    });
+
+    // 3. Use in-memory filtering to check if reminder was already sent
+    const logSet = new Set(existingLogs.map((l) => `${l.tenantId}:${l.type}`));
+
+    const jobs: { tenantId: string; diffDays: number }[] = [];
     for (const sub of subs) {
-      try {
-        const subEndDate = new Date(sub.endDate);
-        subEndDate.setHours(0, 0, 0, 0);
+      const subEndDate = new Date(sub.endDate);
+      subEndDate.setHours(0, 0, 0, 0);
 
-        const diffTime = subEndDate.getTime() - today.getTime();
-        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      const diffTime = subEndDate.getTime() - today.getTime();
+      const diffDays = Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+      const type = `TENANT_EXPIRING_${diffDays}_DAYS`;
 
-        await this.whatsappService.sendTenantRenewalReminder(
-          sub.tenantId,
-          diffDays >= 0 ? diffDays : 0,
-        );
-      } catch (err) {
-        this.logger.error(
-          `Failed to send renewal reminder to tenant ${sub.tenantId}`,
-          err,
-        );
+      if (!logSet.has(`${sub.tenantId}:${type}`)) {
+        jobs.push({ tenantId: sub.tenantId, diffDays });
       }
     }
 
-    this.logger.log('Sent renewal reminders for expiring subscriptions');
+    // 4. Execute jobs directly
+    if (jobs.length > 0) {
+      this.logger.log(`Processing ${jobs.length} tenant renewal reminders.`);
+      Promise.allSettled(
+        jobs.map(job => 
+          this.whatsappService.sendTenantRenewalReminder(job.tenantId, job.diffDays)
+        )
+      ).then(results => {
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          this.logger.error(`Failed to send ${failed.length} renewal reminders`);
+        }
+      });
+    } else {
+      this.logger.log('All required tenant renewal reminders have already been sent today.');
+    }
   }
 }

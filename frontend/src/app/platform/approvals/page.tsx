@@ -48,7 +48,7 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[24px] font-semibold text-[#171717]">Pending Approvals</h1>
+        <h1 className="text-[24px] font-semibold text-[var(--on-primary)]">Pending Approvals</h1>
         <p className="text-[14px] text-[#666666] mt-1">Review and approve new gym registrations.</p>
       </div>
 
@@ -57,38 +57,38 @@ export default function ApprovalsPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
       ) : tenants.length === 0 ? (
-        <div className="bg-white rounded-lg p-8 shadow-sm">
+        <div className="bg-[var(--canvas-light)] rounded-lg p-8 shadow-sm">
           <EmptyState 
             title="No Pending Applications" 
             description="There are currently no new gym registrations waiting for approval." 
           />
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-x-auto">
+        <div className="bg-[var(--canvas-light)] rounded-lg shadow-sm border border-[var(--hairline-soft)] overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-[var(--canvas-paper)]">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gym Details</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner Details</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied On</th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--mute)] uppercase tracking-wider">Gym Details</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--mute)] uppercase tracking-wider">Owner Details</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-[var(--mute)] uppercase tracking-wider">Applied On</th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-[var(--mute)] uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-[var(--canvas-light)] divide-y divide-gray-200">
               {tenants.map((tenant) => (
-                <tr key={tenant.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={tenant.id} className="hover:bg-[var(--canvas-paper)] transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{tenant.name}</div>
-                    <div className="text-sm text-gray-500">{tenant.email}</div>
-                    {tenant.phone && <div className="text-xs text-gray-400 mt-1">{tenant.phone}</div>}
+                    <div className="text-sm font-medium text-[var(--on-primary)]">{tenant.name}</div>
+                    <div className="text-sm text-[var(--mute)]">{tenant.email}</div>
+                    {tenant.phone && <div className="text-xs text-[var(--ash)] mt-1">{tenant.phone}</div>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-[var(--on-primary)]">
                       {tenant.users[0]?.firstName} {tenant.users[0]?.lastName}
                     </div>
-                    <div className="text-sm text-gray-500">{tenant.users[0]?.email}</div>
+                    <div className="text-sm text-[var(--mute)]">{tenant.users[0]?.email}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--mute)]">
                     {new Date(tenant.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">

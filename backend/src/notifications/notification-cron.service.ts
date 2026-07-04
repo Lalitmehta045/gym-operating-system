@@ -2,11 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from './notifications.service.js';
-import { Prisma } from '@prisma/client';
 import { NotificationType } from './dto/notification-type.enum.js';
-
-import { WhatsappService } from '../whatsapp/services/whatsapp.service.js';
-import { RazorpayService } from '../razorpay/services/razorpay.service.js';
+import { NotificationQueueService } from './notification-queue.service.js';
+import type { RenewalReminderJobData } from './notification-queue.types.js';
 
 @Injectable()
 export class NotificationCronService {
@@ -15,8 +13,7 @@ export class NotificationCronService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
-    private whatsappService: WhatsappService,
-    private razorpayService: RazorpayService,
+    private notificationQueue: NotificationQueueService,
   ) {}
 
   // Run daily at midnight server time
@@ -64,11 +61,16 @@ export class NotificationCronService {
           endDate: { gte: r.targetDate, lt: r.nextDay },
         })),
       },
-      select: {
-        id: true,
-        tenantId: true,
-        memberId: true,
-        endDate: true,
+      include: {
+        member: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            deletedAt: true,
+          },
+        },
         membershipPlan: {
           select: { name: true },
         },
@@ -76,6 +78,7 @@ export class NotificationCronService {
     });
 
     const notificationsToCreate: any[] = [];
+    const renewalReminderJobs: RenewalReminderJobData[] = [];
 
     for (const sub of subscriptions) {
       const subEndDate = new Date(sub.endDate);
@@ -106,6 +109,24 @@ export class NotificationCronService {
         message,
         metadata: { subscriptionId: sub.id, daysRemaining: effectiveDays },
       });
+
+      if ([7, 3, 1, 0].includes(effectiveDays)) {
+        renewalReminderJobs.push({
+          tenantId: sub.tenantId,
+          subscriptionId: sub.id,
+          memberId: sub.memberId,
+          daysRemaining: effectiveDays,
+          amount: sub.amount.toString(),
+          subscriptionDeletedAt: sub.deletedAt?.toISOString() ?? null,
+          member: {
+            firstName: sub.member.firstName,
+            lastName: sub.member.lastName,
+            email: sub.member.email,
+            phone: sub.member.phone,
+            deletedAt: sub.member.deletedAt?.toISOString() ?? null,
+          },
+        });
+      }
     }
 
     if (notificationsToCreate.length > 0) {
@@ -114,33 +135,7 @@ export class NotificationCronService {
       });
     }
 
-    await Promise.all(
-      subscriptions.map(async (sub) => {
-        const subEndDate = new Date(sub.endDate);
-        subEndDate.setHours(0, 0, 0, 0);
-        const diffTime = subEndDate.getTime() - today.getTime();
-        const days = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        const effectiveDays = days >= 0 ? days : 0;
-
-        if ([7, 3, 1, 0].includes(effectiveDays)) {
-          const paymentLink =
-            effectiveDays > 0
-              ? await this.razorpayService.createPaymentLink(
-                  sub.tenantId,
-                  sub.id,
-                  sub.memberId,
-                )
-              : undefined;
-
-          await this.whatsappService.sendRenewalReminder(
-            sub.tenantId,
-            sub.memberId,
-            effectiveDays,
-            paymentLink ?? undefined,
-          );
-        }
-      }),
-    );
+    await this.notificationQueue.enqueueRenewalReminders(renewalReminderJobs);
   }
 
   async generatePaymentDueNotifications() {
@@ -187,4 +182,5 @@ export class NotificationCronService {
       skip += limit;
     }
   }
+
 }

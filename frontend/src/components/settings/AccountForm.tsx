@@ -82,10 +82,10 @@ export function AccountForm() {
     <div className="space-y-12">
       <form onSubmit={handlePasswordSubmit} className="space-y-6">
         <div>
-          <h3 className="text-[16px] font-medium text-[#171717] mb-4">Change Password</h3>
+          <h3 className="text-[16px] font-medium text-[var(--on-primary)] mb-4">Change Password</h3>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="currentPassword" className="text-[14px] font-medium text-[#171717]">
+              <label htmlFor="currentPassword" className="text-[14px] font-medium text-[var(--on-primary)]">
                 Current Password
               </label>
               <Input
@@ -97,7 +97,7 @@ export function AccountForm() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="newPassword" className="text-[14px] font-medium text-[#171717]">
+              <label htmlFor="newPassword" className="text-[14px] font-medium text-[var(--on-primary)]">
                 New Password
               </label>
               <Input
@@ -109,7 +109,7 @@ export function AccountForm() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-[14px] font-medium text-[#171717]">
+              <label htmlFor="confirmPassword" className="text-[14px] font-medium text-[var(--on-primary)]">
                 Confirm New Password
               </label>
               <Input
@@ -151,9 +151,9 @@ export function AccountForm() {
         )}
       </form>
 
-      <div className="pt-8 border-t border-[#ebebeb]">
+      <div className="pt-8 border-t border-[var(--hairline-soft)]">
         <h3 className="text-[16px] font-medium text-red-600 mb-2">Danger Zone</h3>
-        <p className="text-[14px] text-[#4d4d4d] mb-4">
+        <p className="text-[14px] text-[var(--mute)] mb-4">
           Log out of all active sessions across all devices. You will be required to log in again.
         </p>
         <Button

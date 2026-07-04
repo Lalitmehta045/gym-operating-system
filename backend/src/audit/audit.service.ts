@@ -22,26 +22,29 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createLog(dto: CreateAuditLogDto) {
-    try {
-      return await this.prisma.auditLog.create({
-        data: {
-          tenantId: dto.tenantId,
-          userId: dto.userId,
-          memberId: dto.memberId,
-          entity: dto.entity,
-          entityId: dto.entityId,
-          action: dto.action,
-          description: dto.description,
-          metadata: dto.metadata || null,
-          ipAddress: dto.ipAddress || null,
-          userAgent: dto.userAgent || null,
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Failed to create audit log: ${error.message}`, error.stack);
-      // We don't want audit logging failures to crash the application flow
-      return null;
-    }
+    // Process asynchronously in the background so it doesn't block the request
+    Promise.resolve().then(async () => {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            tenantId: dto.tenantId,
+            userId: dto.userId,
+            memberId: dto.memberId,
+            entity: dto.entity,
+            entityId: dto.entityId,
+            action: dto.action,
+            description: dto.description,
+            metadata: dto.metadata || null,
+            ipAddress: dto.ipAddress || null,
+            userAgent: dto.userAgent || null,
+          },
+        });
+      } catch (error: any) {
+        this.logger.error(`Failed to process audit log: ${error.message}`, error.stack);
+      }
+    });
+    
+    return true;
   }
 
   async getLogs(
@@ -104,6 +107,15 @@ export class AuditService {
         orderBy: { createdAt: 'desc' },
         skip: query.skip || 0,
         take: query.take || 20,
+        select: {
+          id: true,
+          action: true,
+          entity: true,
+          entityId: true,
+          description: true,
+          createdAt: true,
+          userId: true,
+        },
       }),
       this.prisma.auditLog.count({ where }),
     ]);
@@ -125,6 +137,15 @@ export class AuditService {
         orderBy: { createdAt: 'desc' },
         skip,
         take,
+        select: {
+          id: true,
+          action: true,
+          entity: true,
+          entityId: true,
+          description: true,
+          createdAt: true,
+          userId: true,
+        },
       }),
       this.prisma.auditLog.count({ where: { tenantId, memberId } }),
     ]);
@@ -146,6 +167,15 @@ export class AuditService {
         orderBy: { createdAt: 'desc' },
         skip,
         take,
+        select: {
+          id: true,
+          action: true,
+          entity: true,
+          entityId: true,
+          description: true,
+          createdAt: true,
+          userId: true,
+        },
       }),
       this.prisma.auditLog.count({ where: { tenantId, userId } }),
     ]);

@@ -20,12 +20,12 @@ export default function PlatformAuditPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717]">Platform Audit Logs</h1>
-          <p className="text-sm text-[#888888] mt-1">View system-wide activity logs across all gyms.</p>
+          <h1 className="text-2xl font-semibold text-[var(--on-primary)]">Platform Audit Logs</h1>
+          <p className="text-sm text-[var(--ash)] mt-1">View system-wide activity logs across all gyms.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-[12px] p-6 border border-[#ebebeb]">
+      <div className="bg-[var(--canvas-light)] rounded-[12px] p-6 border border-[var(--hairline-soft)]">
         <AuditFiltersComponent
           filters={filters}
           onChange={(newFilters) => setFilters({ ...newFilters, skip: 0 })}

@@ -10,4 +10,7 @@ export class InvoiceDto {
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
+  member?: any;
+  subscription?: any;
+  payment?: any;
 }

@@ -14,7 +14,7 @@ const highlights = [
 
 export function ProductShowcase() {
   return (
-    <section className="marketing-section-light px-[var(--spacing-lg)]">
+    <section className="bg-[var(--canvas-soft)] py-[var(--spacing-5xl)] px-[var(--spacing-lg)]">
       <div className="mx-auto w-full max-w-[1640px]">
         <div className="flex flex-col items-center text-center mb-[var(--spacing-section-lg)]">
           <div className="text-mono-eyebrow text-[var(--mute)] mb-[var(--spacing-md)]">
@@ -23,7 +23,7 @@ export function ProductShowcase() {
           <h2 className="text-display-md text-[var(--ink)] max-w-3xl mb-[var(--spacing-md)]">
             Engineered for absolute control.
           </h2>
-          <p className="text-subtitle text-[var(--ink-soft)] max-w-3xl">
+          <p className="text-body-lg text-[var(--ink-soft)] max-w-3xl">
             Stop juggling multiple spreadsheets and software. NexUp Fit gives you a bird's-eye view of your entire operation, wrapped in a beautiful, lightning-fast interface.
           </p>
         </div>

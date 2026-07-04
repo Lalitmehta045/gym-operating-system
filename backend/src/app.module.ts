@@ -41,6 +41,8 @@ import { MediaModule } from './media/media.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { AuditLogInterceptor } from './audit/interceptors/audit-log.interceptor.js';
 import { TenantStorageModule } from './storage/tenant-storage.module.js';
+import { SettingsModule } from './settings/settings.module.js';
+import { StaffModule } from './staff/staff.module.js';
 
 @Module({
   imports: [
@@ -72,6 +74,8 @@ import { TenantStorageModule } from './storage/tenant-storage.module.js';
     MediaModule,
     AuditModule,
     TenantStorageModule,
+    SettingsModule,
+    StaffModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000,

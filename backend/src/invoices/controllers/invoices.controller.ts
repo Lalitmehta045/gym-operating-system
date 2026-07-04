@@ -30,7 +30,7 @@ export class InvoicesController {
   }
 
   @Get()
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(900000) // 15 minutes
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListInvoicesQueryDto,
@@ -39,7 +39,7 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  @CacheTTL(900) // 15 minutes
+  @CacheTTL(900000) // 15 minutes
   findOne(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,

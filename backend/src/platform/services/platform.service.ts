@@ -2,8 +2,10 @@
 // PlatformService — Phase 9A Super Admin platform analytics
 // ============================================================================
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import type { Cache } from 'cache-manager';
 import {
   ListTenantsQueryDto,
   PlatformDashboardDto,
@@ -17,9 +19,21 @@ import { TenantStatus } from '../../../generated/prisma/client.js';
 
 @Injectable()
 export class PlatformService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly dashboardCacheKey = 'nexupfit:platform:dashboard';
+  private readonly revenueCacheKey = 'nexupfit:platform:revenue';
+  private readonly platformCacheTtlMs = 60_000;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
   async getPlatformDashboard(): Promise<PlatformDashboardDto> {
+    const cached = await this.cacheManager.get<PlatformDashboardDto>(
+      this.dashboardCacheKey,
+    );
+    if (cached) return cached;
+
     const [totalGyms, activeGyms, trialGyms, expiredGyms, suspendedGyms] =
       await this.prisma.$transaction([
         this.prisma.tenant.count({ where: { deletedAt: null } }),
@@ -37,13 +51,21 @@ export class PlatformService {
         }),
       ]);
 
-    return {
+    const dashboard = {
       totalGyms,
       activeGyms,
       trialGyms,
       expiredGyms,
       suspendedGyms,
     };
+
+    await this.cacheManager.set(
+      this.dashboardCacheKey,
+      dashboard,
+      this.platformCacheTtlMs,
+    );
+
+    return dashboard;
   }
 
   async getTenants(query: ListTenantsQueryDto): Promise<PaginatedTenantsDto> {
@@ -71,7 +93,18 @@ export class PlatformService {
         skip,
         take: limit,
         orderBy: { createdAt: sortOrder },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          city: true,
+          state: true,
+          country: true,
+          status: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
           _count: {
             select: {
               users: true,
@@ -188,6 +221,7 @@ export class PlatformService {
       where: { id: tenantId },
       data: { status: TenantStatus.SUSPENDED },
     });
+    await this.invalidatePlatformCaches();
 
     return this.getTenantById(tenantId);
   }
@@ -205,11 +239,17 @@ export class PlatformService {
       where: { id: tenantId },
       data: { status: TenantStatus.ACTIVE },
     });
+    await this.invalidatePlatformCaches();
 
     return this.getTenantById(tenantId);
   }
 
   async getRevenueMetrics(): Promise<RevenueMetricsDto> {
+    const cached = await this.cacheManager.get<RevenueMetricsDto>(
+      this.revenueCacheKey,
+    );
+    if (cached) return cached;
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -262,11 +302,26 @@ export class PlatformService {
       };
     });
 
-    return {
+    const metrics = {
       mrr,
       arr: mrr * 12,
       revenueThisMonth,
       revenueByPlan,
     };
+
+    await this.cacheManager.set(
+      this.revenueCacheKey,
+      metrics,
+      this.platformCacheTtlMs,
+    );
+
+    return metrics;
+  }
+
+  private async invalidatePlatformCaches() {
+    await Promise.all([
+      this.cacheManager.del(this.dashboardCacheKey),
+      this.cacheManager.del(this.revenueCacheKey),
+    ]);
   }
 }

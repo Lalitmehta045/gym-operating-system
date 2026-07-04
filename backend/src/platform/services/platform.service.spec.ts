@@ -4,6 +4,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { PlatformService } from './platform.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { TenantStatus } from '../../../generated/prisma/client.js';
@@ -21,12 +22,18 @@ describe('PlatformService', () => {
     },
     $transaction: jest.fn(),
   };
+  const mockCacheManager = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PlatformService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: CACHE_MANAGER, useValue: mockCacheManager },
       ],
     }).compile();
 
@@ -36,6 +43,7 @@ describe('PlatformService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    mockCacheManager.get.mockResolvedValue(null);
   });
 
   describe('getPlatformDashboard', () => {
@@ -49,6 +57,26 @@ describe('PlatformService', () => {
       expect(result.trialGyms).toBe(3);
       expect(result.expiredGyms).toBe(1);
       expect(result.suspendedGyms).toBe(1);
+      expect(mockCacheManager.set).toHaveBeenCalledWith(
+        'nexupfit:platform:dashboard',
+        result,
+        60000,
+      );
+    });
+
+    it('should return cached platform dashboard metrics', async () => {
+      mockCacheManager.get.mockResolvedValueOnce({
+        totalGyms: 1,
+        activeGyms: 1,
+        trialGyms: 0,
+        expiredGyms: 0,
+        suspendedGyms: 0,
+      });
+
+      const result = await service.getPlatformDashboard();
+
+      expect(result.totalGyms).toBe(1);
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
     });
   });
 
@@ -195,6 +223,9 @@ describe('PlatformService', () => {
         where: { id: 't1' },
         data: { status: TenantStatus.SUSPENDED },
       });
+      expect(mockCacheManager.del).toHaveBeenCalledWith(
+        'nexupfit:platform:dashboard',
+      );
       expect(result.status).toBe(TenantStatus.SUSPENDED);
     });
 
@@ -245,6 +276,9 @@ describe('PlatformService', () => {
         where: { id: 't1' },
         data: { status: TenantStatus.ACTIVE },
       });
+      expect(mockCacheManager.del).toHaveBeenCalledWith(
+        'nexupfit:platform:dashboard',
+      );
       expect(result.status).toBe(TenantStatus.ACTIVE);
     });
 

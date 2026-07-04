@@ -16,14 +16,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           "inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-[#171717] text-[#ffffff] hover:bg-[#171717]/90": variant === "primary" || variant === "default",
-            "bg-[#ffffff] text-[#171717] border border-[#ebebeb] hover:bg-[#fafafa] shadow-sm": variant === "secondary" || variant === "outline",
-            "bg-transparent text-[#171717] hover:bg-[#fafafa]": variant === "ghost",
+            "bg-[#6C47FF] text-white hover:bg-purple-700": variant === "primary" || variant === "default",
+            "bg-[var(--canvas-light)] text-[var(--ink-soft)] border border-[var(--hairline)] hover:bg-[var(--canvas-paper)] shadow-sm": variant === "secondary" || variant === "outline",
+            "bg-transparent text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)]": variant === "ghost",
             "bg-red-600 text-white hover:bg-red-700": variant === "destructive",
-            "h-12 px-[12px] text-[16px] leading-[24px] rounded-[100px]": size === "lg",
-            "h-8 px-[8px] text-[14px] leading-[20px] rounded-[100px]": size === "md",
-            "h-9 px-[8px] text-[14px] leading-[20px] rounded-[6px]": size === "sm",
-            "h-10 w-10 rounded-full border border-[#ebebeb] bg-[#ffffff] text-[#171717] hover:bg-[#fafafa]": size === "icon",
+            "px-6 py-2.5 rounded-lg text-sm font-medium": size === "md" || size === "lg",
+            "px-3 py-1.5 rounded-md text-sm": size === "sm",
+            "h-10 w-10 rounded-full border border-[var(--hairline)] bg-[var(--canvas-light)] text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)]": size === "icon",
           },
           className
         )}

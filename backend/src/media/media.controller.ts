@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Param, UseInterceptors, UploadedFile, UploadedFiles, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, Query, UseInterceptors, UploadedFile, UploadedFiles, Body, BadRequestException } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
@@ -24,17 +24,16 @@ export class MediaController {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files provided');
     }
-    const uploadedMedia: any[] = [];
-    for (const file of files) {
-      const media = await this.mediaService.createMedia(file, {
-        tenantId: user.tenantId!,
-        memberId,
-        uploadedById: user.sub,
-        category: category || MediaCategory.OTHER,
-      });
-      uploadedMedia.push(media);
-    }
-    return uploadedMedia;
+    return Promise.all(
+      files.map((file) =>
+        this.mediaService.createMedia(file, {
+          tenantId: user.tenantId!,
+          memberId,
+          uploadedById: user.sub,
+          category: category || MediaCategory.OTHER,
+        }),
+      ),
+    );
   }
 
   @Post('members/:id/profile-photo')
@@ -65,25 +64,32 @@ export class MediaController {
     @CurrentUser() user: JwtPayload,
   ) {
     if (!files || files.length === 0) throw new BadRequestException('Files are required');
-    const uploaded: any[] = [];
-    for (const file of files) {
-      uploaded.push(await this.mediaService.createMedia(file, {
-        tenantId: user.tenantId!,
-        memberId,
-        uploadedById: user.sub,
-        category: MediaCategory.MEMBER_GALLERY,
-      }));
-    }
-    return uploaded;
+    return Promise.all(
+      files.map((file) =>
+        this.mediaService.createMedia(file, {
+          tenantId: user.tenantId!,
+          memberId,
+          uploadedById: user.sub,
+          category: MediaCategory.MEMBER_GALLERY,
+        }),
+      ),
+    );
   }
 
   @Get('members/:id/gallery')
   @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   async getGallery(
     @Param('id') memberId: string,
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.mediaService.getMemberGallery(user.tenantId!, memberId);
+    return this.mediaService.getMemberGallery(
+      user.tenantId!,
+      memberId,
+      page ? parseInt(page, 10) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
+    );
   }
 
   @Delete('members/:id/gallery/:mediaId')
@@ -128,4 +134,5 @@ export class MediaController {
       category,
     });
   }
+
 }

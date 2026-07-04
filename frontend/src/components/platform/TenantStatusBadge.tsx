@@ -5,7 +5,7 @@ export type TenantStatus = 'ACTIVE' | 'INACTIVE' | 'TRIAL' | 'EXPIRED' | 'SUSPEN
 export function TenantStatusBadge({ status }: { status: TenantStatus }) {
   const styles = {
     ACTIVE: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    INACTIVE: "bg-gray-100 text-gray-800 border-gray-200",
+    INACTIVE: "bg-[var(--canvas-paper)] text-[var(--on-primary)] border-[var(--hairline)]",
     TRIAL: "bg-blue-100 text-blue-800 border-blue-200",
     EXPIRED: "bg-red-100 text-red-800 border-red-200",
     SUSPENDED: "bg-amber-100 text-amber-800 border-amber-200",

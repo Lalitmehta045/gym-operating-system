@@ -32,7 +32,6 @@ import { AuditLog } from '../../audit/decorators/audit-log.decorator.js';
 import * as crypto from 'crypto';
 
 @Controller('auth')
-@SkipThrottle({ default: true })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

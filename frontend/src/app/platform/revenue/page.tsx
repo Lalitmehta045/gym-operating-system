@@ -19,7 +19,7 @@ export default function PlatformRevenuePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[24px] font-semibold text-[#171717]">Revenue</h1>
+          <h1 className="text-[24px] font-semibold text-[var(--on-primary)]">Revenue</h1>
           <p className="text-[14px] text-[#666666] mt-1">Platform financial metrics and revenue tracking.</p>
         </div>
       </div>
@@ -27,14 +27,14 @@ export default function PlatformRevenuePage() {
       {isLoading || !data ? (
         <div className="grid gap-[24px] sm:grid-cols-3 animate-pulse">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="rounded-xl border border-[#ebebeb] bg-white p-6 h-[116px]"></div>
+            <div key={i} className="rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-6 h-[116px]"></div>
           ))}
         </div>
       ) : (
         <div className="grid gap-[24px] sm:grid-cols-3">
-          <div className="relative overflow-hidden rounded-xl border border-[#ebebeb] bg-white p-6">
+          <div className="relative overflow-hidden rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-6">
             <dt>
-              <div className="absolute rounded-md p-3 text-emerald-600 bg-gray-50">
+              <div className="absolute rounded-md p-3 text-emerald-600 bg-[var(--canvas-paper)]">
                 <DollarSign className="h-5 w-5" aria-hidden="true" />
               </div>
               <p className="ml-16 truncate text-[14px] font-medium text-[#666666]">
@@ -42,14 +42,14 @@ export default function PlatformRevenuePage() {
               </p>
             </dt>
             <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-              <p className="text-[24px] font-semibold text-[#171717]">
+              <p className="text-[24px] font-semibold text-[var(--on-primary)]">
                 {formatCurrency(data.mrr)}
               </p>
             </dd>
           </div>
-          <div className="relative overflow-hidden rounded-xl border border-[#ebebeb] bg-white p-6">
+          <div className="relative overflow-hidden rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-6">
             <dt>
-              <div className="absolute rounded-md p-3 text-blue-600 bg-gray-50">
+              <div className="absolute rounded-md p-3 text-blue-600 bg-[var(--canvas-paper)]">
                 <TrendingUp className="h-5 w-5" aria-hidden="true" />
               </div>
               <p className="ml-16 truncate text-[14px] font-medium text-[#666666]">
@@ -57,14 +57,14 @@ export default function PlatformRevenuePage() {
               </p>
             </dt>
             <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-              <p className="text-[24px] font-semibold text-[#171717]">
+              <p className="text-[24px] font-semibold text-[var(--on-primary)]">
                 {formatCurrency(data.arr)}
               </p>
             </dd>
           </div>
-          <div className="relative overflow-hidden rounded-xl border border-[#ebebeb] bg-white p-6">
+          <div className="relative overflow-hidden rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-6">
             <dt>
-              <div className="absolute rounded-md p-3 text-indigo-600 bg-gray-50">
+              <div className="absolute rounded-md p-3 text-indigo-600 bg-[var(--canvas-paper)]">
                 <Calendar className="h-5 w-5" aria-hidden="true" />
               </div>
               <p className="ml-16 truncate text-[14px] font-medium text-[#666666]">
@@ -72,7 +72,7 @@ export default function PlatformRevenuePage() {
               </p>
             </dt>
             <dd className="ml-16 flex items-baseline pb-1 sm:pb-2">
-              <p className="text-[24px] font-semibold text-[#171717]">
+              <p className="text-[24px] font-semibold text-[var(--on-primary)]">
                 {formatCurrency(data.revenueThisMonth)}
               </p>
             </dd>

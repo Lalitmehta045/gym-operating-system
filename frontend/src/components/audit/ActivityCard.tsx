@@ -31,7 +31,7 @@ export function ActivityCard({ log }: ActivityCardProps) {
       case 'UPLOAD':
         return <FileText className="w-4 h-4 text-purple-500" />;
       default:
-        return <CheckCircle className="w-4 h-4 text-gray-500" />;
+        return <CheckCircle className="w-4 h-4 text-[var(--mute)]" />;
     }
   };
 
@@ -42,12 +42,12 @@ export function ActivityCard({ log }: ActivityCardProps) {
       <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-[#f8f8f8] text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
         {getIcon()}
       </div>
-      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-[#fdfdfd] p-4 rounded-[12px] border border-[#ebebeb] shadow-sm">
+      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-[#fdfdfd] p-4 rounded-[12px] border border-[var(--hairline-soft)] shadow-sm">
         <div className="flex items-center justify-between space-x-2 mb-1">
-          <div className="font-bold text-[#171717] text-sm">{log.description}</div>
-          <time className="text-xs font-medium text-[#888888]">{timeAgo}</time>
+          <div className="font-bold text-[var(--on-primary)] text-sm">{log.description}</div>
+          <time className="text-xs font-medium text-[var(--ash)]">{timeAgo}</time>
         </div>
-        <div className="text-sm text-[#888888]">
+        <div className="text-sm text-[var(--ash)]">
           {log.entity} • {log.action}
         </div>
       </div>

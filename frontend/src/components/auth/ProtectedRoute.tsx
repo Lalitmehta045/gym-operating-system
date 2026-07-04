@@ -29,7 +29,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <LoadingState className="h-screen bg-[#fafafa]" />
+    return <LoadingState className="h-screen bg-[var(--canvas-soft)]" />
   }
 
   return <>{children}</>

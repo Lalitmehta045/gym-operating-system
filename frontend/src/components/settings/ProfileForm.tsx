@@ -39,7 +39,7 @@ export function ProfileForm() {
   };
 
   if (isLoading) {
-    return <div className="text-[14px] text-[#4d4d4d]">Loading profile...</div>;
+    return <div className="text-[14px] text-[var(--mute)]">Loading profile...</div>;
   }
 
   if (error) {
@@ -56,7 +56,7 @@ export function ProfileForm() {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label htmlFor="firstName" className="text-[14px] font-medium text-[#171717]">
+          <label htmlFor="firstName" className="text-[14px] font-medium text-[var(--on-primary)]">
             First Name
           </label>
           <Input id="firstName" {...form.register("firstName")} placeholder="e.g. John" />
@@ -65,7 +65,7 @@ export function ProfileForm() {
           )}
         </div>
         <div className="space-y-2">
-          <label htmlFor="lastName" className="text-[14px] font-medium text-[#171717]">
+          <label htmlFor="lastName" className="text-[14px] font-medium text-[var(--on-primary)]">
             Last Name
           </label>
           <Input id="lastName" {...form.register("lastName")} placeholder="e.g. Doe" />
@@ -76,7 +76,7 @@ export function ProfileForm() {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="email" className="text-[14px] font-medium text-[#171717]">
+        <label htmlFor="email" className="text-[14px] font-medium text-[var(--on-primary)]">
           Email Address
         </label>
         <Input
@@ -84,9 +84,9 @@ export function ProfileForm() {
           type="email"
           value={profile?.email || ""}
           readOnly
-          className="bg-[#fafafa] cursor-not-allowed"
+          className="bg-[var(--canvas-soft)] cursor-not-allowed"
         />
-        <p className="text-[12px] text-[#888888]">Email cannot be changed here.</p>
+        <p className="text-[12px] text-[var(--ash)]">Email cannot be changed here.</p>
       </div>
 
       <div className="pt-4 flex justify-end">

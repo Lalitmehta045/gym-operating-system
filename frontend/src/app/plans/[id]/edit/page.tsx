@@ -28,7 +28,7 @@ export default function EditPlanPage() {
   if (isFetching) {
     return (
       <div className="flex justify-center p-8">
-        <span className="text-[#888888] text-sm">Loading plan details...</span>
+        <span className="text-[var(--ash)] text-sm">Loading plan details...</span>
       </div>
     )
   }
@@ -36,7 +36,7 @@ export default function EditPlanPage() {
   if (!plan) {
     return (
       <div className="flex justify-center p-8">
-        <span className="text-[#888888] text-sm">Plan not found.</span>
+        <span className="text-[var(--ash)] text-sm">Plan not found.</span>
       </div>
     )
   }
@@ -44,12 +44,12 @@ export default function EditPlanPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/plans" className="text-[#888888] hover:text-[#171717] transition-colors">
+        <Link href="/plans" className="text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717]">Edit Plan: {plan.name}</h1>
-          <p className="text-sm text-[#888888]">Update membership plan details</p>
+          <h1 className="text-2xl font-semibold text-[var(--on-primary)]">Edit Plan: {plan.name}</h1>
+          <p className="text-sm text-[var(--ash)]">Update membership plan details</p>
         </div>
       </div>
 

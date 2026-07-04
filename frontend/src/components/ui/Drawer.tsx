@@ -32,14 +32,14 @@ const DrawerContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-y-0 right-0 z-50 h-full w-full max-w-md border-l border-[#ebebeb] bg-[#ffffff] p-[24px] shadow-2xl transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+        "fixed inset-y-0 right-0 z-50 h-full w-full max-w-md border-l border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-[24px] shadow-2xl transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-[24px] top-[24px] rounded-sm opacity-70 ring-offset-[#ffffff] transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#171717] focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-[#fafafa]">
-        <X className="h-4 w-4 text-[#171717]" />
+      <DialogPrimitive.Close className="absolute right-[24px] top-[24px] rounded-sm opacity-70 ring-offset-[#ffffff] transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#171717] focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-[var(--canvas-soft)]">
+        <X className="h-4 w-4 text-[var(--on-primary)]" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -82,7 +82,7 @@ const DrawerTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      "text-[18px] font-semibold leading-[28px] tracking-[-0.6px] text-[#171717]",
+      "text-[18px] font-semibold leading-[28px] tracking-[-0.6px] text-[var(--on-primary)]",
       className
     )}
     {...props}
@@ -96,7 +96,7 @@ const DrawerDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-[14px] text-[#4d4d4d]", className)}
+    className={cn("text-[14px] text-[var(--mute)]", className)}
     {...props}
   />
 ))

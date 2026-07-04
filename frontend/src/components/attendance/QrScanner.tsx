@@ -51,5 +51,5 @@ export function QrScanner({ onScanSuccess, onScanFailure }: QrScannerProps) {
     }
   }, [onScanSuccess, onScanFailure])
 
-  return <div id="qr-reader" className="w-full max-w-md mx-auto overflow-hidden rounded-lg border border-[#ebebeb] bg-white" />
+  return <div id="qr-reader" className="w-full max-w-md mx-auto overflow-hidden rounded-lg border border-[var(--hairline-soft)] bg-[var(--canvas-light)]" />
 }

@@ -43,7 +43,7 @@ export function Navbar() {
             </Link>
 
             {/* Mobile Menu Toggle */}
-            <button 
+            <button
               className="md:hidden p-1 sm:p-2 text-[var(--on-primary)] ml-1"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle mobile menu"
@@ -70,7 +70,7 @@ export function Navbar() {
               <Link href="#pricing" onClick={() => setIsMobileMenuOpen(false)} className="text-[var(--on-primary)] font-medium">Pricing</Link>
               <Link href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="text-[var(--on-primary)] font-medium">FAQ</Link>
             </div>
-            
+
             <div className="mt-auto mb-[var(--spacing-xl)] flex flex-col gap-4">
               <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-[var(--on-primary)] text-center font-medium py-2">
                 Sign In

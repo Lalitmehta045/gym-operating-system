@@ -4,16 +4,19 @@ import {
   ExecutionContext,
   CallHandler,
   Inject,
+  Logger,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { switchMap } from 'rxjs/operators';
 import { INVALIDATE_CACHE_KEY } from '../decorators/invalidate-cache.decorator.js';
 
 @Injectable()
 export class CacheInvalidationInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(CacheInvalidationInterceptor.name);
+
   constructor(
     private reflector: Reflector,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -33,12 +36,13 @@ export class CacheInvalidationInterceptor implements NestInterceptor {
     const tenantId = request.user?.tenantId;
 
     return next.handle().pipe(
-      tap(async () => {
+      switchMap(async (data) => {
         // Only invalidate on successful responses (2xx)
         const response = context.switchToHttp().getResponse();
         if (response.statusCode >= 200 && response.statusCode < 300) {
           await this.invalidatePatterns(patterns, tenantId);
         }
+        return data;
       }),
     );
   }
@@ -83,7 +87,7 @@ export class CacheInvalidationInterceptor implements NestInterceptor {
         }
       }
     } catch (err) {
-      console.warn(
+      this.logger.warn(
         'Cache invalidation failed: keys() might not be supported by the store.',
         err,
       );

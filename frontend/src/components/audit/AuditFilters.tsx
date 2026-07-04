@@ -13,7 +13,7 @@ export function AuditFilters({ filters, onChange }: AuditFiltersProps) {
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-6">
       <div className="flex-1 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888888]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ash)]" />
         <Input
           type="text"
           placeholder="Search by description or IP..."

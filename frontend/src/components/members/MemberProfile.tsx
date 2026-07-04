@@ -9,13 +9,13 @@ export function MemberProfile({ member }: MemberProfileProps) {
   return (
     <div className="space-y-6">
       {/* Profile Header */}
-      <div className="flex items-center gap-6 bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-        <div className="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-2xl font-semibold uppercase">
+      <div className="flex items-center gap-6 bg-[var(--canvas-light)] rounded-[12px] p-6 border border-[var(--hairline-soft)]">
+        <div className="h-20 w-20 rounded-full bg-[var(--canvas-paper)] flex items-center justify-center text-[var(--mute)] text-2xl font-semibold uppercase">
           {member.firstName[0]}{member.lastName[0]}
         </div>
         <div>
-          <h2 className="text-2xl font-semibold text-[#171717]">{member.firstName} {member.lastName}</h2>
-          <div className="flex items-center gap-4 mt-2 text-sm text-[#888888]">
+          <h2 className="text-2xl font-semibold text-[var(--on-primary)]">{member.firstName} {member.lastName}</h2>
+          <div className="flex items-center gap-4 mt-2 text-sm text-[var(--ash)]">
             <span>Code: {member.memberCode}</span>
             <span className="flex items-center gap-1.5">
               <span className={`h-2 w-2 rounded-full ${
@@ -31,24 +31,24 @@ export function MemberProfile({ member }: MemberProfileProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Contact Information */}
-        <div className="bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-          <h3 className="text-lg font-medium text-[#171717] mb-4">Contact Information</h3>
+        <div className="bg-[var(--canvas-light)] rounded-[12px] p-6 border border-[var(--hairline-soft)]">
+          <h3 className="text-lg font-medium text-[var(--on-primary)] mb-4">Contact Information</h3>
           <dl className="space-y-4">
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Email</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.email}</dd>
+              <dt className="text-sm text-[var(--ash)]">Email</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.email}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Phone</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.phone}</dd>
+              <dt className="text-sm text-[var(--ash)]">Phone</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.phone}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Gender</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2 capitalize">{member.gender.toLowerCase()}</dd>
+              <dt className="text-sm text-[var(--ash)]">Gender</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2 capitalize">{member.gender.toLowerCase()}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Date of Birth</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">
+              <dt className="text-sm text-[var(--ash)]">Date of Birth</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">
                 {member.dateOfBirth ? new Date(member.dateOfBirth).toLocaleDateString() : 'N/A'}
               </dd>
             </div>
@@ -56,66 +56,66 @@ export function MemberProfile({ member }: MemberProfileProps) {
         </div>
 
         {/* Emergency Contact */}
-        <div className="bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-          <h3 className="text-lg font-medium text-[#171717] mb-4">Emergency Contact</h3>
+        <div className="bg-[var(--canvas-light)] rounded-[12px] p-6 border border-[var(--hairline-soft)]">
+          <h3 className="text-lg font-medium text-[var(--on-primary)] mb-4">Emergency Contact</h3>
           <dl className="space-y-4">
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Name</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.emergencyContactName}</dd>
+              <dt className="text-sm text-[var(--ash)]">Name</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.emergencyContactName}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Phone</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.emergencyContactPhone}</dd>
+              <dt className="text-sm text-[var(--ash)]">Phone</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.emergencyContactPhone}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Relation</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.emergencyContactRelation}</dd>
+              <dt className="text-sm text-[var(--ash)]">Relation</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.emergencyContactRelation}</dd>
             </div>
           </dl>
         </div>
 
         {/* Fitness & Medical */}
-        <div className="bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-          <h3 className="text-lg font-medium text-[#171717] mb-4">Fitness & Medical</h3>
+        <div className="bg-[var(--canvas-light)] rounded-[12px] p-6 border border-[var(--hairline-soft)]">
+          <h3 className="text-lg font-medium text-[var(--on-primary)] mb-4">Fitness & Medical</h3>
           <dl className="space-y-4">
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Height</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.heightCm ? `${member.heightCm} cm` : 'N/A'}</dd>
+              <dt className="text-sm text-[var(--ash)]">Height</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.heightCm ? `${member.heightCm} cm` : 'N/A'}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Weight</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.weightKg ? `${member.weightKg} kg` : 'N/A'}</dd>
+              <dt className="text-sm text-[var(--ash)]">Weight</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.weightKg ? `${member.weightKg} kg` : 'N/A'}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Blood Group</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.bloodGroup?.replace('_', ' ') || 'N/A'}</dd>
+              <dt className="text-sm text-[var(--ash)]">Blood Group</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.bloodGroup?.replace('_', ' ') || 'N/A'}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Fitness Goal</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.fitnessGoal || 'N/A'}</dd>
+              <dt className="text-sm text-[var(--ash)]">Fitness Goal</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.fitnessGoal || 'N/A'}</dd>
             </div>
           </dl>
         </div>
 
         {/* CRM Information */}
-        <div className="bg-[#ffffff] rounded-[12px] p-6 border border-[#ebebeb]">
-          <h3 className="text-lg font-medium text-[#171717] mb-4">CRM Information</h3>
+        <div className="bg-[var(--canvas-light)] rounded-[12px] p-6 border border-[var(--hairline-soft)]">
+          <h3 className="text-lg font-medium text-[var(--on-primary)] mb-4">CRM Information</h3>
           <dl className="space-y-4">
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Source</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2 capitalize">{member.source?.replace('_', ' ').toLowerCase() || 'N/A'}</dd>
+              <dt className="text-sm text-[var(--ash)]">Source</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2 capitalize">{member.source?.replace('_', ' ').toLowerCase() || 'N/A'}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Occupation</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{member.occupation || 'N/A'}</dd>
+              <dt className="text-sm text-[var(--ash)]">Occupation</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{member.occupation || 'N/A'}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Joined Date</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2">{new Date(member.joinedAt).toLocaleDateString()}</dd>
+              <dt className="text-sm text-[var(--ash)]">Joined Date</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2">{new Date(member.joinedAt).toLocaleDateString()}</dd>
             </div>
             <div className="grid grid-cols-3">
-              <dt className="text-sm text-[#888888]">Notes</dt>
-              <dd className="text-sm font-medium text-[#171717] col-span-2 whitespace-pre-wrap">{member.notes || 'N/A'}</dd>
+              <dt className="text-sm text-[var(--ash)]">Notes</dt>
+              <dd className="text-sm font-medium text-[var(--on-primary)] col-span-2 whitespace-pre-wrap">{member.notes || 'N/A'}</dd>
             </div>
           </dl>
         </div>

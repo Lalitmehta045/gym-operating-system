@@ -7,7 +7,7 @@ export function TrustSection() {
   ];
 
   return (
-    <section className="marketing-section-paper px-[var(--spacing-lg)] border-y border-[var(--hairline)]">
+    <section className="bg-[var(--canvas-soft)] py-[var(--spacing-5xl)] px-[var(--spacing-lg)] border-y border-[var(--hairline)]">
       <div className="mx-auto w-full max-w-[1640px]">
         <div className="text-center mb-[var(--spacing-xl)]">
           <h2 className="text-mono-caps text-[var(--mute)]">

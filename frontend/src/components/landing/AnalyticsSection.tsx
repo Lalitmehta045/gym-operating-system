@@ -4,14 +4,14 @@ import { motion } from 'framer-motion';
 
 export function AnalyticsSection() {
   return (
-    <section className="marketing-section-light px-[var(--spacing-lg)]">
+    <section className="bg-[var(--canvas)] py-[var(--spacing-5xl)] px-[var(--spacing-lg)]">
       <div className="mx-auto w-full max-w-[1640px]">
         <div className="mx-auto max-w-2xl text-center mb-[var(--spacing-section)]">
           <div className="text-mono-eyebrow text-[var(--mute)] mb-[var(--spacing-sm)] uppercase tracking-wider">Analytics</div>
           <h2 className="text-display-md text-[var(--ink)] mb-[var(--spacing-md)]">
             Insights that drive growth
           </h2>
-          <p className="text-subtitle text-[var(--ink-soft)]">
+          <p className="text-body-lg text-[var(--ink-soft)]">
             Stop guessing. Our enterprise-grade analytics give you absolute clarity on your revenue, retention, and peak attendance hours.
           </p>
         </div>
@@ -23,9 +23,9 @@ export function AnalyticsSection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="feature-card-light flex flex-col"
+            className="card-marketing flex flex-col"
           >
-            <h3 className="text-heading-sm text-[var(--ink)] mb-1">Revenue Growth</h3>
+            <h3 className="text-body-md-strong text-[var(--ink)] mb-1">Revenue Growth</h3>
             <p className="text-body-sm text-[var(--ink-soft)] mb-[var(--spacing-lg)]">+24% from last month</p>
             
             <div className="mt-auto h-32 flex items-end gap-2">
@@ -41,9 +41,9 @@ export function AnalyticsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="feature-card-light flex flex-col"
+            className="card-marketing flex flex-col"
           >
-            <h3 className="text-heading-sm text-[var(--ink)] mb-1">Peak Attendance</h3>
+            <h3 className="text-body-md-strong text-[var(--ink)] mb-1">Peak Attendance</h3>
             <p className="text-body-sm text-[var(--ink-soft)] mb-[var(--spacing-lg)]">Highest traffic at 6:00 PM</p>
             
             <div className="mt-auto h-32 relative">
@@ -60,9 +60,9 @@ export function AnalyticsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
-            className="feature-card-light flex flex-col"
+            className="card-marketing flex flex-col"
           >
-            <h3 className="text-heading-sm text-[var(--ink)] mb-1">Active Members</h3>
+            <h3 className="text-body-md-strong text-[var(--ink)] mb-1">Active Members</h3>
             <p className="text-body-sm text-[var(--ink-soft)] mb-[var(--spacing-lg)]">92% retention rate</p>
             
             <div className="mt-auto h-32 relative flex items-center justify-center">

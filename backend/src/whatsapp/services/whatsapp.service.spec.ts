@@ -13,6 +13,7 @@ describe('WhatsappService', () => {
       whatsAppLog: {
         create: jest.fn(),
         findFirst: jest.fn(),
+        findMany: jest.fn(),
         updateMany: jest.fn(),
       },
       member: {
@@ -101,14 +102,14 @@ describe('WhatsappService', () => {
         phone: '919876543210',
       } as any);
 
-      prismaService.whatsAppLog.findFirst.mockResolvedValueOnce(null); // No recent log
+      prismaService.whatsAppLog.findMany.mockResolvedValueOnce([]); // No recent log
       axiosPostSpy.mockResolvedValueOnce({
         data: { messages: [{ id: 'msg-id' }] },
       });
 
       await service.sendRenewalReminder('tenant-1', 'member-1', 7);
 
-      expect(prismaService.whatsAppLog.findFirst).toHaveBeenCalled();
+      expect(prismaService.whatsAppLog.findMany).toHaveBeenCalled();
       expect(axiosPostSpy).toHaveBeenCalled();
     });
 
@@ -120,9 +121,13 @@ describe('WhatsappService', () => {
         phone: '919876543210',
       } as any);
 
-      prismaService.whatsAppLog.findFirst.mockResolvedValueOnce({
-        id: 'log-1',
-      } as any); // Recent log exists
+      prismaService.whatsAppLog.findMany.mockResolvedValueOnce([
+        {
+          tenantId: 'tenant-1',
+          memberId: 'member-1',
+          type: 'EXPIRING_7_DAYS',
+        },
+      ] as any); // Recent log exists
 
       await service.sendRenewalReminder('tenant-1', 'member-1', 7);
 

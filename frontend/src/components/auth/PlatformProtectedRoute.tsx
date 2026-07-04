@@ -29,7 +29,7 @@ export function PlatformProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!isAuthenticated || user?.role !== 'SUPER_ADMIN') {
-    return <LoadingState className="h-screen bg-[#fafafa]" />
+    return <LoadingState className="h-screen bg-[var(--canvas-soft)]" />
   }
 
   return <>{children}</>

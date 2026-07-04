@@ -43,21 +43,22 @@ export default function AttendanceHistoryPage() {
   }
 
   return (
-    <div className="flex flex-col gap-y-[32px]">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex flex-col gap-y-[8px]">
-          <Link href="/attendance" className="inline-flex items-center text-sm text-[#888888] hover:text-[#171717] mb-2">
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to Dashboard
-          </Link>
-          <h1 className="text-[32px] font-semibold tracking-[-1.28px] text-[#171717]">Attendance History</h1>
-          <p className="text-[16px] text-[#4d4d4d]">View and manage all attendance records</p>
+    <div className="min-h-screen bg-[var(--canvas-soft)] py-8">
+      <div className="max-w-6xl mx-auto space-y-6 px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <Link href="/attendance" className="inline-flex items-center text-sm text-[var(--mute)] hover:text-[var(--on-primary)] mb-4 transition-colors">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              Back to Dashboard
+            </Link>
+            <h1 className="text-3xl font-bold text-[var(--on-primary)]">Attendance History</h1>
+            <p className="text-sm text-[var(--mute)] mt-1">View and manage all attendance records</p>
+          </div>
+          <Button variant="primary" onClick={() => setIsManualModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Manual Entry
+          </Button>
         </div>
-        <Button variant="primary" onClick={() => setIsManualModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Manual Entry
-        </Button>
-      </div>
 
       <AttendanceFilters 
         memberSearch={memberSearch}
@@ -87,6 +88,7 @@ export default function AttendanceHistoryPage() {
         open={!!selectedMemberId}
         onOpenChange={(open) => !open && setSelectedMemberId(null)}
       />
+      </div>
     </div>
   )
 }

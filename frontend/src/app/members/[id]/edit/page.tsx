@@ -37,8 +37,8 @@ export default function EditMemberPage() {
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717]">Edit Member</h1>
-          <p className="text-sm text-[#888888]">Update {member.firstName} {member.lastName}'s details</p>
+          <h1 className="text-2xl font-semibold text-[var(--on-primary)]">Edit Member</h1>
+          <p className="text-sm text-[var(--ash)]">Update {member.firstName} {member.lastName}'s details</p>
         </div>
       </div>
 

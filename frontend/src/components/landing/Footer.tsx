@@ -20,43 +20,43 @@ export function Footer() {
           <div>
             <h3 className="text-mono-caps text-[var(--mute)] mb-4">Solutions</h3>
             <ul className="space-y-3">
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">For Studios</Link></li>
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">For Chains</Link></li>
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">For Trainers</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">For Studios</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">For Chains</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">For Trainers</Link></li>
             </ul>
           </div>
           {/* Column 3 */}
           <div>
             <h3 className="text-mono-caps text-[var(--mute)] mb-4">Resources</h3>
             <ul className="space-y-3">
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Blog</Link></li>
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Webinars</Link></li>
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Help Center</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Blog</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Webinars</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Help Center</Link></li>
             </ul>
           </div>
           {/* Column 4 */}
           <div>
             <h3 className="text-mono-caps text-[var(--mute)] mb-4">Customers</h3>
             <ul className="space-y-3">
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Case Studies</Link></li>
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Testimonials</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Case Studies</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Testimonials</Link></li>
             </ul>
           </div>
           {/* Column 5 */}
           <div>
             <h3 className="text-mono-caps text-[var(--mute)] mb-4">Company</h3>
             <ul className="space-y-3">
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">About</Link></li>
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Careers</Link></li>
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Contact</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">About</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Careers</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Contact</Link></li>
             </ul>
           </div>
           {/* Column 6 */}
           <div>
             <h3 className="text-mono-caps text-[var(--mute)] mb-4">Legal</h3>
             <ul className="space-y-3">
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Privacy Policy</Link></li>
-              <li><Link href="#" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Terms of Service</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/" className="text-caption text-[var(--ash)] hover:text-[var(--on-primary)] transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
         </div>

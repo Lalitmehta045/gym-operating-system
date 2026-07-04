@@ -4,27 +4,33 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { User, Shield, Building2, Plug, Activity } from "lucide-react";
+import { User, Shield, Building2, Plug, Activity, Users } from "lucide-react";
 
 const settingsNavigation = [
-  { name: "Profile", href: "/settings/profile", icon: User },
-  { name: "Account", href: "/settings/account", icon: Shield },
-  { name: "Gym", href: "/settings/gym", icon: Building2 },
-  { name: "Integrations", href: "/settings/integrations", icon: Plug },
-  { name: "Audit Logs", href: "/settings/audit", icon: Activity },
+  { name: "Profile", href: "/settings/profile", icon: User, roles: ["OWNER", "MANAGER", "TRAINER"] },
+  { name: "Account", href: "/settings/account", icon: Shield, roles: ["OWNER", "MANAGER", "TRAINER"] },
+  { name: "Gym", href: "/settings/gym", icon: Building2, roles: ["OWNER", "MANAGER", "TRAINER"] }, // assuming all can see gym
+  { name: "Staff", href: "/settings/staff", icon: Users, roles: ["OWNER"] },
+  { name: "Integrations", href: "/settings/integrations", icon: Plug, roles: ["OWNER"] },
+  { name: "Audit Logs", href: "/settings/audit", icon: Activity, roles: ["OWNER", "MANAGER", "TRAINER"] },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const userRole = user?.role || "TRAINER";
+
+  const filteredNavigation = settingsNavigation.filter(item => item.roles.includes(userRole));
 
   return (
     <ProtectedRoute>
       <DashboardLayout>
         <div className="p-[32px] max-w-[1200px] mx-auto w-full">
           <div className="mb-[32px]">
-            <h1 className="text-[24px] font-semibold tracking-tight text-[#171717]">Settings</h1>
-            <p className="text-[14px] text-[#4d4d4d] mt-[4px]">
+            <h1 className="text-[24px] font-semibold tracking-tight text-[var(--on-primary)]">Settings</h1>
+            <p className="text-[14px] text-[var(--mute)] mt-[4px]">
               Manage your personal and workspace preferences.
             </p>
           </div>
@@ -32,7 +38,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           <div className="flex flex-col md:flex-row gap-8">
             <aside className="w-full md:w-[240px] flex-shrink-0">
               <nav className="flex flex-row md:flex-col gap-1 overflow-x-auto pb-4 md:pb-0">
-                {settingsNavigation.map((item) => {
+                {filteredNavigation.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link
@@ -41,14 +47,14 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                       className={cn(
                         "group flex items-center rounded-[6px] px-[12px] py-[8px] text-[14px] font-medium transition-colors whitespace-nowrap",
                         isActive
-                          ? "bg-[#fafafa] text-[#171717]"
-                          : "text-[#4d4d4d] hover:bg-[#fafafa] hover:text-[#171717]"
+                          ? "bg-[var(--canvas-soft)] text-[var(--on-primary)]"
+                          : "text-[var(--mute)] hover:bg-[var(--canvas-soft)] hover:text-[var(--on-primary)]"
                       )}
                     >
                       <item.icon
                         className={cn(
                           "mr-[12px] h-4 w-4 flex-shrink-0 transition-colors",
-                          isActive ? "text-[#171717]" : "text-[#888888] group-hover:text-[#171717]"
+                          isActive ? "text-[var(--on-primary)]" : "text-[var(--ash)] group-hover:text-[var(--on-primary)]"
                         )}
                         aria-hidden="true"
                       />
@@ -59,7 +65,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               </nav>
             </aside>
             <main className="flex-1 min-w-0">
-              <div className="bg-white rounded-[6px] border border-[#ebebeb]">
+              <div className="bg-[var(--canvas-light)] rounded-[6px] border border-[var(--hairline-soft)]">
                 {children}
               </div>
             </main>

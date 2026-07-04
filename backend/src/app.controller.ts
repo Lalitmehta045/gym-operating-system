@@ -1,17 +1,22 @@
-import { Controller, Get, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, UseInterceptors, ForbiddenException } from '@nestjs/common';
 import { CacheTTL } from '@nestjs/cache-manager';
 import { AppService } from './app.service.js';
 import { Public } from './auth/decorators/public.decorator.js';
 import { HttpCacheInterceptor } from './common/interceptors/http-cache.interceptor.js';
+import { PrismaService } from './prisma/prisma.service.js';
+import { Role } from '../generated/prisma/client.js';
 
 @Controller()
 @UseInterceptors(HttpCacheInterceptor)
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Public()
   @Get()
-  @CacheTTL(86400) // 24 hours
+  @CacheTTL(86400000) // 24 hours
   getHello(): string {
     return this.appService.getHello();
   }
@@ -19,10 +24,11 @@ export class AppController {
   @Public()
   @Get('seed-admin')
   async seedAdmin() {
-    const { PrismaClient, Role } =
-      await import('../generated/prisma/client.js');
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Not available in production');
+    }
+
     const bcrypt = await import('bcrypt');
-    const prisma = new PrismaClient();
 
     const email = process.env.SUPERADMIN_EMAIL;
     const password = process.env.SUPERADMIN_PASSWORD;
@@ -34,7 +40,7 @@ export class AppController {
       };
     }
 
-    const existingSuperAdmin = await prisma.user.findFirst({
+    const existingSuperAdmin = await this.prisma.user.findFirst({
       where: { email, tenantId: null, deletedAt: null },
     });
 
@@ -44,7 +50,7 @@ export class AppController {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const superAdmin = await prisma.user.create({
+    const superAdmin = await this.prisma.user.create({
       data: {
         firstName: 'Super',
         lastName: 'Admin',

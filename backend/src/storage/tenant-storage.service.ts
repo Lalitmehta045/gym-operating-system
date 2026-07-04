@@ -1,4 +1,6 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -20,7 +22,29 @@ export class TenantStorageService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly whatsapp: WhatsappService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
+
+  async getTenantStorage(tenantId: string) {
+    const cacheKey = `tenant-storage:${tenantId}`;
+    let storage = await this.cacheManager.get<any>(cacheKey);
+    if (storage) return storage;
+
+    storage = await this.prisma.tenantStorage.findUnique({
+      where: { tenantId },
+    });
+
+    if (storage) {
+      await this.cacheManager.set(cacheKey, storage, 300_000);
+      return storage;
+    }
+
+    return this.calculateTenantStorage(tenantId, false);
+  }
+
+  async invalidateStorageCache(tenantId: string) {
+    await this.cacheManager.del(`tenant-storage:${tenantId}`);
+  }
 
   async getStorageLimitForTenant(tenantId: string): Promise<number> {
     const tenantSub = await this.prisma.tenantSubscription.findFirst({
@@ -43,12 +67,14 @@ export class TenantStorageService {
     return STORAGE_LIMITS.STARTER; // Default if unmatched
   }
 
-  async calculateTenantStorage(tenantId: string) {
+  async calculateTenantStorage(tenantId: string, persist = true) {
     const limit = await this.getStorageLimitForTenant(tenantId);
-    
-    const media = await this.prisma.media.findMany({
+
+    const mediaGroups = await this.prisma.media.groupBy({
+      by: ['type'],
       where: { tenantId, deletedAt: null },
-      select: { size: true, type: true },
+      _sum: { size: true },
+      _count: { _all: true },
     });
 
     let totalFiles = 0;
@@ -56,24 +82,40 @@ export class TenantStorageService {
     let totalDocuments = 0;
     let usedBytes = 0;
 
-    for (const file of media) {
-      usedBytes += file.size || 0;
-      totalFiles++;
-      if (file.type === 'IMAGE') totalImages++;
-      else if (file.type === 'DOCUMENT') totalDocuments++;
+    for (const group of mediaGroups) {
+      const count = group._count._all;
+      usedBytes += group._sum.size || 0;
+      totalFiles += count;
+      if (group.type === 'IMAGE') totalImages = count;
+      else if (group.type === 'DOCUMENT') totalDocuments = count;
     }
 
-    const storage = await this.prisma.tenantStorage.upsert({
-      where: { tenantId },
-      update: {
-        usedStorageBytes: usedBytes,
-        storageLimitBytes: limit,
-        totalFiles,
-        totalImages,
-        totalDocuments,
-        lastCalculatedAt: new Date(),
-      },
-      create: {
+    let storage;
+    if (persist) {
+      storage = await this.prisma.tenantStorage.upsert({
+        where: { tenantId },
+        update: {
+          usedStorageBytes: usedBytes,
+          storageLimitBytes: limit,
+          totalFiles,
+          totalImages,
+          totalDocuments,
+          lastCalculatedAt: new Date(),
+        },
+        create: {
+          tenantId,
+          usedStorageBytes: usedBytes,
+          storageLimitBytes: limit,
+          totalFiles,
+          totalImages,
+          totalDocuments,
+          lastCalculatedAt: new Date(),
+        },
+      });
+
+      await this.checkQuotas(tenantId, storage.usedStorageBytes, storage.storageLimitBytes);
+    } else {
+      storage = {
         tenantId,
         usedStorageBytes: usedBytes,
         storageLimitBytes: limit,
@@ -81,11 +123,10 @@ export class TenantStorageService {
         totalImages,
         totalDocuments,
         lastCalculatedAt: new Date(),
-      },
-    });
+      };
+    }
 
-    await this.checkQuotas(tenantId, storage.usedStorageBytes, storage.storageLimitBytes);
-
+    await this.cacheManager.set(`tenant-storage:${tenantId}`, storage, 300_000);
     return storage;
   }
 
@@ -155,46 +196,139 @@ export class TenantStorageService {
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async recalculateAllTenants() {
+    const startedAt = Date.now();
     this.logger.log('Starting daily storage recalculation for all tenants...');
-    const tenants = await this.prisma.tenant.findMany({
-      where: { isActive: true },
-      select: { id: true },
-    });
 
-    for (const t of tenants) {
-      try {
-        await this.calculateTenantStorage(t.id);
-      } catch (err) {
-        this.logger.error(`Failed to calculate storage for tenant ${t.id}`, err);
+    try {
+      // 1. Group by tenantId and type to calculate storage for ALL tenants at once
+      const mediaGroups = await this.prisma.media.groupBy({
+        by: ['tenantId', 'type'],
+        where: { deletedAt: null },
+        _sum: { size: true },
+        _count: { _all: true },
+      });
+
+      const tenantStorageMap = new Map<string, {
+        usedBytes: number;
+        totalFiles: number;
+        totalImages: number;
+        totalDocuments: number;
+      }>();
+
+      for (const group of mediaGroups) {
+        if (!group.tenantId) continue;
+        
+        const existing = tenantStorageMap.get(group.tenantId) || {
+          usedBytes: 0,
+          totalFiles: 0,
+          totalImages: 0,
+          totalDocuments: 0,
+        };
+
+        const count = group._count._all;
+        existing.usedBytes += Number(group._sum.size || 0);
+        existing.totalFiles += count;
+        if (group.type === 'IMAGE') existing.totalImages += count;
+        else if (group.type === 'DOCUMENT') existing.totalDocuments += count;
+
+        tenantStorageMap.set(group.tenantId, existing);
       }
+
+      // Zero out any existing storage records that no longer have media files
+      const activeStorage = await this.prisma.tenantStorage.findMany({
+        select: { tenantId: true },
+      });
+
+      for (const { tenantId } of activeStorage) {
+        if (!tenantStorageMap.has(tenantId)) {
+          tenantStorageMap.set(tenantId, {
+            usedBytes: 0,
+            totalFiles: 0,
+            totalImages: 0,
+            totalDocuments: 0,
+          });
+        }
+      }
+
+      // 2. Run one transaction to update all tenantStorage records
+      const updateOps: any[] = [];
+      const cacheOps: Promise<any>[] = [];
+      for (const [tenantId, stats] of tenantStorageMap.entries()) {
+        updateOps.push(
+          this.prisma.tenantStorage.updateMany({
+            where: { tenantId },
+            data: {
+              usedStorageBytes: stats.usedBytes,
+              totalFiles: stats.totalFiles,
+              totalImages: stats.totalImages,
+              totalDocuments: stats.totalDocuments,
+              updatedAt: new Date(),
+            },
+          })
+        );
+        cacheOps.push(this.cacheManager.del(`tenant-storage:${tenantId}`).catch(() => {}));
+      }
+
+      if (updateOps.length > 0) {
+        await this.prisma.$transaction(updateOps);
+        await Promise.all(cacheOps);
+      }
+
+      const duration = Date.now() - startedAt;
+      this.logger.log(`Recalculated storage for ${tenantStorageMap.size} tenants in ${duration} ms`);
+    } catch (err) {
+      this.logger.error('Failed to recalculate daily storage', err);
     }
-    this.logger.log('Finished daily storage recalculation.');
   }
 
-  async getPlatformStorage() {
-    const storageStats = await this.prisma.tenantStorage.findMany({
-      include: {
-        tenant: {
-          select: { name: true },
+  async getPlatformStorage(page = 1, limit = 50) {
+    const currentPage = Number.isFinite(page) && page > 0 ? page : 1;
+    const pageSize = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 50) : 50;
+    const skip = (currentPage - 1) * pageSize;
+
+    const [storageStats, total, totals] = await Promise.all([
+      this.prisma.tenantStorage.findMany({
+        include: {
+          tenant: {
+            select: { name: true },
+          },
         },
-      },
-      orderBy: { usedStorageBytes: 'desc' },
-    });
+        orderBy: { usedStorageBytes: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.tenantStorage.count(),
+      this.prisma.tenantStorage.aggregate({
+        _sum: {
+          usedStorageBytes: true,
+          storageLimitBytes: true,
+          totalFiles: true,
+        },
+      }),
+    ]);
 
-    let totalUsed = 0;
-    let totalLimit = 0;
-    let totalFiles = 0;
+    const tenantIds = storageStats.map((stat) => stat.tenantId);
+    const subscriptions = tenantIds.length
+      ? await this.prisma.tenantSubscription.findMany({
+          where: {
+            tenantId: { in: tenantIds },
+            status: { in: ['ACTIVE', 'TRIAL'] },
+          },
+          include: { platformPlan: true },
+          orderBy: { createdAt: 'desc' },
+        })
+      : [];
 
-    const tenantData = await Promise.all(storageStats.map(async stat => {
-      totalUsed += stat.usedStorageBytes;
-      totalLimit += stat.storageLimitBytes;
-      totalFiles += stat.totalFiles;
-      
-      const sub = await this.prisma.tenantSubscription.findFirst({
-        where: { tenantId: stat.tenantId, status: { in: ['ACTIVE', 'TRIAL'] } },
-        include: { platformPlan: true }
-      });
-      
+    const subscriptionByTenant = new Map<string, any>();
+    for (const subscription of subscriptions) {
+      if (!subscriptionByTenant.has(subscription.tenantId)) {
+        subscriptionByTenant.set(subscription.tenantId, subscription);
+      }
+    }
+
+    const tenantData = storageStats.map((stat) => {
+      const sub = subscriptionByTenant.get(stat.tenantId);
+
       return {
         tenantId: stat.tenantId,
         tenantName: stat.tenant?.name || 'Unknown',
@@ -204,13 +338,34 @@ export class TenantStorageService {
         usagePercent: ((stat.usedStorageBytes / stat.storageLimitBytes) * 100).toFixed(1),
         fileCount: stat.totalFiles,
       };
-    }));
+    });
 
     return {
-      totalUsed,
-      totalLimit,
-      totalFiles,
+      totalUsed: totals._sum.usedStorageBytes || 0,
+      totalLimit: totals._sum.storageLimitBytes || 0,
+      totalFiles: totals._sum.totalFiles || 0,
       tenants: tenantData,
+      total,
+      page: currentPage,
+      limit: pageSize,
     };
+  }
+
+  private async runWithConcurrency<T>(
+    items: T[],
+    limit: number,
+    worker: (item: T) => Promise<void>,
+  ): Promise<void> {
+    let index = 0;
+    const runners = Array.from(
+      { length: Math.min(limit, items.length) },
+      async () => {
+        while (index < items.length) {
+          const item = items[index++];
+          await worker(item);
+        }
+      },
+    );
+    await Promise.all(runners);
   }
 }

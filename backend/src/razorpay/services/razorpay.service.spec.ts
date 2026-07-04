@@ -14,6 +14,8 @@ import crypto from 'crypto';
 describe('RazorpayService', () => {
   let service: RazorpayService;
   let prisma: PrismaService;
+  let whatsappService: WhatsappService;
+  let auditService: AuditService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -66,6 +68,8 @@ describe('RazorpayService', () => {
 
     service = module.get<RazorpayService>(RazorpayService);
     prisma = module.get<PrismaService>(PrismaService);
+    whatsappService = module.get<WhatsappService>(WhatsappService);
+    auditService = module.get<AuditService>(AuditService);
 
     process.env.RAZORPAY_KEY_SECRET = 'test_secret';
     process.env.RAZORPAY_WEBHOOK_SECRET = 'webhook_secret';
@@ -120,6 +124,8 @@ describe('RazorpayService', () => {
       expect(prisma.payment.updateMany).toHaveBeenCalledTimes(2);
       expect(prisma.invoice.create).toHaveBeenCalledTimes(1); // Only generated once
       expect(prisma.notification.create).toHaveBeenCalledTimes(1);
+      expect(auditService.createLog).toHaveBeenCalledTimes(2);
+      expect(whatsappService.sendPaymentSuccess).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -170,6 +176,8 @@ describe('RazorpayService', () => {
 
       expect(prisma.payment.updateMany).toHaveBeenCalledTimes(2);
       expect(prisma.invoice.create).toHaveBeenCalledTimes(1);
+      expect(auditService.createLog).toHaveBeenCalledTimes(2);
+      expect(whatsappService.sendPaymentSuccess).toHaveBeenCalledTimes(1);
     });
   });
 

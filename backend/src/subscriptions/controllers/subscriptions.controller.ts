@@ -49,7 +49,7 @@ export class SubscriptionsController {
   }
 
   @Get()
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListSubscriptionsQueryDto,
@@ -61,7 +61,7 @@ export class SubscriptionsController {
   }
 
   @Get('expiring')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   findExpiring(
     @CurrentUser() user: JwtPayload,
     @Query() query: ExpiringSubscriptionsQueryDto,
@@ -73,7 +73,7 @@ export class SubscriptionsController {
   }
 
   @Get(':id')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   findOne(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
@@ -99,6 +99,7 @@ export class SubscriptionsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(Role.OWNER)
   remove(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,

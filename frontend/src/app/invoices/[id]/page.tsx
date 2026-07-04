@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useInvoice } from '@/hooks/api/useInvoices';
+import { useGymProfile } from '@/hooks/api/useSettings';
 import { Button } from '@/components/ui/Button';
 import { LoadingState, ErrorState } from '@/components/ui/States';
 import { ArrowLeft, Printer, ExternalLink } from 'lucide-react';
@@ -13,6 +14,7 @@ export default function InvoiceDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: invoice, isLoading, isError } = useInvoice(id);
+  const { data: gymProfile } = useGymProfile();
 
   if (isLoading) {
     return <LoadingState />;
@@ -42,7 +44,7 @@ export default function InvoiceDetailsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-[24px] font-semibold text-[#171717] tracking-tight">
+            <h1 className="text-[24px] font-semibold text-[var(--on-primary)] tracking-tight">
               Invoice {invoice.invoiceNumber}
             </h1>
           </div>
@@ -52,83 +54,117 @@ export default function InvoiceDetailsPage() {
         </Button>
       </div>
 
-      <div className="bg-white border border-[#ebebeb] rounded-[8px] p-[48px] print:p-[24px] print:border-none print:shadow-none">
+      <div className="bg-[var(--canvas-light)] border border-[var(--hairline-soft)] rounded-[16px] shadow-sm p-[48px] print:p-0 print:border-none print:shadow-none font-sans relative overflow-hidden">
+        {/* Decorative Top Accent */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-neutral-800 to-neutral-600 print:hidden"></div>
+
         <div className="flex justify-between items-start mb-12">
-          <div>
-            <h2 className="text-[32px] font-bold text-[#171717] tracking-tight">INVOICE</h2>
-            <p className="text-[14px] text-[#888888] mt-1">GymOS Platform</p>
+          <div className="max-w-[50%]">
+            <h2 className="text-[36px] font-black text-[#111111] tracking-tight mb-1 uppercase">INVOICE</h2>
+            <div className="text-[14px] text-[#555555] mt-4 space-y-1">
+              <p className="font-bold text-[18px] text-[#222222]">{gymProfile?.name || 'GymOS Platform'}</p>
+              {gymProfile?.address && <p>{gymProfile.address}</p>}
+              {gymProfile?.city && gymProfile?.state && <p>{gymProfile.city}, {gymProfile.state} {gymProfile.country && `- ${gymProfile.country}`}</p>}
+              {gymProfile?.email && <p className="mt-2 text-neutral-400">{gymProfile.email}</p>}
+              {gymProfile?.phone && <p className="text-neutral-400">{gymProfile.phone}</p>}
+            </div>
           </div>
           <div className="text-right">
-            <p className="text-[14px] font-medium text-[#171717]">Invoice Number</p>
-            <p className="text-[14px] text-[#888888]">{invoice.invoiceNumber}</p>
-            <p className="text-[14px] font-medium text-[#171717] mt-4">Date Issued</p>
-            <p className="text-[14px] text-[#888888]">{format(new Date(invoice.issuedAt), 'MMM d, yyyy')}</p>
+            <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-100 inline-block text-left min-w-[200px]">
+              <p className="text-[12px] font-bold text-[var(--ash)] uppercase tracking-wider mb-1">Invoice Number</p>
+              <p className="text-[16px] font-medium text-[#111111]">{invoice.invoiceNumber}</p>
+              
+              <p className="text-[12px] font-bold text-[var(--ash)] uppercase tracking-wider mb-1 mt-4">Date Issued</p>
+              <p className="text-[16px] font-medium text-[#111111]">{format(new Date(invoice.issuedAt), 'MMM d, yyyy')}</p>
+              
+              <div className="mt-4">
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+                  ${invoice.payment?.paymentStatus === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                `}>
+                  {invoice.payment?.paymentStatus === 'PAID' ? 'PAID' : 'UNPAID'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-between items-start mb-12 border-t border-[#ebebeb] pt-8">
+        <div className="flex justify-between items-start mb-12 pt-8 border-t border-dashed border-neutral-200">
           <div>
-            <p className="text-[14px] font-medium text-[#171717] mb-2">Billed To:</p>
-            <p className="text-[16px] font-semibold text-[#171717]">
+            <p className="text-[12px] font-bold text-[var(--ash)] uppercase tracking-wider mb-2">Billed To</p>
+            <p className="text-[18px] font-bold text-[#111111]">
               {invoice.member?.firstName} {invoice.member?.lastName}
             </p>
-            {invoice.member?.email && <p className="text-[14px] text-[#888888]">{invoice.member.email}</p>}
-            {invoice.member?.phone && <p className="text-[14px] text-[#888888]">{invoice.member.phone}</p>}
+            <div className="text-[14px] text-[#555555] mt-1 space-y-1">
+              {invoice.member?.email && <p>{invoice.member.email}</p>}
+              {invoice.member?.phone && <p>{invoice.member.phone}</p>}
+            </div>
           </div>
         </div>
 
-        <table className="w-full mb-12 border-collapse">
-          <thead>
-            <tr className="border-b border-[#ebebeb]">
-              <th className="py-3 text-left text-[14px] font-medium text-[#171717]">Description</th>
-              <th className="py-3 text-right text-[14px] font-medium text-[#171717]">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-[#ebebeb]">
-              <td className="py-4 text-[14px] text-[#171717]">
-                {invoice.subscription ? (
-                  <>
-                    <p className="font-medium">{invoice.subscription.membershipPlan?.name || 'Membership Plan'}</p>
-                    <p className="text-[#888888] text-[13px] mt-1">
-                      {format(new Date(invoice.subscription.startDate), 'MMM d, yyyy')} to {format(new Date(invoice.subscription.endDate), 'MMM d, yyyy')}
-                    </p>
-                  </>
-                ) : (
-                  'Gym Services / General Payment'
-                )}
-                {invoice.notes && (
-                  <p className="text-[#888888] text-[13px] mt-2 italic">{invoice.notes}</p>
-                )}
-              </td>
-              <td className="py-4 text-right text-[14px] text-[#171717] align-top">
-                {formatCurrency(invoice.amount)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="rounded-lg border border-neutral-200 overflow-hidden mb-12">
+          <table className="w-full border-collapse">
+            <thead className="bg-neutral-50">
+              <tr>
+                <th className="py-4 px-6 text-left text-[12px] font-bold text-[var(--ash)] uppercase tracking-wider">Description</th>
+                <th className="py-4 px-6 text-right text-[12px] font-bold text-[var(--ash)] uppercase tracking-wider">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              <tr>
+                <td className="py-6 px-6 text-[15px] text-[#111111]">
+                  {invoice.subscription ? (
+                    <>
+                      <p className="font-bold text-[16px]">{invoice.subscription.membershipPlan?.name || 'Membership Plan'}</p>
+                      <p className="text-[#555555] text-[14px] mt-1 flex items-center">
+                        <span className="inline-block px-2 py-0.5 bg-neutral-100 rounded text-neutral-600 mr-2 text-xs font-medium">Billing Period</span>
+                        {format(new Date(invoice.subscription.startDate), 'MMM d, yyyy')} — {format(new Date(invoice.subscription.endDate), 'MMM d, yyyy')}
+                      </p>
+                    </>
+                  ) : (
+                    <span className="font-medium">Gym Services / General Payment</span>
+                  )}
+                  {invoice.notes && (
+                    <div className="mt-3 bg-neutral-50 p-3 rounded text-[#555555] text-[13px] border border-neutral-100">
+                      <strong>Note:</strong> {invoice.notes}
+                    </div>
+                  )}
+                </td>
+                <td className="py-6 px-6 text-right text-[16px] font-medium text-[#111111] align-top">
+                  {formatCurrency(invoice.amount)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div className="flex justify-end mb-12">
-          <div className="w-64">
-            <div className="flex justify-between py-2 font-bold text-[#171717] text-[18px]">
-              <span>Total</span>
-              <span>{formatCurrency(invoice.amount)}</span>
-            </div>
-            {invoice.payment && (
-              <div className="flex justify-between py-2 text-[#2b8a3e] text-[14px]">
-                <span>Paid via {invoice.payment.paymentMethod.replace('_', ' ')}</span>
-                <span>-{formatCurrency(invoice.amount)}</span>
+          <div className="w-80">
+            <div className="bg-neutral-50 rounded-lg p-6 border border-neutral-200">
+              <div className="flex justify-between py-2 text-[#555555] text-[15px]">
+                <span>Subtotal</span>
+                <span className="font-medium text-[#111111]">{formatCurrency(invoice.amount)}</span>
               </div>
-            )}
-            <div className="flex justify-between py-2 font-bold text-[#171717] text-[18px] border-t border-[#ebebeb] mt-2">
-              <span>Amount Due</span>
-              <span>{invoice.payment?.paymentStatus === 'PAID' ? formatCurrency(0) : formatCurrency(invoice.amount)}</span>
+              
+              {invoice.payment && (
+                <div className="flex justify-between py-2 text-[#2b8a3e] text-[15px]">
+                  <span className="flex items-center">
+                    Paid ({invoice.payment.paymentMethod.replace('_', ' ')})
+                  </span>
+                  <span className="font-medium">-{formatCurrency(invoice.amount)}</span>
+                </div>
+              )}
+              
+              <div className="flex justify-between pt-4 mt-2 border-t border-neutral-200 font-bold text-[#111111] text-[20px]">
+                <span>Amount Due</span>
+                <span>{invoice.payment?.paymentStatus === 'PAID' ? formatCurrency(0) : formatCurrency(invoice.amount)}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-[#ebebeb] pt-8 text-center text-[12px] text-[#888888]">
-          <p>Thank you for your business.</p>
+        <div className="mt-16 pt-8 border-t border-[var(--hairline-soft)] flex flex-col items-center justify-center text-center">
+          <p className="text-[16px] font-medium text-[#111111] mb-1">Thank you for your business!</p>
+          <p className="text-[13px] text-[var(--ash)]">If you have any questions concerning this invoice, contact {gymProfile?.email || 'support@gymos.com'}</p>
         </div>
       </div>
 

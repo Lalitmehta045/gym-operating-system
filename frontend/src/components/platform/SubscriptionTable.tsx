@@ -27,7 +27,7 @@ export function SubscriptionTable() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="relative w-72">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#888888]" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[var(--ash)]" />
           <Input 
             placeholder="Search by gym..." 
             className="pl-9"
@@ -37,10 +37,10 @@ export function SubscriptionTable() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-[#ebebeb] bg-white overflow-hidden">
+      <div className="rounded-xl border border-[var(--hairline-soft)] bg-[var(--canvas-light)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[14px]">
-            <thead className="bg-[#fafafa] text-[#666666]">
+            <thead className="bg-[var(--canvas-soft)] text-[#666666]">
               <tr>
                 <th className="px-6 py-3 font-medium">Gym</th>
                 <th className="px-6 py-3 font-medium">Plan</th>
@@ -50,7 +50,7 @@ export function SubscriptionTable() {
                 <th className="px-6 py-3 font-medium text-right">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#ebebeb] text-[#171717]">
+            <tbody className="divide-y divide-[#ebebeb] text-[var(--on-primary)]">
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-10 text-center text-[#666666]">Loading subscriptions...</td>
@@ -61,9 +61,9 @@ export function SubscriptionTable() {
                 </tr>
               ) : (
                 data?.data.map((gym) => (
-                  <tr key={gym.id} className="hover:bg-[#fafafa] transition-colors">
+                  <tr key={gym.id} className="hover:bg-[var(--canvas-soft)] transition-colors">
                     <td className="px-6 py-4">
-                      <Link href={`/platform/gyms/${gym.id}`} className="font-medium text-[#171717] hover:underline">
+                      <Link href={`/platform/gyms/${gym.id}`} className="font-medium text-[var(--on-primary)] hover:underline">
                         {gym.name}
                       </Link>
                     </td>
@@ -90,10 +90,10 @@ export function SubscriptionTable() {
         </div>
         
         {data?.meta && data.meta.totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-[#ebebeb] bg-white px-6 py-3">
+          <div className="flex items-center justify-between border-t border-[var(--hairline-soft)] bg-[var(--canvas-light)] px-6 py-3">
             <p className="text-[14px] text-[#666666]">
-              Showing <span className="font-medium text-[#171717]">{data.data.length}</span> of{' '}
-              <span className="font-medium text-[#171717]">{data.meta.total}</span> results
+              Showing <span className="font-medium text-[var(--on-primary)]">{data.data.length}</span> of{' '}
+              <span className="font-medium text-[var(--on-primary)]">{data.meta.total}</span> results
             </p>
             <div className="flex gap-2">
               <Button 

@@ -16,15 +16,37 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
+  private readonly slowQueryThresholdMs: number;
 
   constructor() {
+    const enableQueryPerformanceLogs =
+      process.env.PERFORMANCE_DB_QUERY_LOGGING === 'true';
+
     super({
-      log:
-        process.env.NODE_ENV === 'development'
+      log: enableQueryPerformanceLogs
+        ? [
+            { level: 'query', emit: 'event' },
+            { level: 'warn', emit: 'stdout' },
+            { level: 'error', emit: 'stdout' },
+          ]
+        : process.env.NODE_ENV === 'development'
           ? ['query', 'info', 'warn', 'error']
           : ['error'],
     });
 
+    this.slowQueryThresholdMs = Number(
+      process.env.PERFORMANCE_SLOW_DB_QUERY_MS ?? 250,
+    );
+
+    if (enableQueryPerformanceLogs) {
+      this.$on('query' as never, (event: any) => {
+        if (event.duration >= this.slowQueryThresholdMs) {
+          this.logger.warn(
+            `SLOW_DB_QUERY durationMs=${event.duration} query=${event.query}`,
+          );
+        }
+      });
+    }
   }
 
   async onModuleInit(): Promise<void> {

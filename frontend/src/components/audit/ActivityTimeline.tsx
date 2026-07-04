@@ -15,15 +15,15 @@ export function ActivityTimeline({ memberId }: ActivityTimelineProps) {
   
   if (!data?.data || data.data.length === 0) {
     return (
-      <div className="bg-white rounded-[12px] p-8 border border-[#ebebeb] text-center text-[#888888]">
+      <div className="bg-[var(--canvas-light)] rounded-[12px] p-8 border border-[var(--hairline-soft)] text-center text-[var(--ash)]">
         No activity history found for this member.
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-[12px] p-6 border border-[#ebebeb]">
-      <h3 className="text-lg font-medium text-[#171717] mb-6">Activity Timeline</h3>
+    <div className="bg-[var(--canvas-light)] rounded-[12px] p-6 border border-[var(--hairline-soft)]">
+      <h3 className="text-lg font-medium text-[var(--on-primary)] mb-6">Activity Timeline</h3>
       <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[#ebebeb] before:to-transparent">
         {data.data.map((log) => (
           <ActivityCard key={log.id} log={log} />

@@ -4,18 +4,20 @@ import { CheckInForm } from "@/components/attendance/CheckInForm"
 
 export default function CheckInPage() {
   return (
-    <div className="flex flex-col gap-y-[32px]">
-      <div className="flex flex-col gap-y-[8px]">
-        <Link href="/attendance" className="inline-flex items-center text-sm text-[#888888] hover:text-[#171717] mb-2">
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Back to Dashboard
-        </Link>
-        <h1 className="text-[32px] font-semibold tracking-[-1.28px] text-[#171717]">Quick Check-In</h1>
-        <p className="text-[16px] text-[#4d4d4d]">Search for a member and check them in instantly</p>
-      </div>
+    <div className="min-h-screen bg-[var(--canvas-soft)] py-8">
+      <div className="max-w-4xl mx-auto space-y-6 px-4">
+        <div>
+          <Link href="/attendance" className="inline-flex items-center text-sm text-[var(--mute)] hover:text-[var(--on-primary)] mb-4 transition-colors">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+          <h1 className="text-3xl font-bold text-[var(--on-primary)]">Quick Check-In</h1>
+          <p className="text-sm text-[var(--mute)] mt-1">Search for a member and check them in instantly</p>
+        </div>
 
-      <div className="flex items-center justify-center py-10">
-        <CheckInForm />
+        <div className="flex items-center justify-center py-10">
+          <CheckInForm />
+        </div>
       </div>
     </div>
   )

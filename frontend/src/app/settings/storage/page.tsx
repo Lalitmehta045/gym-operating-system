@@ -16,8 +16,8 @@ export default function StorageSettingsPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-2xl font-semibold text-[#171717]">Storage Management</h1>
-        <p className="text-sm text-[#888888] mt-1">Manage your gym's file storage quota and limits.</p>
+        <h1 className="text-2xl font-semibold text-[var(--on-primary)]">Storage Management</h1>
+        <p className="text-sm text-[var(--ash)] mt-1">Manage your gym's file storage quota and limits.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

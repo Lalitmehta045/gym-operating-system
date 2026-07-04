@@ -11,11 +11,11 @@ export function TenantStorageTable({ data }: { data: PlatformStorage }) {
   };
 
   return (
-    <div className="bg-white border border-[#ebebeb] rounded-xl shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-[#ebebeb] flex justify-between items-center bg-gray-50">
+    <div className="bg-[var(--canvas-light)] border border-[var(--hairline-soft)] rounded-xl shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-[var(--hairline-soft)] flex justify-between items-center bg-[var(--canvas-paper)]">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Global Storage Overview</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-lg font-semibold text-[var(--on-primary)]">Global Storage Overview</h2>
+          <p className="text-sm text-[var(--mute)] mt-1">
             Total Used: {formatBytes(data.totalUsed)} | Files: {data.totalFiles}
           </p>
         </div>
@@ -23,7 +23,7 @@ export function TenantStorageTable({ data }: { data: PlatformStorage }) {
       
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b border-[#ebebeb] text-xs uppercase text-gray-500">
+          <thead className="bg-[var(--canvas-paper)] border-b border-[var(--hairline-soft)] text-xs uppercase text-[var(--mute)]">
             <tr>
               <th className="px-6 py-4 font-medium">Gym Name</th>
               <th className="px-6 py-4 font-medium">Plan</th>
@@ -35,15 +35,15 @@ export function TenantStorageTable({ data }: { data: PlatformStorage }) {
           </thead>
           <tbody className="divide-y divide-[#ebebeb]">
             {data.tenants.map((tenant) => (
-              <tr key={tenant.tenantId} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-medium text-gray-900">{tenant.tenantName}</td>
-                <td className="px-6 py-4 text-gray-500">
+              <tr key={tenant.tenantId} className="hover:bg-[var(--canvas-paper)] transition-colors">
+                <td className="px-6 py-4 font-medium text-[var(--on-primary)]">{tenant.tenantName}</td>
+                <td className="px-6 py-4 text-[var(--mute)]">
                   <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium text-xs">
                     {tenant.planName}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-gray-500">{formatBytes(tenant.usedBytes)}</td>
-                <td className="px-6 py-4 text-gray-500">{formatBytes(tenant.limitBytes)}</td>
+                <td className="px-6 py-4 text-[var(--mute)]">{formatBytes(tenant.usedBytes)}</td>
+                <td className="px-6 py-4 text-[var(--mute)]">{formatBytes(tenant.limitBytes)}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-2">
                     <div className="w-16 bg-gray-200 rounded-full h-1.5">
@@ -52,18 +52,18 @@ export function TenantStorageTable({ data }: { data: PlatformStorage }) {
                         style={{ width: `${Math.min(100, Number(tenant.usagePercent))}%` }}
                       ></div>
                     </div>
-                    <span className={`text-xs ${Number(tenant.usagePercent) >= 90 ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                    <span className={`text-xs ${Number(tenant.usagePercent) >= 90 ? 'text-red-600 font-medium' : 'text-[var(--mute)]'}`}>
                       {tenant.usagePercent}%
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-500">{tenant.fileCount}</td>
+                <td className="px-6 py-4 text-[var(--mute)]">{tenant.fileCount}</td>
               </tr>
             ))}
             
             {data.tenants.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-10 text-center text-[var(--mute)]">
                   No storage data available yet.
                 </td>
               </tr>

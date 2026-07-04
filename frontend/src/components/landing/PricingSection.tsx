@@ -66,7 +66,7 @@ export function PricingSection() {
                     <span className="text-body-sm text-[var(--mute)]">/month</span>
                   )}
                 </div>
-                
+
                 <Link
                   href={tier.href}
                   className={tier.featured ? 'button-primary w-full' : 'button-primary-on-light w-full'}

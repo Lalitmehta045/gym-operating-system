@@ -43,14 +43,14 @@ export function WhatsAppAutomation() {
   ];
 
   return (
-    <section className="marketing-section-dark px-[var(--spacing-lg)] overflow-hidden">
+    <section className="bg-[var(--primary)] text-[var(--on-primary)] py-[var(--spacing-5xl)] px-[var(--spacing-lg)] overflow-hidden">
       <div className="mx-auto w-full max-w-[1640px]">
         <div className="mx-auto max-w-2xl text-center mb-[var(--spacing-section)]">
           <div className="text-mono-eyebrow text-[var(--mute)] mb-[var(--spacing-sm)] uppercase tracking-wider">Automation</div>
           <h2 className="text-display-md text-[var(--on-primary)] mb-[var(--spacing-md)]">
             Zero-Touch Renewals
           </h2>
-          <p className="text-subtitle text-[var(--ash)]">
+          <p className="text-body-lg text-[var(--ash)]">
             Let the system handle the awkward payment conversations. Integrated WhatsApp automation ensures you get paid on time, every time.
           </p>
         </div>
@@ -98,7 +98,7 @@ export function WhatsAppAutomation() {
                     <div className="w-20 h-20 rounded-[var(--radius-full)] bg-[var(--canvas-paper)] mb-[var(--spacing-md)] flex items-center justify-center text-[var(--mute)] font-bold text-2xl border-4 border-white shadow-sm">
                       SJ
                     </div>
-                    <h3 className="text-heading-sm text-[var(--ink)] mb-1">Sarah Jenkins</h3>
+                    <h3 className="text-body-md-strong text-[var(--ink)] mb-1">Sarah Jenkins</h3>
                     <div className="px-3 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded-[var(--radius-full)] text-caption-tight font-bold mb-[var(--spacing-lg)]">
                       Expiring in 2 days
                     </div>
@@ -120,7 +120,7 @@ export function WhatsAppAutomation() {
                   >
                     {/* WhatsApp Header */}
                     <div className="bg-[#075e54] px-4 py-3 flex items-center gap-[var(--spacing-sm)]">
-                      <div className="w-8 h-8 rounded-[var(--radius-full)] bg-white/20 flex items-center justify-center text-white">
+                      <div className="w-8 h-8 rounded-[var(--radius-full)] bg-[var(--canvas-light)]/20 flex items-center justify-center text-white">
                         <Smartphone className="w-4 h-4" />
                       </div>
                       <div className="text-white">
@@ -137,7 +137,7 @@ export function WhatsAppAutomation() {
                           initial={{ opacity: 0, y: 10, scale: 0.9, transformOrigin: 'top left' }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                          className="bg-white rounded-[var(--radius-app-lg)] rounded-tl-none p-[var(--spacing-sm)] text-caption text-[var(--ink)] shadow-sm self-start max-w-[85%]"
+                          className="bg-[var(--canvas-light)] rounded-[var(--radius-app-lg)] rounded-tl-none p-[var(--spacing-sm)] text-caption text-[var(--ink)] shadow-sm self-start max-w-[85%]"
                         >
                           Hi Sarah! 👋 Your Pro Annual plan at <strong>NexUp Fit</strong> expires in 2 days. 
                         </motion.div>
@@ -147,7 +147,7 @@ export function WhatsAppAutomation() {
                             initial={{ opacity: 0, y: 10, scale: 0.9, transformOrigin: 'top left' }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            className="bg-white rounded-[var(--radius-app-lg)] rounded-tl-none p-[var(--spacing-sm)] text-caption text-[var(--ink)] shadow-sm self-start max-w-[85%] flex flex-col gap-[var(--spacing-xs)]"
+                            className="bg-[var(--canvas-light)] rounded-[var(--radius-app-lg)] rounded-tl-none p-[var(--spacing-sm)] text-caption text-[var(--ink)] shadow-sm self-start max-w-[85%] flex flex-col gap-[var(--spacing-xs)]"
                           >
                             <div>Tap below to renew instantly. No login required!</div>
                             <div className="bg-[#25D366]/10 border border-[#25D366]/30 rounded-[var(--radius-app-sm)] p-[var(--spacing-xs)] text-center text-[#075e54] font-semibold flex items-center justify-center gap-1 cursor-pointer hover:bg-[#25D366]/20 transition-colors">
@@ -185,7 +185,7 @@ export function WhatsAppAutomation() {
                     <div className="w-20 h-20 rounded-[var(--radius-full)] bg-[#e6f4ea] mb-[var(--spacing-md)] flex items-center justify-center text-[var(--success)] border-4 border-[var(--canvas-light)] shadow-sm ring-1 ring-[#ceead6]">
                       <CheckCircle2 className="w-10 h-10" />
                     </div>
-                    <h3 className="text-heading-sm text-[var(--ink)] mb-1">Sarah Jenkins</h3>
+                    <h3 className="text-body-md-strong text-[var(--ink)] mb-1">Sarah Jenkins</h3>
                     <div className="px-3 py-1 bg-[#e6f4ea] border border-[#ceead6] text-[var(--success)] rounded-[var(--radius-full)] text-caption-tight font-bold mb-[var(--spacing-lg)]">
                       Active
                     </div>

@@ -66,7 +66,7 @@ export function FeaturesSection() {
             NexUp Fit replaces 5 different tools with one seamless, premium platform. We focus on automation so you can focus on growth.
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--spacing-lg)]">
           {features.map((feature) => (
             <div key={feature.name} className="feature-card-dark flex flex-col h-full hover:border-[var(--mute)] transition-colors duration-300">

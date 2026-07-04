@@ -10,11 +10,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen w-full bg-[var(--canvas)] overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden">
       {/* Mobile Sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[var(--canvas-soft)]/80 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -28,9 +28,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden bg-[var(--canvas-soft)]">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-[24px]">
+        <main className="flex-1 overflow-y-auto px-6 pb-6">
           <div className="mx-auto max-w-[1400px]">
             {children}
           </div>

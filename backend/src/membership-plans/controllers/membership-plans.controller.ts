@@ -40,7 +40,7 @@ export class MembershipPlansController {
   ) {}
 
   @Post()
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER)
   async createPlan(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateMembershipPlanDto,
@@ -49,7 +49,7 @@ export class MembershipPlansController {
   }
 
   @Get()
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   async listPlans(
     @CurrentUser() user: JwtPayload,
@@ -59,7 +59,7 @@ export class MembershipPlansController {
   }
 
   @Get(':id')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   async getPlanById(
     @CurrentUser() user: JwtPayload,
@@ -72,7 +72,7 @@ export class MembershipPlansController {
   }
 
   @Patch(':id')
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER)
   async updatePlan(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) planId: string,
@@ -87,7 +87,7 @@ export class MembershipPlansController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(Role.OWNER, Role.MANAGER)
+  @Roles(Role.OWNER)
   async deletePlan(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) planId: string,

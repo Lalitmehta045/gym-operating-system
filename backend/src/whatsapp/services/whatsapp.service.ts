@@ -3,6 +3,17 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import axios from 'axios';
 import { ExternalServiceCall } from '../../common/utils/circuit-breaker.util.js';
 
+interface RenewalReminderRecipient {
+  tenantId: string;
+  memberId: string;
+  daysRemaining: number;
+  paymentLink?: string;
+  member: {
+    firstName: string;
+    phone: string;
+  };
+}
+
 @Injectable()
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
@@ -48,7 +59,7 @@ export class WhatsappService {
         ),
         (err) => {
           this.logger.error('WhatsApp API unavailable. Gracefully degrading.', err);
-          return { 
+          return {
             data: { messages: [] },
             status: 200,
             statusText: 'OK',
@@ -133,7 +144,7 @@ export class WhatsappService {
         ),
         (err) => {
           this.logger.error('WhatsApp API unavailable for template. Gracefully degrading.', err);
-          return { 
+          return {
             data: { messages: [] },
             status: 200,
             statusText: 'OK',
@@ -216,6 +227,101 @@ export class WhatsappService {
     });
     if (!member || !member.phone) return;
 
+    await this.sendRenewalReminderToMember({
+      tenantId,
+      memberId,
+      daysRemaining,
+      paymentLink,
+      member: {
+        firstName: member.firstName,
+        phone: member.phone,
+      },
+    });
+  }
+
+  async sendRenewalReminderToMember(
+    reminder: RenewalReminderRecipient,
+  ): Promise<void> {
+    await this.sendRenewalRemindersBatch([reminder]);
+  }
+
+  async sendRenewalRemindersBatch(
+    reminders: RenewalReminderRecipient[],
+  ): Promise<void> {
+    const candidates = reminders
+      .filter((reminder) => reminder.member.phone)
+      .map((reminder) => {
+        const { type, text } = this.buildRenewalReminderMessage(
+          reminder.member,
+          reminder.daysRemaining,
+          reminder.paymentLink,
+        );
+        return { ...reminder, type, text };
+      });
+
+    if (candidates.length === 0) return;
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+
+    const existingLogs = await this.prisma.whatsAppLog.findMany({
+      where: {
+        OR: candidates.map((candidate) => ({
+          tenantId: candidate.tenantId,
+          memberId: candidate.memberId,
+          type: candidate.type,
+          createdAt: { gte: cutoff },
+        })),
+      },
+      select: {
+        tenantId: true,
+        memberId: true,
+        type: true,
+      },
+    });
+
+    const existingKeys = new Set(
+      existingLogs.map(
+        (log) => `${log.tenantId}:${log.memberId ?? ''}:${log.type}`,
+      ),
+    );
+
+    const remindersByType = new Map<string, typeof candidates>();
+
+    for (const candidate of candidates) {
+      const key = `${candidate.tenantId}:${candidate.memberId}:${candidate.type}`;
+      if (existingKeys.has(key)) {
+        this.logger.log(
+          `Skipping duplicate WhatsApp reminder of type ${candidate.type} for member ${candidate.memberId}`,
+        );
+        continue;
+      }
+
+      const group = remindersByType.get(candidate.type) ?? [];
+      group.push(candidate);
+      remindersByType.set(candidate.type, group);
+    }
+
+    for (const remindersForType of remindersByType.values()) {
+      await Promise.all(
+        remindersForType.map((reminder) =>
+          this.sendMessage(
+            reminder.member.phone,
+            reminder.text,
+            reminder.tenantId,
+            reminder.memberId,
+            reminder.type,
+          ),
+        ),
+      );
+    }
+  }
+
+  private buildRenewalReminderMessage(
+    member: { firstName: string },
+    daysRemaining: number,
+    paymentLink?: string,
+  ) {
     let type = '';
     let text = '';
 
@@ -233,16 +339,7 @@ export class WhatsappService {
       text += `Please renew soon to continue access.`;
     }
 
-    // Check duplicate logic. If we already sent this specific reminder type recently (e.g. within 30 days)
-    const canSend = await this.canSendMessage(tenantId, memberId, type, 30);
-    if (!canSend) {
-      this.logger.log(
-        `Skipping duplicate WhatsApp reminder of type ${type} for member ${memberId}`,
-      );
-      return;
-    }
-
-    await this.sendMessage(member.phone, text, tenantId, memberId, type);
+    return { type, text };
   }
 
   async sendPaymentSuccess(tenantId: string, memberId: string, amount: number) {
@@ -301,6 +398,55 @@ export class WhatsappService {
     }
 
     await this.sendMessage(tenant.phone, text, tenantId, undefined, type);
+  }
+
+  async sendWithCredentials(
+    phoneNumber: string,
+    message: string,
+    credentials: {
+      phoneNumberId: string;
+      accessToken: string;
+    },
+  ) {
+    try {
+      const response = await ExternalServiceCall.execute(
+        'whatsapp-send-with-credentials',
+        () => axios.post(
+          `${this.apiUrl}/${credentials.phoneNumberId}/messages`,
+          {
+            messaging_product: 'whatsapp',
+            to: phoneNumber,
+            type: 'text',
+            text: { body: message },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${credentials.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+        (err) => {
+          this.logger.error('WhatsApp API unavailable. Gracefully degrading.', err);
+          return {
+            data: { messages: [] },
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config: {} as any,
+          };
+        },
+        { timeout: 5000 }
+      );
+
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(
+        'Failed to send WhatsApp message with credentials',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
   }
 
   async processWebhook(body: any) {

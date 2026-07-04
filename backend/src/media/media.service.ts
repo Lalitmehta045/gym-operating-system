@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { StorageService as AwsStorageService } from './storage.service.js';
 import { TenantStorageService } from '../storage/tenant-storage.service.js';
 import { MediaType, MediaCategory, Prisma } from '../../generated/prisma/client.js';
-import sharp from 'sharp';
+import { ImageProcessingProcessor } from './processors/image-processing.processor.js';
 
 @Injectable()
 export class MediaService {
@@ -13,64 +13,8 @@ export class MediaService {
     private prisma: PrismaService,
     private storageService: AwsStorageService,
     private tenantStorageService: TenantStorageService,
+    private imageProcessor: ImageProcessingProcessor,
   ) {}
-
-  async processAndUploadImage(
-    fileBuffer: Buffer,
-    originalName: string,
-    mimeType: string,
-    folder: string,
-  ) {
-    let processedBuffer = fileBuffer;
-    let finalMimeType = mimeType;
-    let finalExt = originalName;
-    let width: number | null = null;
-    let height: number | null = null;
-    let thumbnailBuffer: Buffer | null = null;
-
-    if (mimeType.startsWith('image/')) {
-      try {
-        const image = sharp(fileBuffer);
-        const metadata = await image.metadata();
-        width = metadata.width || null;
-        height = metadata.height || null;
-
-        processedBuffer = await image
-          .webp({ quality: 80 })
-          .toBuffer();
-        
-        finalMimeType = 'image/webp';
-        finalExt = originalName.replace(/\.[^/.]+$/, "") + '.webp';
-
-        thumbnailBuffer = await sharp(fileBuffer)
-          .resize(200, 200, { fit: 'cover' })
-          .webp({ quality: 70 })
-          .toBuffer();
-
-      } catch (error) {
-        this.logger.error(`Error processing image: ${error.message}`);
-      }
-    }
-    const storageKey = await this.storageService.uploadFile(processedBuffer, finalExt, finalMimeType, folder);
-    const publicUrl = this.storageService.getPublicUrl(storageKey);
-
-    let thumbnailUrl: string | null = null;
-    if (thumbnailBuffer) {
-      const thumbKey = await this.storageService.uploadFile(thumbnailBuffer, `thumb_${finalExt}`, finalMimeType, `${folder}/thumbnails`);
-      thumbnailUrl = this.storageService.getPublicUrl(thumbKey);
-    }
-
-    return {
-      storageKey,
-      publicUrl,
-      thumbnailUrl,
-      width,
-      height,
-      mimeType: finalMimeType,
-      fileName: finalExt,
-      size: processedBuffer.length,
-    };
-  }
 
   async createMedia(
     file: Express.Multer.File,
@@ -106,48 +50,104 @@ export class MediaService {
     // Validate storage quota before processing
     await this.tenantStorageService.validateUpload(tenantId, file.size);
 
-    const processed = await this.processAndUploadImage(
+    const storageKey = await this.storageService.uploadFile(
       file.buffer,
       file.originalname,
       file.mimetype,
       folder
     );
 
-    const media = await this.prisma.media.create({
-      data: {
+    if (type === MediaType.IMAGE) {
+      const media = await this.prisma.media.create({
+        data: {
+          tenantId,
+          memberId,
+          uploadedById,
+          type,
+          category,
+          originalName: file.originalname,
+          fileName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          storageKey,
+        },
+      });
+
+      // Process image in the background
+      this.imageProcessor.process({
+        mediaId: media.id,
         tenantId,
-        memberId,
-        uploadedById,
-        type,
-        category,
+        storageKey,
         originalName: file.originalname,
-        fileName: processed.fileName,
-        mimeType: processed.mimeType,
-        size: processed.size,
-        width: processed.width,
-        height: processed.height,
-        storageKey: processed.storageKey,
-        publicUrl: processed.publicUrl,
-        thumbnailUrl: processed.thumbnailUrl,
-      },
-    });
+        mimeType: file.mimetype,
+        folder
+      }).catch(err => {
+        this.logger.error(`Failed to process image ${media.id}`, err.stack);
+      });
 
-    // Increment tenant storage
-    await this.tenantStorageService.incrementStorage(tenantId, processed.size, type);
+      await this.tenantStorageService.incrementStorage(tenantId, file.size, type);
+      await this.tenantStorageService.invalidateStorageCache(tenantId);
+      return { status: 'processing', tempKey: storageKey, mediaId: media.id };
+    } else {
+      const publicUrl = this.storageService.getPublicUrl(storageKey);
+      const media = await this.prisma.media.create({
+        data: {
+          tenantId,
+          memberId,
+          uploadedById,
+          type,
+          category,
+          originalName: file.originalname,
+          fileName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          storageKey,
+          publicUrl,
+        },
+      });
 
-    return media;
+      await this.tenantStorageService.incrementStorage(tenantId, file.size, type);
+      await this.tenantStorageService.invalidateStorageCache(tenantId);
+      return media;
+    }
   }
 
-  async getMemberGallery(tenantId: string, memberId: string) {
-    return this.prisma.media.findMany({
-      where: {
-        tenantId,
-        memberId,
-        category: MediaCategory.MEMBER_GALLERY,
-        deletedAt: null,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getMemberGallery(tenantId: string, memberId: string, page = 1, limit = 20) {
+    const currentPage = Number.isFinite(page) && page > 0 ? page : 1;
+    const pageSize = Number.isFinite(limit) && limit > 0 ? limit : 20;
+    const skip = (currentPage - 1) * pageSize;
+    const where = {
+      tenantId,
+      memberId,
+      category: MediaCategory.MEMBER_GALLERY,
+      deletedAt: null,
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.media.findMany({
+        where,
+        select: {
+          id: true,
+          type: true,
+          category: true,
+          originalName: true,
+          fileName: true,
+          mimeType: true,
+          size: true,
+          width: true,
+          height: true,
+          publicUrl: true,
+          thumbnailUrl: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.media.count({ where }),
+    ]);
+
+    return { data, total, page: currentPage, limit: pageSize };
   }
 
   async deleteMedia(tenantId: string, mediaId: string) {
@@ -165,6 +165,7 @@ export class MediaService {
     });
 
     await this.tenantStorageService.incrementStorage(tenantId, -media.size, media.type);
+    await this.tenantStorageService.invalidateStorageCache(tenantId);
 
     try {
       await this.storageService.deleteFile(media.storageKey);
@@ -201,4 +202,3 @@ export class MediaService {
     }
   }
 }
-

@@ -62,27 +62,27 @@ export default function QrScannerPage() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div>
-        <h1 className="text-2xl font-semibold text-[#171717]">QR Check-In</h1>
-        <p className="text-sm text-[#888888]">Scan member QR code to mark attendance</p>
+        <h1 className="text-2xl font-semibold text-[var(--on-primary)]">QR Check-In</h1>
+        <p className="text-sm text-[var(--ash)]">Scan member QR code to mark attendance</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-[1fr_300px]">
         {/* Scanner Column */}
         <div className="flex flex-col gap-4">
           {isScanning ? (
-            <div className="rounded-lg border border-[#ebebeb] bg-white p-4 shadow-sm">
+            <div className="rounded-lg border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-4 shadow-sm">
               <QrScanner
                 onScanSuccess={handleScanSuccess}
                 onScanFailure={handleScanFailure}
               />
             </div>
           ) : (
-            <div className="flex h-[350px] flex-col items-center justify-center rounded-lg border border-[#ebebeb] bg-white p-6 text-center shadow-sm">
+            <div className="flex h-[350px] flex-col items-center justify-center rounded-lg border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-6 text-center shadow-sm">
               {scanResult.status === "success" && (
                 <>
                   <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-                  <h3 className="text-xl font-medium text-[#171717]">{scanResult.memberName}</h3>
-                  <p className="text-[#888888] mt-2 mb-6">{scanResult.message}</p>
+                  <h3 className="text-xl font-medium text-[var(--on-primary)]">{scanResult.memberName}</h3>
+                  <p className="text-[var(--ash)] mt-2 mb-6">{scanResult.message}</p>
                 </>
               )}
               
@@ -93,8 +93,8 @@ export default function QrScannerPage() {
                   ) : (
                     <XCircle className="h-16 w-16 text-red-500 mb-4" />
                   )}
-                  <h3 className="text-xl font-medium text-[#171717]">Scan Failed</h3>
-                  <p className="text-[#888888] mt-2 mb-6">{scanResult.message}</p>
+                  <h3 className="text-xl font-medium text-[var(--on-primary)]">Scan Failed</h3>
+                  <p className="text-[var(--ash)] mt-2 mb-6">{scanResult.message}</p>
                 </>
               )}
 
@@ -106,24 +106,24 @@ export default function QrScannerPage() {
         </div>
 
         {/* Info Column */}
-        <div className="rounded-lg border border-[#ebebeb] bg-white p-6 shadow-sm h-fit">
-          <h3 className="font-medium text-[#171717] mb-4">Instructions</h3>
-          <ul className="space-y-3 text-sm text-[#888888]">
+        <div className="rounded-lg border border-[var(--hairline-soft)] bg-[var(--canvas-light)] p-6 shadow-sm h-fit">
+          <h3 className="font-medium text-[var(--on-primary)] mb-4">Instructions</h3>
+          <ul className="space-y-3 text-sm text-[var(--ash)]">
             <li className="flex gap-2">
-              <span className="font-medium text-[#171717]">1.</span>
+              <span className="font-medium text-[var(--on-primary)]">1.</span>
               <span>Ask the member to open their GymOS profile.</span>
             </li>
             <li className="flex gap-2">
-              <span className="font-medium text-[#171717]">2.</span>
+              <span className="font-medium text-[var(--on-primary)]">2.</span>
               <span>They should present their active QR code.</span>
             </li>
             <li className="flex gap-2">
-              <span className="font-medium text-[#171717]">3.</span>
+              <span className="font-medium text-[var(--on-primary)]">3.</span>
               <span>Point the camera at the code. It will scan automatically.</span>
             </li>
           </ul>
           
-          <div className="mt-6 rounded-md bg-[#fafafa] p-4 text-xs text-[#888888]">
+          <div className="mt-6 rounded-md bg-[var(--canvas-soft)] p-4 text-xs text-[var(--ash)]">
             Note: QR codes expire 24 hours after generation for security. 
             Duplicate scans on the same day will be rejected.
           </div>

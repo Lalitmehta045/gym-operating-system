@@ -34,6 +34,10 @@ export interface DashboardAttendance {
   todayMissed: number;
   attendanceRate: number;
   monthlyAttendanceTrend: { date: string; count: number }[];
+  hourlyData: { time: string; checkIns: number; checkOuts: number }[];
+  planData: { name: string; value: number; color: string }[];
+  totalCheckInsThisMonth: number;
+  growthPercentage: number;
 }
 
 export interface DashboardRevenue {

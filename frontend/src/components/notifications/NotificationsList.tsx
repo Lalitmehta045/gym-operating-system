@@ -5,16 +5,9 @@ import { useNotifications, useMarkRead, useMarkAllRead, NotificationType } from 
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { States } from "@/components/ui/States";
-import { Check, CheckCheck, Bell, Calendar, CreditCard, Info } from "lucide-react";
+import { Check, CheckCircle2, Bell, Calendar, CreditCard, Info, AlertTriangle, User, Megaphone, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const typeIcons: Record<NotificationType, React.ReactNode> = {
-  MEMBERSHIP_EXPIRING: <Calendar className="h-4 w-4 text-orange-500" />,
-  MEMBERSHIP_EXPIRED: <Calendar className="h-4 w-4 text-red-500" />,
-  PAYMENT_DUE: <CreditCard className="h-4 w-4 text-orange-500" />,
-  PAYMENT_RECEIVED: <CreditCard className="h-4 w-4 text-green-500" />,
-  SYSTEM: <Info className="h-4 w-4 text-blue-500" />,
-};
+import { format } from "date-fns";
 
 export function NotificationsList() {
   const [page, setPage] = React.useState(1);
@@ -45,18 +38,93 @@ export function NotificationsList() {
     );
   }
 
+  const getIconDetails = (notification: any) => {
+    const type = notification.type;
+    const title = notification.title?.toLowerCase() || '';
+
+    if (type === 'PAYMENT_RECEIVED') {
+      return {
+        icon: <CheckCircle2 className="w-5 h-5 text-green-600" />,
+        bgClass: 'bg-green-50',
+        unreadDotClass: 'bg-green-500',
+        unreadTextClass: 'text-green-700',
+        unreadBorderClass: 'border-green-200',
+        unreadBgClass: 'bg-green-50',
+      };
+    }
+    if (type === 'PAYMENT_DUE') {
+      return {
+        icon: <CreditCard className="w-5 h-5 text-orange-600" />,
+        bgClass: 'bg-orange-50',
+        unreadDotClass: 'bg-orange-500',
+        unreadTextClass: 'text-orange-700',
+        unreadBorderClass: 'border-orange-200',
+        unreadBgClass: 'bg-orange-50',
+      };
+    }
+    if (type === 'MEMBERSHIP_EXPIRING') {
+      return {
+        icon: <Calendar className="w-5 h-5 text-blue-600" />,
+        bgClass: 'bg-blue-50',
+        unreadDotClass: 'bg-blue-500',
+        unreadTextClass: 'text-blue-700',
+        unreadBorderClass: 'border-blue-200',
+        unreadBgClass: 'bg-blue-50',
+      };
+    }
+    if (type === 'MEMBERSHIP_EXPIRED') {
+      return {
+        icon: <AlertTriangle className="w-5 h-5 text-red-600" />,
+        bgClass: 'bg-red-50',
+        unreadDotClass: 'bg-red-500',
+        unreadTextClass: 'text-red-700',
+        unreadBorderClass: 'border-red-200',
+        unreadBgClass: 'bg-red-50',
+      };
+    }
+    if (type === 'SYSTEM') {
+      if (title.includes('member') || title.includes('join')) {
+        return {
+          icon: <User className="w-5 h-5 text-purple-600" />,
+          bgClass: 'bg-purple-50',
+          unreadDotClass: 'bg-purple-500',
+          unreadTextClass: 'text-purple-700',
+          unreadBorderClass: 'border-purple-200',
+          unreadBgClass: 'bg-purple-50',
+        };
+      }
+      return {
+        icon: <Megaphone className="w-5 h-5 text-green-600" />,
+        bgClass: 'bg-green-50',
+        unreadDotClass: 'bg-green-500',
+        unreadTextClass: 'text-green-700',
+        unreadBorderClass: 'border-green-200',
+        unreadBgClass: 'bg-green-50',
+      };
+    }
+
+    return {
+      icon: <Bell className="w-5 h-5 text-[var(--slate-soft)]" />,
+      bgClass: 'bg-[var(--canvas-paper)]',
+      unreadDotClass: 'bg-[var(--canvas-paper)]0',
+      unreadTextClass: 'text-[var(--ink-soft)]',
+      unreadBorderClass: 'border-[var(--hairline)]',
+      unreadBgClass: 'bg-[var(--canvas-paper)]',
+    };
+  };
+
   return (
     <div className="space-y-6">
       {/* Filters and Actions */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Select
+          <select
             value={type}
             onChange={(e) => {
               setType(e.target.value as NotificationType | "");
               setPage(1);
             }}
-            className="w-[200px]"
+            className="h-10 px-3 rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-sm text-[var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] min-w-[150px]"
           >
             <option value="">All Types</option>
             <option value="MEMBERSHIP_EXPIRING">Membership Expiring</option>
@@ -64,35 +132,35 @@ export function NotificationsList() {
             <option value="PAYMENT_DUE">Payment Due</option>
             <option value="PAYMENT_RECEIVED">Payment Received</option>
             <option value="SYSTEM">System</option>
-          </Select>
-          <Select
+          </select>
+          <select
             value={isRead}
             onChange={(e) => {
               setIsRead(e.target.value as "all" | "read" | "unread");
               setPage(1);
             }}
-            className="w-[150px]"
+            className="h-10 px-3 rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-sm text-[var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] min-w-[150px]"
           >
             <option value="all">All Status</option>
             <option value="unread">Unread</option>
             <option value="read">Read</option>
-          </Select>
+          </select>
         </div>
         <Button
-          variant="secondary"
+          variant="outline"
           onClick={() => markAllRead.mutate()}
           disabled={markAllRead.isPending || (data?.data?.length === 0)}
-          className="w-full sm:w-auto"
+          className="bg-[var(--canvas-light)] border-[var(--hairline)] text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] h-10 px-4 rounded-lg flex items-center gap-2 w-full sm:w-auto font-medium"
         >
-          <CheckCheck className="mr-2 h-4 w-4" />
+          <Check className="w-4 h-4 text-[var(--mute)]" />
           Mark all as read
         </Button>
       </div>
 
       {/* List */}
-      <div className="bg-white rounded-[6px] border border-[#ebebeb] overflow-hidden">
+      <div className="bg-[var(--canvas-light)] rounded-xl border border-[var(--hairline)] shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-[#4d4d4d]">Loading notifications...</div>
+          <div className="p-8 text-center text-[var(--mute)]">Loading notifications...</div>
         ) : data?.data?.length === 0 ? (
           <States
             state="empty"
@@ -100,82 +168,87 @@ export function NotificationsList() {
             description="You don't have any notifications matching your filters."
           />
         ) : (
-          <div className="divide-y divide-[#ebebeb]">
-            {data?.data?.map((notification) => (
-              <div
-                key={notification.id}
-                className={cn(
-                  "p-4 flex gap-4 transition-colors hover:bg-[#fafafa]",
-                  !notification.isRead ? "bg-[#fafafa]" : "bg-white"
-                )}
-              >
-                <div className="mt-1 flex-shrink-0">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#ebebeb] bg-white">
-                    {typeIcons[notification.type] || <Bell className="h-4 w-4 text-[#888888]" />}
+          <div className="divide-y divide-gray-100">
+            {data?.data?.map((notification) => {
+              const iconDetails = getIconDetails(notification);
+              return (
+                <div
+                  key={notification.id}
+                  className="flex items-center gap-4 px-6 py-4 hover:bg-[var(--canvas-paper)]/50 transition-colors bg-[var(--canvas-light)] group cursor-pointer"
+                  onClick={() => !notification.isRead && markRead.mutate(notification.id)}
+                >
+                  <div className={`flex-shrink-0 w-[44px] h-[44px] rounded-full flex items-center justify-center ${iconDetails.bgClass}`}>
+                    {iconDetails.icon}
                   </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className={cn("text-[14px] font-medium", !notification.isRead ? "text-[#171717]" : "text-[#4d4d4d]")}>
-                      {notification.title}
-                    </p>
-                    <span className="text-[12px] text-[#888888] whitespace-nowrap">
-                      {new Date(notification.createdAt).toLocaleDateString()}
-                    </span>
+                  
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="font-bold text-[var(--on-primary)] text-[15px]">{notification.title}</p>
+                    <p className="text-sm text-[var(--mute)] mt-0.5 line-clamp-1">{notification.message}</p>
                   </div>
-                  <p className="text-[14px] text-[#4d4d4d] mt-1 line-clamp-2">
-                    {notification.message}
-                  </p>
-                </div>
-                {!notification.isRead && (
-                  <div className="flex-shrink-0 flex items-center">
+
+                  <div className="flex items-center gap-6 flex-shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm text-[var(--on-primary)] font-medium">{format(new Date(notification.createdAt), 'MMM dd, yyyy')}</p>
+                      <p className="text-xs text-[var(--mute)] mt-0.5">{format(new Date(notification.createdAt), 'hh:mm a')}</p>
+                    </div>
+                    
+                    <div className="w-[85px] flex justify-end">
+                      {notification.isRead ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--hairline)] text-[var(--mute)] bg-[var(--canvas-paper)]">
+                          <span className="w-1.5 h-1.5 rounded-full mr-1.5 bg-gray-400"></span>
+                          Read
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${iconDetails.unreadBorderClass} ${iconDetails.unreadTextClass} ${iconDetails.unreadBgClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${iconDetails.unreadDotClass}`}></span>
+                          Unread
+                        </span>
+                      )}
+                    </div>
+                    
                     <Button
                       variant="ghost"
-                      size="md"
-                      onClick={() => markRead.mutate(notification.id)}
-                      disabled={markRead.isPending}
-                      className="text-[#888888] hover:text-[#171717]"
-                      title="Mark as read"
+                      size="icon"
+                      className="h-8 w-8 text-[var(--ash)] hover:text-[var(--slate-soft)] hover:bg-[var(--canvas-paper)] rounded-full"
                     >
-                      <Check className="h-4 w-4" />
+                      <MoreVertical className="w-4 h-4" />
                     </Button>
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* Pagination */}
-      {data && data.meta.totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-[#ebebeb] bg-white px-4 py-3 sm:px-6 rounded-[6px]">
-          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-              <p className="text-[14px] text-[#4d4d4d]">
-                Showing <span className="font-medium text-[#171717]">{((page - 1) * 10) + 1}</span> to{" "}
-                <span className="font-medium text-[#171717]">
-                  {Math.min(page * 10, data.meta.total)}
-                </span>{" "}
-                of <span className="font-medium text-[#171717]">{data.meta.total}</span> results
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setPage((p) => Math.min(data.meta.totalPages, p + 1))}
-                disabled={page === data.meta.totalPages}
-              >
-                Next
-              </Button>
-            </div>
+      {data && data.meta.total > 0 && (
+        <div className="flex items-center justify-between border-t border-[var(--hairline)] bg-[var(--canvas-light)] px-6 py-4 rounded-b-xl -mt-6">
+          <span className="text-sm text-[var(--mute)]">
+            Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, data.meta.total)} of {data.meta.total} notifications
+          </span>
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)]"
+            >
+              {'<'}
+            </Button>
+            <Button variant="outline" size="sm" className="h-8 w-8 text-white bg-[#6C47FF] border-[#6C47FF] hover:bg-[#5835e5]">
+              {page}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setPage((p) => Math.min(data.meta.totalPages, p + 1))}
+              disabled={page === data.meta.totalPages}
+              className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]"
+            >
+              {'>'}
+            </Button>
           </div>
         </div>
       )}

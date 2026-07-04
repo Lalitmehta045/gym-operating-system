@@ -36,13 +36,13 @@ export class PlatformController {
   ) {}
 
   @Get('dashboard')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   async getDashboard(): Promise<PlatformDashboardDto> {
     return this.platformService.getPlatformDashboard();
   }
 
   @Get('tenants')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   async getTenants(
     @Query() query: ListTenantsQueryDto,
   ): Promise<PaginatedTenantsDto> {
@@ -50,7 +50,7 @@ export class PlatformController {
   }
 
   @Get('tenants/:id')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   async getTenantById(
     @Param('id', new ParseUUIDPipe({ version: '4' })) tenantId: string,
   ): Promise<TenantDetailDto> {
@@ -74,14 +74,20 @@ export class PlatformController {
   }
 
   @Get('revenue')
-  @CacheTTL(600) // 10 minutes
+  @CacheTTL(600000) // 10 minutes
   async getRevenueMetrics(): Promise<RevenueMetricsDto> {
     return this.platformService.getRevenueMetrics();
   }
 
   @Get('storage')
-  @CacheTTL(600) // 10 minutes
-  async getStorageMetrics() {
-    return this.storageService.getPlatformStorage();
+  @CacheTTL(600000) // 10 minutes
+  async getStorageMetrics(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.storageService.getPlatformStorage(
+      page ? parseInt(page, 10) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
+    );
   }
 }

@@ -42,6 +42,7 @@ describe('RazorpayService SaaS Tenant Billing', () => {
   let prisma: any;
   let tenantSubService: any;
   let whatsappService: any;
+  let auditService: any;
   let svc: RazorpayService;
   const tenantId = 'tenant-1';
   const planId = 'plan-1';
@@ -50,7 +51,8 @@ describe('RazorpayService SaaS Tenant Billing', () => {
     prisma = makePrismaMock();
     tenantSubService = makeTenantSubServiceMock();
     whatsappService = makeWhatsappServiceMock();
-    svc = new RazorpayService(prisma, whatsappService, tenantSubService);
+    auditService = { createLog: jest.fn() };
+    svc = new RazorpayService(prisma, whatsappService, tenantSubService, auditService);
     // Mock razorpay instance
     (svc as any).razorpay = {
       orders: {
@@ -173,6 +175,7 @@ describe('RazorpayService SaaS Tenant Billing', () => {
       tenantId,
       planId,
       'inv-1',
+      prisma,
     );
 
     jest.restoreAllMocks();
@@ -234,6 +237,12 @@ describe('RazorpayService SaaS Tenant Billing', () => {
     });
 
     expect(result.status).toBe('ok');
+    expect(tenantSubService.activateSubscription).toHaveBeenCalledWith(
+      tenantId,
+      planId,
+      'inv-1',
+      prisma,
+    );
     jest.restoreAllMocks();
   });
 

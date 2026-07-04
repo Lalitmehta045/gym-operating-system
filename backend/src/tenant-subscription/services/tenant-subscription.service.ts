@@ -1,9 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import {
   TenantSubscriptionStatus,
   TenantStatus,
   PaymentStatus,
+  Prisma,
 } from '../../../generated/prisma/client.js';
 
 const TRIAL_DAYS = 14;
@@ -13,7 +16,14 @@ const SUBSCRIPTION_DAYS = 30;
 export class TenantSubscriptionService {
   private readonly logger = new Logger(TenantSubscriptionService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
+
+  private async invalidateCache(tenantId: string) {
+    await this.cacheManager.del(`tenant-sub-guard:${tenantId}`);
+  }
 
   async createTrialSubscription(tenantId: string) {
     const now = new Date();
@@ -50,6 +60,7 @@ export class TenantSubscriptionService {
     this.logger.log(
       `Trial subscription created for tenant ${tenantId} until ${endDate.toISOString()}`,
     );
+    await this.invalidateCache(tenantId);
     return subscription;
   }
 
@@ -57,14 +68,13 @@ export class TenantSubscriptionService {
     tenantId: string,
     planId: string,
     invoiceId: string,
+    client: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     const now = new Date();
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + SUBSCRIPTION_DAYS);
 
-    const currentSub = await this.getCurrentSubscription(tenantId);
-
-    const subscription = await this.prisma.tenantSubscription.create({
+    const subscription = await client.tenantSubscription.create({
       data: {
         tenantId,
         platformPlanId: planId,
@@ -74,12 +84,12 @@ export class TenantSubscriptionService {
       },
     });
 
-    await this.prisma.tenantInvoice.update({
+    await client.tenantInvoice.update({
       where: { id: invoiceId },
       data: { tenantSubscriptionId: subscription.id },
     });
 
-    await this.prisma.tenant.update({
+    await client.tenant.update({
       where: { id: tenantId },
       data: { status: TenantStatus.ACTIVE },
     });
@@ -87,6 +97,7 @@ export class TenantSubscriptionService {
     this.logger.log(
       `Subscription activated for tenant ${tenantId} on plan ${planId} until ${endDate.toISOString()}`,
     );
+    await this.invalidateCache(tenantId);
     return subscription;
   }
 
@@ -110,6 +121,7 @@ export class TenantSubscriptionService {
     this.logger.log(
       `Subscription renewed for tenant ${tenantId} until ${newEndDate.toISOString()}`,
     );
+    await this.invalidateCache(tenantId);
     return subscription;
   }
 
@@ -129,6 +141,7 @@ export class TenantSubscriptionService {
     });
 
     this.logger.log(`Subscription cancelled for tenant ${tenantId}`);
+    await this.invalidateCache(tenantId);
     return subscription;
   }
 
@@ -155,6 +168,7 @@ export class TenantSubscriptionService {
     ]);
 
     this.logger.log(`Subscription expired for tenant ${tenantId}`);
+    await this.invalidateCache(tenantId);
     return subscription;
   }
 

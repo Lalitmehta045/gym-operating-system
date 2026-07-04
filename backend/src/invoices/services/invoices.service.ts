@@ -34,6 +34,37 @@ export class InvoicesService {
           notes: true,
           createdAt: true,
           updatedAt: true,
+          member: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          subscription: {
+            select: {
+              id: true,
+              startDate: true,
+              endDate: true,
+              membershipPlan: {
+                select: {
+                  id: true,
+                  name: true,
+                  durationDays: true,
+                },
+              },
+            },
+          },
+          payment: {
+            select: {
+              id: true,
+              paymentMethod: true,
+              paymentStatus: true,
+              paidAt: true,
+            },
+          },
         },
       }),
       this.prisma.invoice.count({ where: { tenantId } }),
@@ -55,6 +86,59 @@ export class InvoicesService {
   async getInvoiceById(tenantId: string, id: string): Promise<InvoiceDto> {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, tenantId },
+      select: {
+        id: true,
+        tenantId: true,
+        memberId: true,
+        subscriptionId: true,
+        paymentId: true,
+        invoiceNumber: true,
+        amount: true,
+        issuedAt: true,
+        notes: true,
+        createdAt: true,
+        updatedAt: true,
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        subscription: {
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            membershipPlan: {
+              select: {
+                id: true,
+                name: true,
+                durationDays: true,
+              },
+            },
+          },
+        },
+        payment: {
+          select: {
+            id: true,
+            amount: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            transactionReference: true,
+            razorpayOrderId: true,
+            razorpayPaymentId: true,
+            gateway: true,
+            gatewayStatus: true,
+            paidAt: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
     return this.mapToDto(invoice);
@@ -73,6 +157,9 @@ export class InvoicesService {
       notes: invoice.notes,
       createdAt: invoice.createdAt,
       updatedAt: invoice.updatedAt,
+      member: invoice.member,
+      subscription: invoice.subscription,
+      payment: invoice.payment,
     };
   }
 }

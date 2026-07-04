@@ -57,17 +57,17 @@ export function PlanForm({ initialValues, onSubmit, isLoading, submitLabel = "Sa
   }, [planType, setValue])
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-white p-6 rounded-[6px] border border-[#ebebeb]">
+    <form onSubmit={handleSubmit(onSubmit)} className="bg-[var(--canvas-light)] rounded-xl shadow-sm border border-[var(--hairline-soft)] p-8 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Plan Name *</label>
-          <Input {...register("name")} placeholder="e.g. Gold Membership" />
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Plan Name <span className="text-red-500">*</span></label>
+          <Input {...register("name")} placeholder="e.g. Gold Membership" className="w-full" />
           {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Plan Type *</label>
-          <Select {...register("planType")}>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Plan Type <span className="text-red-500">*</span></label>
+          <Select {...register("planType")} className="w-full">
             <option value="MONTHLY">Monthly (30 Days)</option>
             <option value="QUARTERLY">Quarterly (90 Days)</option>
             <option value="HALF_YEARLY">Half Yearly (180 Days)</option>
@@ -77,59 +77,72 @@ export function PlanForm({ initialValues, onSubmit, isLoading, submitLabel = "Sa
           {errors.planType && <p className="text-red-500 text-sm">{errors.planType.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Duration (Days) *</label>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Duration (Days) <span className="text-red-500">*</span></label>
           <Input 
             type="number" 
             {...register("durationDays")} 
             readOnly={planType !== "CUSTOM"}
-            className={planType !== "CUSTOM" ? "bg-gray-50" : ""}
+            className={`w-full ${planType !== "CUSTOM" ? "bg-[var(--canvas-paper)]" : ""}`}
           />
           {errors.durationDays && <p className="text-red-500 text-sm">{errors.durationDays.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Price *</label>
-          <Input type="number" step="0.01" {...register("price")} placeholder="0.00" />
+        <div className="space-y-1 relative">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Price <span className="text-red-500">*</span></label>
+          <div className="relative">
+            <span className="absolute left-4 top-2.5 text-[var(--mute)]">₹</span>
+            <Input type="number" step="0.01" {...register("price")} placeholder="0.00" className="pl-8 w-full" />
+          </div>
           {errors.price && <p className="text-red-500 text-sm">{errors.price.message}</p>}
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-medium text-[#171717]">Description</label>
+        <div className="space-y-1 md:col-span-2">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Description</label>
           <textarea
             {...register("description")}
-            className="w-full flex min-h-[80px] rounded-[6px] border border-[#ebebeb] bg-transparent px-[12px] py-[8px] text-[14px] text-[#171717] placeholder:text-[#888888] focus:outline-none focus:border-[#171717] focus:ring-1 focus:ring-[#171717] disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+            className="w-full min-h-[120px] rounded-lg border border-[var(--hairline)] px-4 py-2.5 text-[var(--on-primary)] focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 bg-[var(--canvas-light)] resize-y"
             placeholder="Plan benefits and details..."
           />
           {errors.description && <p className="text-red-500 text-sm">{errors.description.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[#171717]">Display Order</label>
-          <Input type="number" {...register("displayOrder")} />
-          <p className="text-xs text-[#888888]">Lower numbers appear first</p>
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-[var(--ink-soft)] block">Display Order</label>
+          <Input type="number" {...register("displayOrder")} className="w-full" />
         </div>
 
-        <div className="space-y-2 flex flex-col justify-center">
+        <div className="space-y-1 flex flex-col justify-center">
           <Controller
             name="isActive"
             control={control}
             render={({ field }) => (
-              <label className="flex items-center gap-2 cursor-pointer mt-6">
+              <label className="flex items-center gap-3 cursor-pointer mt-6">
+                <div className={`w-11 h-6 rounded-full relative transition-colors ${field.value ? 'bg-[#6C47FF]' : 'bg-gray-200'}`}>
+                  <div className={`w-5 h-5 bg-[var(--canvas-light)] rounded-full absolute top-0.5 transition-transform ${field.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </div>
                 <input
                   type="checkbox"
                   checked={field.value}
                   onChange={(e) => field.onChange(e.target.checked)}
-                  className="w-4 h-4 rounded border-[#ebebeb] text-[#171717] focus:ring-[#171717]"
+                  className="hidden"
                 />
-                <span className="text-sm font-medium text-[#171717]">Plan is Active</span>
+                <span className="text-sm font-medium text-[var(--ink-soft)]">Plan is Active</span>
               </label>
             )}
           />
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 pt-4 border-t border-[#ebebeb]">
+      <div className="flex justify-end gap-4 pt-6 mt-6 border-t border-[var(--hairline-soft)]">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => window.history.back()}
+          disabled={isLoading}
+        >
+          Cancel
+        </Button>
         <Button
           type="submit"
           variant="primary"

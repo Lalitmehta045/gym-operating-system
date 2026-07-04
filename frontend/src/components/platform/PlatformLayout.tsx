@@ -12,7 +12,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <PlatformProtectedRoute>
-      <div className="flex h-screen w-full bg-[#fafafa] overflow-hidden">
+      <div className="flex h-screen w-full bg-[var(--canvas-soft)] overflow-hidden">
         {/* Mobile Sidebar overlay */}
         {sidebarOpen && (
           <div 

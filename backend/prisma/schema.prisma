@@ -184,6 +184,7 @@ model Tenant {
   tenantInvoices      TenantInvoice[]
   media               Media[]
   tenantStorage       TenantStorage?
+  tenantIntegrationSettings TenantIntegrationSettings?
 
   @@index([deletedAt], name: "idx_tenant_deleted_at")
   @@index([isActive, deletedAt], name: "idx_tenant_active_status")
@@ -334,6 +335,7 @@ model Member {
   @@index([tenantId, lastName, firstName, deletedAt], name: "idx_member_tenant_name")
   @@index([tenantId, fitnessGoal, deletedAt], name: "idx_member_tenant_fitness_goal")
   @@index([tenantId, status, isActive, deletedAt], name: "idx_member_tenant_status_active")
+  @@index([gender])
   @@index([tenantId, source, deletedAt], name: "idx_member_tenant_source")
   @@index([tenantId, occupation, deletedAt], name: "idx_member_tenant_occupation")
   @@index([tenantId, bloodGroup, deletedAt], name: "idx_member_tenant_blood_group")
@@ -375,6 +377,7 @@ model Attendance {
   @@index([checkInAt, deletedAt], name: "idx_attendance_checkin_date")
   @@index([tenantId, createdAt, deletedAt], name: "idx_attendance_tenant_created")
   @@index([tenantId, memberId, checkOutAt, deletedAt], name: "idx_attendance_active_checkin")
+  @@index([tenantId, memberId, attendanceDate])
   @@map("attendances")
 }
 
@@ -440,6 +443,7 @@ model Payment {
   invoices     Invoice[]
 
   @@index([razorpayOrderId], name: "idx_payment_razorpay_order")
+  @@index([razorpayPaymentId])
   @@index([paymentStatus], name: "idx_payment_global_cron")
   @@index([tenantId, deletedAt], name: "idx_payment_tenant_deleted")
   @@index([tenantId, memberId, deletedAt], name: "idx_payment_tenant_member")
@@ -522,6 +526,7 @@ model TenantSubscription {
   @@index([tenantId, status], name: "idx_tenant_sub_tenant_status")
   @@index([tenantId, endDate], name: "idx_tenant_sub_tenant_end_date")
   @@index([status], name: "idx_tenant_sub_global_status")
+  @@index([platformPlanId])
   @@map("tenant_subscriptions")
 }
 
@@ -552,6 +557,7 @@ model TenantInvoice {
   @@index([invoiceNumber], name: "idx_tenant_invoice_number")
   @@index([tenantId, issuedAt], name: "idx_tenant_invoice_tenant_issued")
   @@index([tenantId, status], name: "idx_tenant_invoice_tenant_status")
+  @@index([tenantSubscriptionId])
   @@index([razorpayOrderId], name: "idx_tenant_invoice_order_id")
   @@index([status, paidAt], name: "idx_tenant_invoice_revenue_lookup")
   @@index([platformPlanId, status], name: "idx_tenant_invoice_plan_reporting")
@@ -607,6 +613,7 @@ model Media {
   @@index([tenantId, deletedAt], name: "idx_media_tenant_deleted")
   @@index([tenantId, memberId, category, deletedAt], name: "idx_media_tenant_member_category")
   @@index([tenantId, category, deletedAt], name: "idx_media_tenant_category")
+  @@index([uploadedById])
   @@map("media")
 }
 
@@ -661,7 +668,11 @@ model AuditLog {
   @@index([userId], name: "idx_audit_log_user")
   @@index([memberId], name: "idx_audit_log_member")
   @@index([entity], name: "idx_audit_log_entity")
+  @@index([action])
   @@index([createdAt], name: "idx_audit_log_created_at")
+  @@index([tenantId, createdAt], name: "idx_audit_log_tenant_created")
+  @@index([tenantId, memberId, createdAt], name: "idx_audit_log_tenant_member_created")
+  @@index([tenantId, userId, createdAt], name: "idx_audit_log_tenant_user_created")
   @@map("audit_logs")
 }
 
@@ -682,4 +693,34 @@ model TenantStorage {
 
   @@index([usedStorageBytes], name: "idx_tenant_storage_used")
   @@map("tenant_storage")
+}
+
+model TenantIntegrationSettings {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @unique @map("tenant_id") @db.Uuid
+
+  // Razorpay credentials (per-tenant)
+  razorpayKeyId          String?  @map("razorpay_key_id") @db.VarChar(100)
+  razorpayKeySecret      String?  @map("razorpay_key_secret") @db.VarChar(255)
+  razorpayWebhookSecret  String?  @map("razorpay_webhook_secret") @db.VarChar(255)
+  razorpayEnabled        Boolean  @default(false) @map("razorpay_enabled")
+
+  // Meta WhatsApp Cloud API credentials (per-tenant)
+  whatsappPhoneNumberId   String?  @map("whatsapp_phone_number_id") @db.VarChar(100)
+  whatsappAccessToken     String?  @map("whatsapp_access_token") @db.Text
+  whatsappBusinessId      String?  @map("whatsapp_business_id") @db.VarChar(100)
+  whatsappEnabled         Boolean  @default(false) @map("whatsapp_enabled")
+
+  // Notification preferences
+  notifyExpiringDays  Int  @default(7) @map("notify_expiring_days")
+  notifyOnPayment     Boolean @default(true) @map("notify_on_payment")
+  notifyOnExpiry      Boolean @default(true) @map("notify_on_expiry")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], name: "idx_tenant_integration_tenant")
+  @@map("tenant_integration_settings")
 }

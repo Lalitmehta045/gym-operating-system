@@ -14,20 +14,20 @@ export function StorageCard({ metrics }: { metrics: StorageMetrics }) {
   const percentage = Math.min(100, (metrics.usedStorageBytes / metrics.storageLimitBytes) * 100);
 
   return (
-    <div className="bg-white border border-[#ebebeb] rounded-xl p-6 shadow-sm flex flex-col space-y-6">
+    <div className="bg-[var(--canvas-light)] border border-[var(--hairline-soft)] rounded-xl p-6 shadow-sm flex flex-col space-y-6">
       <div className="flex items-center space-x-4">
         <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
           <HardDrive className="h-6 w-6" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Storage Usage</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-[var(--on-primary)]">Storage Usage</h2>
+          <p className="text-sm text-[var(--mute)]">
             {formatBytes(metrics.usedStorageBytes)} used of {formatBytes(metrics.storageLimitBytes)}
           </p>
         </div>
       </div>
 
-      <div className="w-full bg-gray-100 rounded-full h-3 mb-4 overflow-hidden">
+      <div className="w-full bg-[var(--canvas-paper)] rounded-full h-3 mb-4 overflow-hidden">
         <div
           className={`h-3 rounded-full transition-all duration-500 ${
             percentage >= 100 ? 'bg-red-500' : percentage >= 80 ? 'bg-amber-500' : 'bg-blue-600'
@@ -36,14 +36,14 @@ export function StorageCard({ metrics }: { metrics: StorageMetrics }) {
         ></div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[var(--hairline-soft)]">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-green-50 text-green-600 rounded-md">
             <ImageIcon className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Images</p>
-            <p className="text-lg font-semibold text-gray-900">{metrics.totalImages}</p>
+            <p className="text-xs text-[var(--mute)] font-medium uppercase tracking-wider">Images</p>
+            <p className="text-lg font-semibold text-[var(--on-primary)]">{metrics.totalImages}</p>
           </div>
         </div>
         
@@ -52,8 +52,8 @@ export function StorageCard({ metrics }: { metrics: StorageMetrics }) {
             <FileText className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Documents</p>
-            <p className="text-lg font-semibold text-gray-900">{metrics.totalDocuments}</p>
+            <p className="text-xs text-[var(--mute)] font-medium uppercase tracking-wider">Documents</p>
+            <p className="text-lg font-semibold text-[var(--on-primary)]">{metrics.totalDocuments}</p>
           </div>
         </div>
       </div>

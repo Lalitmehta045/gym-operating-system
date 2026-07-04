@@ -14,8 +14,8 @@ export default function PlatformStoragePage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-semibold text-[#171717]">Platform Storage</h1>
-        <p className="text-sm text-[#888888] mt-1">Monitor storage quotas and usage across all tenants.</p>
+        <h1 className="text-2xl font-semibold text-[var(--on-primary)]">Platform Storage</h1>
+        <p className="text-sm text-[var(--ash)] mt-1">Monitor storage quotas and usage across all tenants.</p>
       </div>
 
       <TenantStorageTable data={data} />
