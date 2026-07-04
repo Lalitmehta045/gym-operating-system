@@ -3,11 +3,12 @@ import { backendFetch } from '@/lib/backend-fetch';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await req.json();
-    const data = await backendFetch(req, `/staff/${params.id}/role`, {
+    const data = await backendFetch(req, `/staff/${id}/role`, {
       method: 'PATCH',
       body: JSON.stringify(body),
     });

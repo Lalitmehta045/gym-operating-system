@@ -128,7 +128,7 @@ export function AttendanceCharts() {
                 </Pie>
                 <RechartsTooltip 
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`${value} members`, 'Attendance']}
+                  formatter={(value: any) => [`${value} members`, 'Attendance']}
                 />
               </PieChart>
             </ResponsiveContainer>
