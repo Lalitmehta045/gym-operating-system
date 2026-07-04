@@ -90,7 +90,7 @@ export function RevenueOverview() {
                 }}
                 itemStyle={{ color: '#111827', fontSize: '13px', fontWeight: 600 }}
                 labelStyle={{ color: '#9ca3af', fontSize: '11px', marginBottom: '2px' }}
-                formatter={(value: number) => [formatCurrency(value, currency), 'Revenue']}
+                formatter={(value: any) => [formatCurrency(value, currency), 'Revenue']}
               />
               <Area
                 type="monotone"
