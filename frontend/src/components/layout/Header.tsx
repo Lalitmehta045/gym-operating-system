@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { Menu, Bell } from "lucide-react"
+import { Menu, Bell, LogOut } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
@@ -13,7 +13,19 @@ export function Header({
   onMenuClick: () => void
   className?: string
 }) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const [isProfileOpen, setIsProfileOpen] = React.useState(false)
+  const profileRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const userInitials = user?.email
     ? user.email.substring(0, 2).toUpperCase()
@@ -45,29 +57,47 @@ export function Header({
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Mail Notification */}
+          {/* Notifications */}
           <button onClick={() => {}} className="relative p-2 rounded-xl hover:bg-[var(--canvas-light)] transition-colors">
-            <svg className="w-5 h-5 text-[var(--mute)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-            </svg>
-            <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-[#EF4444] border-2 border-[#F8F7FF] rounded-full text-[8px] font-bold text-white flex items-center justify-center">
+            <Bell className="w-5 h-5 text-[var(--mute)]" />
+            <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-[#6C47FF] border-2 border-[var(--canvas-soft)] rounded-full text-[8px] font-bold text-white flex items-center justify-center">
               2
             </span>
           </button>
 
           {/* User Avatar */}
-          <button onClick={() => {}} className="flex items-center gap-2.5 bg-transparent px-1 py-1.5 transition-shadow">
-            <div className="w-8 h-8 rounded-full bg-[#EF4444] flex items-center justify-center text-white text-[13px] font-semibold">
-              D
-            </div>
-            <div className="hidden md:flex flex-col items-start min-w-0">
-              <span className="text-[13px] font-medium text-[var(--ink-soft)] truncate">demo@gmail.com</span>
-              <span className="text-[11px] text-[var(--mute)]">Admin</span>
-            </div>
-            <svg className="w-4 h-4 text-[var(--ash)] ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
+          <div className="relative" ref={profileRef}>
+            <button 
+              onClick={() => setIsProfileOpen(!isProfileOpen)} 
+              className="flex items-center gap-2.5 bg-transparent px-1 py-1.5 transition-shadow"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#6C47FF] flex items-center justify-center text-white text-[13px] font-semibold">
+                {userInitials.substring(0, 1)}
+              </div>
+              <div className="hidden md:flex flex-col items-start min-w-0">
+                <span className="text-[13px] font-medium text-[var(--ink-soft)] truncate">{user?.email || "demo@gmail.com"}</span>
+                <span className="text-[11px] text-[var(--mute)]">{user?.role === 'OWNER' ? 'Admin' : (user?.role || 'Admin')}</span>
+              </div>
+              <svg className={cn("w-4 h-4 text-[var(--ash)] ml-1 transition-transform", isProfileOpen ? "rotate-180" : "")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[var(--canvas-paper)] border border-[var(--hairline-soft)] shadow-lg py-1 z-50">
+                <div className="px-4 py-2 border-b border-[var(--hairline-soft)]">
+                  <p className="text-sm font-medium text-[var(--on-primary)] truncate">{user?.email || "demo@gmail.com"}</p>
+                </div>
+                <button
+                  onClick={logout}
+                  className="w-full text-left px-4 py-2 text-sm text-[#EF4444] hover:bg-[var(--canvas-light)] flex items-center gap-2 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

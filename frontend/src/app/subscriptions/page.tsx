@@ -8,9 +8,13 @@ import { SubscriptionTable } from "@/components/subscriptions/SubscriptionTable"
 import { SubscriptionDashboardCards } from "@/components/subscriptions/SubscriptionDashboardCards"
 import { useSubscriptions, useRenewSubscription, useDeleteSubscription } from "@/hooks/api/useSubscriptions"
 import { useRazorpay } from "@/hooks/api/useRazorpay"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function SubscriptionsPage() {
-  const { data, isLoading, refetch } = useSubscriptions()
+  const [page, setPage] = React.useState(1)
+  const { user } = useAuth()
+  const isTrainer = user?.role === "TRAINER"
+  const { data, isLoading, refetch } = useSubscriptions({ page })
   const renewSubscription = useRenewSubscription()
   const cancelSubscription = useDeleteSubscription()
   const razorpay = useRazorpay()
@@ -96,12 +100,14 @@ export default function SubscriptionsPage() {
               Expiring Soon
             </button>
           </Link>
-          <Link href="/subscriptions/new">
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-[#6C47FF] hover:bg-[#5b3ce0] text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
-              <Plus className="w-4 h-4" />
-              New Subscription
-            </button>
-          </Link>
+          {!isTrainer && (
+            <Link href="/subscriptions/new">
+              <button className="flex items-center gap-2 px-5 py-2.5 bg-[#6C47FF] hover:bg-[#5b3ce0] text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                <Plus className="w-4 h-4" />
+                New Subscription
+              </button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -111,6 +117,9 @@ export default function SubscriptionsPage() {
       {/* SEARCH/FILTER BAR & TABLE */}
       <SubscriptionTable
         subscriptions={data?.data || []}
+        meta={data?.meta}
+        page={page}
+        onPageChange={setPage}
         isLoading={isLoading}
         onRenew={handleRenew}
         onCancel={handleCancel}

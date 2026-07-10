@@ -46,8 +46,10 @@ export interface GetMembersParams {
   status?: string;
   gender?: string;
   source?: string;
-  startDate?: string;
-  endDate?: string;
+  includeInactive?: boolean;
+  includeDeleted?: boolean;
+  dateFrom?: string;
+  dateTo?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }

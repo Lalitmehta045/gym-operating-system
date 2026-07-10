@@ -9,6 +9,8 @@ import {
   useDeactivateStaff,
   useReactivateStaff,
 } from '@/hooks/api/useStaff';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
@@ -32,7 +34,11 @@ import { toast } from 'sonner';
 
 export default function StaffManagementPage() {
   const { user } = useAuth();
-  const { data: staffData, isLoading } = useGetStaff();
+  const { data: rawStaffData, isLoading, error: queryError } = useGetStaff();
+  const staffData = rawStaffData?.data || rawStaffData || [];
+  
+  const error = queryError ? 'Failed to load staff. Please try again.' : null;
+
   const createStaff = useCreateStaff();
   const updateRole = useUpdateStaffRole();
   const deactivateStaff = useDeactivateStaff();
@@ -47,8 +53,16 @@ export default function StaffManagementPage() {
     role: 'TRAINER',
   });
 
+  const router = useRouter();
+  useEffect(() => {
+    if (user && user.role !== 'OWNER') {
+      toast.error("You don't have permission for this page");
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
   if (user?.role !== 'OWNER') {
-    return <div className="p-8">You do not have permission to view this page.</div>;
+    return null;
   }
 
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -66,7 +80,9 @@ export default function StaffManagementPage() {
         });
       },
       onError: (error: any) => {
-        toast.error(error.message || 'Failed to add staff member');
+        let message = error.response?.data?.message || error.message || 'Failed to add staff member';
+        if (Array.isArray(message)) message = message[0];
+        toast.error(message);
       },
     });
   };
@@ -76,7 +92,11 @@ export default function StaffManagementPage() {
       { id, role: newRole },
       {
         onSuccess: () => toast.success('Role updated successfully'),
-        onError: (error: any) => toast.error(error.message || 'Failed to update role'),
+        onError: (error: any) => {
+          let message = error.response?.data?.message || error.message || 'Failed to update role';
+          if (Array.isArray(message)) message = message[0];
+          toast.error(message);
+        },
       }
     );
   };
@@ -85,12 +105,20 @@ export default function StaffManagementPage() {
     if (isActive) {
       deactivateStaff.mutate(id, {
         onSuccess: () => toast.success('Staff deactivated'),
-        onError: (error: any) => toast.error(error.message),
+        onError: (error: any) => {
+          let message = error.response?.data?.message || error.message || 'Failed to deactivate staff';
+          if (Array.isArray(message)) message = message[0];
+          toast.error(message);
+        },
       });
     } else {
       reactivateStaff.mutate(id, {
         onSuccess: () => toast.success('Staff reactivated'),
-        onError: (error: any) => toast.error(error.message),
+        onError: (error: any) => {
+          let message = error.response?.data?.message || error.message || 'Failed to reactivate staff';
+          if (Array.isArray(message)) message = message[0];
+          toast.error(message);
+        },
       });
     }
   };
@@ -110,6 +138,10 @@ export default function StaffManagementPage() {
 
   if (isLoading) {
     return <div className="p-8">Loading staff...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-red-500">{error}</div>;
   }
 
   return (

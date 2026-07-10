@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button"
 import { MemberTable } from "@/components/members/MemberTable"
 import { MemberFilters } from "@/components/members/MemberFilters"
 import { useMembers, useDeleteMember, useRestoreMember } from "@/hooks/api/useMembers"
+import { useDashboardMembers } from "@/hooks/api/useDashboard"
 import { useAuth } from "@/hooks/useAuth"
 
 export default function MembersPage() {
@@ -17,13 +18,23 @@ export default function MembersPage() {
   const [status, setStatus] = React.useState("")
   const [gender, setGender] = React.useState("")
   const [source, setSource] = React.useState("")
+  const [page, setPage] = React.useState(1)
+
+  // Reset to page 1 whenever filters change
+  React.useEffect(() => { setPage(1) }, [search, status, gender, source])
 
   const { data, isLoading } = useMembers({
+    page,
     search,
     status,
     gender,
     source,
+    includeInactive: true,
   })
+
+  // Dashboard members endpoint returns accurate per-status counts for this tenant
+  const { data: membersStats, isError: statsError } = useDashboardMembers()
+  const showMetricCards = !statsError && user?.role !== 'TRAINER';
 
   const deleteMember = useDeleteMember()
   const restoreMember = useRestoreMember()
@@ -44,6 +55,12 @@ export default function MembersPage() {
     }
   }
 
+  // Metric card values — sourced from /dashboard/members which groups by status server-side
+  const totalMembers = membersStats?.totalMembers ?? 0
+  const activeMembers = membersStats?.activeMembers ?? 0
+  const inactiveMembers = (membersStats?.inactiveMembers ?? 0) + (membersStats?.suspendedMembers ?? 0)
+  const newThisMonth = membersStats?.newMembersThisMonth ?? 0
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -53,7 +70,7 @@ export default function MembersPage() {
         </div>
         {canManage && (
           <Link href="/members/new">
-            <button className="flex items-center gap-2 bg-[#EF4444] hover:bg-[#DC2626] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+            <button className="flex items-center gap-2 bg-[#6C47FF] hover:bg-[#5b3ce0] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm">
               <Plus className="h-4 w-4" />
               Add Member
             </button>
@@ -62,6 +79,7 @@ export default function MembersPage() {
       </div>
 
       {/* Metric Cards */}
+      {showMetricCards && (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Members */}
         <div className="bg-[var(--canvas-light)] rounded-xl p-5 border border-[var(--hairline-soft)] shadow-sm relative overflow-hidden flex flex-col justify-between h-[120px]">
@@ -73,7 +91,7 @@ export default function MembersPage() {
             </div>
             <div className="text-right">
               <p className="text-[12px] font-medium text-[var(--mute)]">Total Members</p>
-              <h3 className="text-2xl font-bold text-[var(--on-primary)] mt-0.5">128</h3>
+              <h3 className="text-2xl font-bold text-[var(--on-primary)] mt-0.5">{isLoading ? "—" : totalMembers}</h3>
             </div>
           </div>
           <div className="flex items-end justify-between mt-4">
@@ -94,7 +112,7 @@ export default function MembersPage() {
             </div>
             <div className="text-right">
               <p className="text-[12px] font-medium text-[var(--mute)]">Active Members</p>
-              <h3 className="text-2xl font-bold text-[var(--on-primary)] mt-0.5">96</h3>
+              <h3 className="text-2xl font-bold text-[var(--on-primary)] mt-0.5">{isLoading ? "—" : activeMembers}</h3>
             </div>
           </div>
           <div className="flex items-end justify-between mt-4">
@@ -115,7 +133,7 @@ export default function MembersPage() {
             </div>
             <div className="text-right">
               <p className="text-[12px] font-medium text-[var(--mute)]">Inactive Members</p>
-              <h3 className="text-2xl font-bold text-[var(--on-primary)] mt-0.5">22</h3>
+              <h3 className="text-2xl font-bold text-[var(--on-primary)] mt-0.5">{isLoading ? "—" : inactiveMembers}</h3>
             </div>
           </div>
           <div className="flex items-end justify-between mt-4">
@@ -136,7 +154,7 @@ export default function MembersPage() {
             </div>
             <div className="text-right">
               <p className="text-[12px] font-medium text-[var(--mute)]">New This Month</p>
-              <h3 className="text-2xl font-bold text-[var(--on-primary)] mt-0.5">12</h3>
+              <h3 className="text-2xl font-bold text-[var(--on-primary)] mt-0.5">{isLoading ? "—" : newThisMonth}</h3>
             </div>
           </div>
           <div className="flex items-end justify-between mt-4">
@@ -147,6 +165,7 @@ export default function MembersPage() {
           </div>
         </div>
       </div>
+      )}
 
       <MemberFilters
         search={search}
@@ -161,6 +180,9 @@ export default function MembersPage() {
 
       <MemberTable
         members={data?.data || []}
+        meta={data?.meta}
+        page={page}
+        onPageChange={setPage}
         isLoading={isLoading}
         onDelete={handleDelete}
         onRestore={handleRestore}

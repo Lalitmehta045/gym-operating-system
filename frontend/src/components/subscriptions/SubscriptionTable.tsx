@@ -4,10 +4,14 @@ import { Eye, MoreVertical, Search, Filter, Smartphone, CreditCard, Landmark } f
 import { Button } from "@/components/ui/Button"
 import { Subscription } from "@/hooks/api/useSubscriptions"
 import { format, differenceInDays } from "date-fns"
+import { useAuth } from "@/hooks/useAuth"
 
 interface SubscriptionTableProps {
   subscriptions: Subscription[]
   isLoading: boolean
+  meta?: { total: number; page: number; limit: number; totalPages: number }
+  page?: number
+  onPageChange?: (page: number) => void
   onRenew?: (id: string) => void
   onCancel?: (id: string) => void
   onPay?: (id: string) => void
@@ -40,7 +44,23 @@ const getPaymentMethodMock = (id: string) => {
   return methods[charCode % methods.length];
 }
 
-export function SubscriptionTable({ subscriptions, isLoading, onRenew, onCancel, onPay }: SubscriptionTableProps) {
+export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, onPageChange, onRenew, onCancel, onPay }: SubscriptionTableProps) {
+  const [openMenuId, setOpenMenuId] = React.useState<string | null>(null)
+  const menuRef = React.useRef<HTMLDivElement>(null)
+  const { user } = useAuth()
+  const isTrainer = user?.role === "TRAINER"
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
   if (isLoading) {
     return (
       <div className="w-full flex items-center justify-center p-8 bg-[var(--canvas-light)] rounded-xl border border-[var(--hairline-soft)] shadow-sm">
@@ -132,7 +152,10 @@ export function SubscriptionTable({ subscriptions, isLoading, onRenew, onCancel,
                         </div>
                         <div>
                           <div className="font-semibold text-[var(--on-primary)]">{fullName}</div>
-                          <div className="text-xs text-[var(--mute)]">{sub.member?.email || `${firstName.toLowerCase()}@example.com`}</div>
+                          <div className="text-xs text-[var(--mute)]">
+                            {sub.member?.memberCode && <span className="font-medium mr-1">#{sub.member.memberCode} •</span>}
+                            {sub.member?.email || `${firstName.toLowerCase()}@example.com`}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -202,9 +225,55 @@ export function SubscriptionTable({ subscriptions, isLoading, onRenew, onCancel,
                             <Eye className="w-4 h-4" />
                           </button>
                         </Link>
-                        <button onClick={() => {}} className="p-1.5 text-[var(--ash)] hover:text-[var(--on-primary)] hover:bg-[var(--canvas-paper)] rounded-lg transition-colors border border-transparent hover:border-[var(--hairline)]">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <div className="relative" ref={openMenuId === sub.id ? menuRef : null}>
+                          <button 
+                            onClick={() => setOpenMenuId(openMenuId === sub.id ? null : sub.id)} 
+                            className="p-1.5 text-[var(--ash)] hover:text-[var(--on-primary)] hover:bg-[var(--canvas-paper)] rounded-lg transition-colors border border-transparent hover:border-[var(--hairline)]"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                          {openMenuId === sub.id && (
+                            <div className="absolute right-0 top-8 z-50 w-48 rounded-lg border border-[var(--hairline-soft)] bg-[var(--canvas-light)] shadow-lg py-1 text-left">
+                              <Link href={`/subscriptions/${sub.id}`}>
+                                <button className="w-full text-left px-4 py-2 text-sm text-[var(--on-primary)] hover:bg-[var(--canvas-paper)] transition-colors">
+                                  View Details
+                                </button>
+                              </Link>
+                              
+                              {!isTrainer && sub.status === "PENDING" && onPay && (
+                                <button 
+                                  onClick={() => { setOpenMenuId(null); onPay(sub.id); }}
+                                  className="w-full text-left px-4 py-2 text-sm text-[#D97706] hover:bg-[#FEF3C7] transition-colors"
+                                >
+                                  Process Payment
+                                </button>
+                              )}
+                              
+                              {!isTrainer && (sub.status === "ACTIVE" || sub.status === "EXPIRED") && onRenew && (
+                                <button 
+                                  onClick={() => { setOpenMenuId(null); onRenew(sub.id); }}
+                                  className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                                >
+                                  Renew Subscription
+                                </button>
+                              )}
+                              
+                              {!isTrainer && (sub.status === "ACTIVE" || sub.status === "PENDING") && onCancel && (
+                                <button 
+                                  onClick={() => { 
+                                    setOpenMenuId(null); 
+                                    if (window.confirm("Are you sure you want to cancel this subscription?")) {
+                                      onCancel(sub.id); 
+                                    }
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  Cancel Subscription
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -214,20 +283,30 @@ export function SubscriptionTable({ subscriptions, isLoading, onRenew, onCancel,
           </table>
         </div>
 
-        {/* Pagination mock */}
+        {/* Pagination */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--hairline-soft)] bg-[var(--canvas-light)]">
           <div className="text-sm text-[var(--mute)]">
-            Showing <span className="font-medium text-[var(--on-primary)]">1</span> to <span className="font-medium text-[var(--on-primary)]">{subscriptions.length}</span> of <span className="font-medium text-[var(--on-primary)]">156</span> subscriptions
+            {meta
+              ? <>Showing <span className="font-medium text-[var(--on-primary)]">{Math.min((page - 1) * (meta.limit || 6) + 1, meta.total)}</span> to <span className="font-medium text-[var(--on-primary)]">{Math.min(page * (meta.limit || 6), meta.total)}</span> of <span className="font-medium text-[var(--on-primary)]">{meta.total}</span> subscriptions</>
+              : <>Showing <span className="font-medium text-[var(--on-primary)]">1</span> to <span className="font-medium text-[var(--on-primary)]">{subscriptions.length}</span> of <span className="font-medium text-[var(--on-primary)]">{subscriptions.length}</span> subscriptions</>
+            }
           </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => {}} className="px-2.5 py-1 text-[var(--mute)] hover:bg-[var(--canvas-paper)] rounded border border-transparent transition-colors">&lt;</button>
-            <button onClick={() => {}} className="px-3 py-1 bg-[#6C47FF] text-white rounded font-medium shadow-sm">1</button>
-            <button onClick={() => {}} className="px-3 py-1 text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] rounded border border-transparent transition-colors">2</button>
-            <button onClick={() => {}} className="px-3 py-1 text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] rounded border border-transparent transition-colors">3</button>
-            <span className="px-2 text-[var(--ash)]">...</span>
-            <button onClick={() => {}} className="px-3 py-1 text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] rounded border border-transparent transition-colors">26</button>
-            <button onClick={() => {}} className="px-2.5 py-1 text-[var(--mute)] hover:bg-[var(--canvas-paper)] rounded border border-transparent transition-colors">&gt;</button>
-          </div>
+          {meta && meta.totalPages > 1 && onPageChange && (
+            <div className="flex items-center gap-1">
+              <button onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1} className="px-2.5 py-1 text-[var(--mute)] hover:bg-[var(--canvas-paper)] rounded border border-transparent transition-colors disabled:opacity-40">&lt;</button>
+              {Array.from({ length: Math.min(meta.totalPages, 5) }, (_, i) => {
+                let p: number
+                if (meta.totalPages <= 5) p = i + 1
+                else if (page <= 3) p = i + 1
+                else if (page >= meta.totalPages - 2) p = meta.totalPages - 4 + i
+                else p = page - 2 + i
+                return (
+                  <button key={p} onClick={() => onPageChange(p)} className={`px-3 py-1 rounded font-medium transition-colors ${ p === page ? "bg-[#6C47FF] text-white shadow-sm" : "text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] border border-transparent" }`}>{p}</button>
+                )
+              })}
+              <button onClick={() => onPageChange(Math.min(meta.totalPages, page + 1))} disabled={page >= meta.totalPages} className="px-2.5 py-1 text-[var(--mute)] hover:bg-[var(--canvas-paper)] rounded border border-transparent transition-colors disabled:opacity-40">&gt;</button>
+            </div>
+          )}
         </div>
       </div>
     </div>

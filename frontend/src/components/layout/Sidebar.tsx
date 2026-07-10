@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, CreditCard, Calendar, Repeat, BarChart3, MessageSquare, Settings, Moon, Sun, Sparkles, ClipboardList } from "lucide-react"
+import { LayoutDashboard, Users, CreditCard, Calendar, Repeat, Bell, FileText, Settings, Moon, Sun, Sparkles, ClipboardList, UserCog } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
 import { useProfile } from "@/hooks/api/useSettings"
@@ -12,12 +12,13 @@ import { useTheme } from "next-themes"
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Members", href: "/members", icon: Users },
+  { name: "Staff", href: "/staff", icon: UserCog },
   { name: "Attendance", href: "/attendance", icon: Calendar },
   { name: "Plans", href: "/plans", icon: ClipboardList },
   { name: "Subscriptions", href: "/subscriptions", icon: Repeat },
   { name: "Payments", href: "/payments", icon: CreditCard },
-  { name: "Reports", href: "/notifications", icon: BarChart3 },
-  { name: "Messages", href: "/invoices", icon: MessageSquare },
+  { name: "Invoices", href: "/invoices", icon: FileText },
+  { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Settings", href: "/settings", icon: Settings },
 ]
 
@@ -63,27 +64,28 @@ export function Sidebar({ className }: { className?: string }) {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-0.5 px-3 py-2">
-        {navigation.map((item) => {
+        {navigation.filter((item) => {
+          if (user?.role === 'TRAINER') {
+            const allowed = ["Dashboard", "Members", "Attendance", "Plans", "Subscriptions", "Settings", "Notifications", "Messages"];
+            return allowed.includes(item.name);
+          }
+          if (user?.role === 'MANAGER') {
+            const allowed = ["Dashboard", "Members", "Attendance", "Plans", "Subscriptions", "Payments", "Settings", "Notifications", "Messages"];
+            return allowed.includes(item.name);
+          }
+          return true;
+        }).map((item) => {
           const isActive = item.href === "/dashboard"
             ? pathname === "/dashboard"
             : pathname.startsWith(item.href)
             
-          const isMembersActive = isActive && item.name === "Members"
-          const isAttendanceActive = isActive && item.name === "Attendance"
-          const isSubscriptionsActive = isActive && item.name === "Subscriptions"
-          const isPlansActive = isActive && item.name === "Plans"
-          
           return (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
                 "group flex items-center rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 relative",
-                isMembersActive
-                  ? "bg-[#FFF0F0] text-[#EF4444] shadow-sm before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-[#EF4444] before:rounded-r-full"
-                  : isAttendanceActive || isSubscriptionsActive || isPlansActive
-                  ? "bg-[#F3F0FF] text-[#6C47FF] shadow-sm before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-8 before:w-1 before:bg-[#6C47FF] before:rounded-r-full"
-                  : isActive
+                isActive
                   ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] shadow-sm"
                   : "text-[var(--sidebar-text)] hover:text-[var(--sidebar-text-hover)] hover:bg-[var(--canvas-light)]/[0.06]"
               )}
@@ -91,7 +93,7 @@ export function Sidebar({ className }: { className?: string }) {
               <item.icon
                 className={cn(
                   "mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors",
-                  isMembersActive ? "text-[#EF4444]" : (isAttendanceActive || isSubscriptionsActive || isPlansActive) ? "text-[#6C47FF]" : isActive ? "text-[var(--sidebar-active-text)]" : "text-[var(--sidebar-text)] group-hover:text-[var(--sidebar-text-hover)]"
+                  isActive ? "text-[var(--sidebar-active-text)]" : "text-[var(--sidebar-text)] group-hover:text-[var(--sidebar-text-hover)]"
                 )}
                 aria-hidden="true"
               />

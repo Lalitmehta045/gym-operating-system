@@ -1,6 +1,9 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { InvoicesTable } from '@/components/invoices/InvoicesTable';
@@ -8,8 +11,20 @@ import { useInvoices } from '@/hooks/api/useInvoices';
 import { Download, Plus, Search, Calendar, Filter, FileText, CheckCircle2, Clock, XCircle } from 'lucide-react';
 
 export default function InvoicesPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [search, setSearch] = React.useState('');
   const { data } = useInvoices();
+
+  React.useEffect(() => {
+    if (user && (user.role === 'TRAINER' || user.role === 'MANAGER')) {
+      toast.error("You don't have permission for this page");
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
+  if (user?.role === 'TRAINER' || user?.role === 'MANAGER') return null;
+
 
   const total = data?.meta?.total || 45;
   const paid = Math.floor(total * 0.711);

@@ -7,9 +7,14 @@ import {
 } from 'recharts';
 import { ChevronDown, Users, Calendar, TrendingUp, Loader2 } from 'lucide-react';
 import { useDashboardAttendance } from '@/hooks/api/useDashboard';
+import { useAuth } from '@/hooks/useAuth';
 
 export function AttendanceCharts() {
-  const { data, isLoading } = useDashboardAttendance();
+  const { user } = useAuth();
+  const canViewMetrics = user?.role === 'OWNER' || user?.role === 'MANAGER';
+  const { data, isLoading, isError } = useDashboardAttendance();
+
+  if (!canViewMetrics || isError) return null;
 
   if (isLoading || !data) {
     return (

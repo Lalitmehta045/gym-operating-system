@@ -22,7 +22,7 @@ export function RevenueSummary() {
   const getPercentage = (amount: number) => ((amount / total) * 100).toFixed(1) + '% of total';
 
   return (
-    <div className="flex flex-nowrap overflow-x-auto lg:flex lg:flex-row gap-4 mb-8 pb-2 lg:pb-0 hide-scrollbar">
+    <div className="flex flex-nowrap overflow-x-auto lg:flex lg:flex-row gap-4 mb-8 pb-2 lg:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       {/* Total Revenue */}
       <div className="min-w-[260px] lg:w-[25%] bg-[#1E1B4B] text-white p-5 rounded-2xl shadow-sm flex flex-col justify-between relative overflow-hidden group">
         <div className="flex justify-between items-start mb-4">
@@ -43,7 +43,7 @@ export function RevenueSummary() {
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-16 opacity-50 translate-y-2">
           <svg viewBox="0 0 200 50" preserveAspectRatio="none" className="w-full h-full">
-            <path d="M0,50 L0,30 C20,40 40,10 60,20 C80,30 100,10 120,25 C140,40 160,10 180,15 C190,17 195,25 200,25 L200,50 Z" fill="none" stroke="#6C47FF" strokeWidth="2" />
+             <path d="M 0 50 L 0 35 C 50 25, 70 15, 100 25 C 140 40, 160 10, 200 15 L 200 50 Z" fill="none" stroke="#6C47FF" strokeWidth="2" />
           </svg>
         </div>
       </div>
@@ -66,7 +66,7 @@ export function RevenueSummary() {
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-12 opacity-60">
           <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full">
-             <path d="M0,30 L0,20 C20,25 40,10 60,15 C80,20 90,5 100,10 L100,30 Z" fill="none" stroke="#22c55e" strokeWidth="1.5" />
+             <path d="M 0 30 L 0 20 C 30 15, 60 25, 100 10 L 100 30 Z" fill="none" stroke="#22c55e" strokeWidth="1.5" />
           </svg>
         </div>
       </div>
@@ -89,7 +89,7 @@ export function RevenueSummary() {
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-12 opacity-60">
           <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full">
-             <path d="M0,30 L0,25 C20,15 40,25 60,10 C80,-5 90,15 100,10 L100,30 Z" fill="none" stroke="#a855f7" strokeWidth="1.5" />
+             <path d="M 0 30 L 0 15 C 40 5, 60 25, 100 15 L 100 30 Z" fill="none" stroke="#a855f7" strokeWidth="1.5" />
           </svg>
         </div>
       </div>
@@ -112,7 +112,7 @@ export function RevenueSummary() {
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-12 opacity-60">
           <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full">
-             <path d="M0,30 L0,15 C20,10 40,20 60,15 C80,10 90,20 100,5 L100,30 Z" fill="none" stroke="#f97316" strokeWidth="1.5" />
+             <path d="M 0 30 L 0 25 C 30 15, 70 25, 100 10 L 100 30 Z" fill="none" stroke="#f97316" strokeWidth="1.5" />
           </svg>
         </div>
       </div>
@@ -135,7 +135,7 @@ export function RevenueSummary() {
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-12 opacity-60">
           <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full">
-             <path d="M0,30 L0,20 C20,10 40,15 60,5 C80,-5 90,15 100,10 L100,30 Z" fill="none" stroke="#3b82f6" strokeWidth="1.5" />
+             <path d="M 0 30 L 0 10 C 40 25, 60 5, 100 20 L 100 30 Z" fill="none" stroke="#3b82f6" strokeWidth="1.5" />
           </svg>
         </div>
       </div>

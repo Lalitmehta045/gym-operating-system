@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PaymentsTable } from '@/components/payments/PaymentsTable';
@@ -10,9 +12,20 @@ import { Receipt, Search, Filter, Calendar } from 'lucide-react';
 
 export default function PaymentsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState('ALL');
   const [method, setMethod] = React.useState('ALL');
+
+  React.useEffect(() => {
+    if (user && user.role === 'TRAINER') {
+      toast.error("You don't have permission for this page");
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
+  if (user?.role === 'TRAINER') return null;
+
 
   return (
     <div className="space-y-6">
@@ -21,10 +34,12 @@ export default function PaymentsPage() {
           <h1 className="text-[32px] font-bold text-[var(--on-primary)] tracking-tight">Payments & Revenue</h1>
           <p className="text-[16px] text-[var(--mute)] mt-1">Manage all incoming payments and track revenue</p>
         </div>
-        <Button onClick={() => router.push('/payments/new')} className="bg-[#6C47FF] hover:bg-[#5835e5] text-white px-4 py-2 flex items-center gap-2 rounded-lg shadow-sm">
-          <Receipt className="w-5 h-5" />
-          Record Payment
-        </Button>
+        {user?.role === 'OWNER' && (
+          <Button onClick={() => router.push('/payments/new')} className="bg-[#6C47FF] hover:bg-[#5835e5] text-white px-4 py-2 flex items-center gap-2 rounded-lg shadow-sm">
+            <Receipt className="w-5 h-5" />
+            Record Payment
+          </Button>
+        )}
       </div>
 
       <RevenueSummary />

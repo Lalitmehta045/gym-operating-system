@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
     const data = await backendFetch(req, '/staff');
     return NextResponse.json(data);
   } catch (error: any) {
+    console.error('STAFF_API_ERROR:', error);
     return NextResponse.json(
       { message: error.message || 'Failed to fetch staff' },
       { status: error.status || 500 }

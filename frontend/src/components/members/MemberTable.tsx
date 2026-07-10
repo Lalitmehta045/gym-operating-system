@@ -13,18 +13,38 @@ import { useAuth } from "@/hooks/useAuth"
 interface MemberTableProps {
   members: Member[];
   isLoading: boolean;
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  page?: number;
+  onPageChange?: (page: number) => void;
   onDelete: (id: string) => void;
   onRestore: (id: string) => void;
 }
 
-export function MemberTable({ members, isLoading, onDelete, onRestore }: MemberTableProps) {
+export function MemberTable({ members, isLoading, meta, page = 1, onPageChange, onDelete, onRestore }: MemberTableProps) {
   const router = useRouter()
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false)
   const [restoreModalOpen, setRestoreModalOpen] = React.useState(false)
   const [selectedMember, setSelectedMember] = React.useState<Member | null>(null)
+  const [openMenuId, setOpenMenuId] = React.useState<string | null>(null)
+  const menuRef = React.useRef<HTMLDivElement>(null)
   const { user } = useAuth()
   const canManage = user?.role === "OWNER" || user?.role === "MANAGER"
 
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
   const handleAction = (member: Member, action: "view" | "edit" | "delete" | "restore") => {
     switch (action) {
       case "view":
@@ -129,7 +149,10 @@ export function MemberTable({ members, isLoading, onDelete, onRestore }: MemberT
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-semibold ${avatarColor}`}>
                           {initials}
                         </div>
-                        <span className="font-semibold text-[var(--on-primary)]">{fullName}</span>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-[var(--on-primary)]">{fullName}</span>
+                          <span className="text-[11px] text-[var(--mute)]">#{member.memberCode}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -198,9 +221,35 @@ export function MemberTable({ members, isLoading, onDelete, onRestore }: MemberT
                             <button onClick={() => handleAction(member, "edit")} className="p-1.5 text-[var(--ash)] hover:text-[var(--slate-soft)] hover:bg-[var(--canvas-paper)] rounded-lg transition-colors">
                               <Pencil className="w-4 h-4" />
                             </button>
-                            <button onClick={() => {}} className="p-1.5 text-[var(--ash)] hover:text-[var(--slate-soft)] hover:bg-[var(--canvas-paper)] rounded-lg transition-colors">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
+                            <div className="relative" ref={openMenuId === member.id ? menuRef : null}>
+                              <button
+                                onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
+                                className="p-1.5 text-[var(--ash)] hover:text-[var(--slate-soft)] hover:bg-[var(--canvas-paper)] rounded-lg transition-colors"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </button>
+                              {openMenuId === member.id && (
+                                <div className="absolute right-0 top-8 z-50 w-44 rounded-lg border border-[var(--hairline-soft)] bg-[var(--canvas-light)] shadow-lg py-1">
+                                  {!member.deletedAt ? (
+                                    <button
+                                      onClick={() => { setOpenMenuId(null); handleAction(member, "delete") }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                      <Trash className="w-4 h-4" />
+                                      Delete Member
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => { setOpenMenuId(null); handleAction(member, "restore") }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-600 hover:bg-green-50 transition-colors"
+                                    >
+                                      <RotateCcw className="w-4 h-4" />
+                                      Restore Member
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </>
                         )}
                       </div>
@@ -215,33 +264,59 @@ export function MemberTable({ members, isLoading, onDelete, onRestore }: MemberT
         {/* Pagination */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--hairline-soft)] bg-[var(--canvas-light)]">
           <p className="text-sm text-[var(--mute)]">
-            Showing 1 to {members.length} of {members.length} members
+            {meta
+              ? `Showing ${Math.min((page - 1) * (meta.limit || 20) + 1, meta.total)}–${Math.min(page * (meta.limit || 20), meta.total)} of ${meta.total} members`
+              : `Showing ${members.length} members`
+            }
           </p>
-          <div className="flex items-center gap-1">
-            <button onClick={() => {}} className="p-2 border border-[var(--hairline)] rounded-lg bg-[var(--canvas-light)] text-[var(--mute)] hover:bg-[var(--canvas-paper)]">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button onClick={() => {}} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#EF4444] text-white text-sm font-medium">
-              1
-            </button>
-            <button onClick={() => {}} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] text-sm font-medium">
-              2
-            </button>
-            <button onClick={() => {}} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] text-sm font-medium">
-              3
-            </button>
-            <span className="px-1 text-[var(--ash)]">...</span>
-            <button onClick={() => {}} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] text-sm font-medium">
-              26
-            </button>
-            <button onClick={() => {}} className="p-2 border border-[var(--hairline)] rounded-lg bg-[var(--canvas-light)] text-[var(--mute)] hover:bg-[var(--canvas-paper)]">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+          {meta && meta.totalPages > 1 && onPageChange && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => onPageChange(Math.max(1, page - 1))}
+                disabled={page <= 1}
+                className="p-2 border border-[var(--hairline)] rounded-lg bg-[var(--canvas-light)] text-[var(--mute)] hover:bg-[var(--canvas-paper)] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              {Array.from({ length: Math.min(meta.totalPages, 5) }, (_, i) => {
+                // Show pages around current page
+                let p: number
+                if (meta.totalPages <= 5) {
+                  p = i + 1
+                } else if (page <= 3) {
+                  p = i + 1
+                } else if (page >= meta.totalPages - 2) {
+                  p = meta.totalPages - 4 + i
+                } else {
+                  p = page - 2 + i
+                }
+                return (
+                  <button
+                    key={p}
+                    onClick={() => onPageChange(p)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium ${
+                      p === page
+                        ? "bg-[#EF4444] text-white"
+                        : "border border-[var(--hairline)] bg-[var(--canvas-light)] text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)]"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => onPageChange(Math.min(meta.totalPages, page + 1))}
+                disabled={page >= meta.totalPages}
+                className="p-2 border border-[var(--hairline)] rounded-lg bg-[var(--canvas-light)] text-[var(--mute)] hover:bg-[var(--canvas-paper)] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

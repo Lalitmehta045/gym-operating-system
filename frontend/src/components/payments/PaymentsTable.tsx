@@ -24,7 +24,13 @@ interface PaymentsTableProps {
 
 export function PaymentsTable({ search, status, method }: PaymentsTableProps) {
   const router = useRouter();
+  const [page, setPage] = React.useState(1);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => { setPage(1) }, [search, status, method])
+
   const { data, isLoading, isError } = usePayments({
+    page,
     search,
     status: status !== 'ALL' ? status : undefined,
     method: method !== 'ALL' ? method : undefined,
@@ -193,16 +199,25 @@ export function PaymentsTable({ search, status, method }: PaymentsTableProps) {
       </Table>
       
       <div className="border-t border-[var(--hairline)] p-4 flex items-center justify-between bg-[var(--canvas-light)]">
-        <span className="text-sm text-[var(--mute)]">Showing 1 to {payments.length} of {data.meta?.total || payments.length} payments</span>
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)]">{'<'}</Button>
-          <Button variant="outline" size="sm" className="h-8 w-8 text-white bg-[#6C47FF] border-[#6C47FF] hover:bg-[#5835e5]">1</Button>
-          <Button variant="outline" size="sm" className="h-8 w-8 text-[var(--slate-soft)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]">2</Button>
-          <Button variant="outline" size="sm" className="h-8 w-8 text-[var(--slate-soft)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]">3</Button>
-          <span className="px-2 text-[var(--ash)]">...</span>
-          <Button variant="outline" size="sm" className="h-8 w-8 text-[var(--slate-soft)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]">9</Button>
-          <Button variant="outline" size="sm" className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]">{'>'}</Button>
-        </div>
+        <span className="text-sm text-[var(--mute)]">
+          Showing {Math.min((page - 1) * (data.meta?.limit || 20) + 1, data.meta?.total || payments.length)} to {Math.min(page * (data.meta?.limit || 20), data.meta?.total || payments.length)} of {data.meta?.total || payments.length} payments
+        </span>
+        {data.meta && data.meta.totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)] disabled:opacity-40">{'<'}</Button>
+            {Array.from({ length: Math.min(data.meta.totalPages, 5) }, (_, i) => {
+              let p: number
+              if (data.meta!.totalPages <= 5) p = i + 1
+              else if (page <= 3) p = i + 1
+              else if (page >= data.meta!.totalPages - 2) p = data.meta!.totalPages - 4 + i
+              else p = page - 2 + i
+              return (
+                <Button key={p} variant="outline" size="sm" onClick={() => setPage(p)} className={`h-8 w-8 ${ p === page ? 'text-white bg-[#6C47FF] border-[#6C47FF] hover:bg-[#5835e5]' : 'text-[var(--slate-soft)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]' }`}>{p}</Button>
+              )
+            })}
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(data.meta!.totalPages, p + 1))} disabled={page >= data.meta.totalPages} className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)] disabled:opacity-40">{'>'}</Button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -13,8 +13,8 @@ import { useAttendances, useCheckOut } from "@/hooks/api/useAttendances"
 export default function AttendanceHistoryPage() {
   const [memberSearch, setMemberSearch] = React.useState("")
   const [status, setStatus] = React.useState("")
-  const [startDate, setStartDate] = React.useState("")
-  const [endDate, setEndDate] = React.useState("")
+  const [dateFrom, setDateFrom] = React.useState("")
+  const [dateTo, setDateTo] = React.useState("")
   
   const [isManualModalOpen, setIsManualModalOpen] = React.useState(false)
   const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(null)
@@ -22,10 +22,10 @@ export default function AttendanceHistoryPage() {
   const { data, isLoading } = useAttendances({
     page: 1,
     limit: 50,
-    memberId: memberSearch ? memberSearch : undefined, // Assuming search is ID for now, or the API handles search string
+    memberId: memberSearch ? memberSearch : undefined,
     status: status ? status : undefined,
-    startDate: startDate ? startDate : undefined,
-    endDate: endDate ? endDate : undefined
+    dateFrom: dateFrom ? dateFrom : undefined,
+    dateTo: dateTo ? dateTo : undefined,
   })
 
   const checkOutMutation = useCheckOut()
@@ -65,10 +65,10 @@ export default function AttendanceHistoryPage() {
         setMemberSearch={setMemberSearch}
         status={status}
         setStatus={setStatus}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
+        startDate={dateFrom}
+        setStartDate={setDateFrom}
+        endDate={dateTo}
+        setEndDate={setDateTo}
       />
 
       <AttendanceTable 

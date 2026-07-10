@@ -47,11 +47,15 @@ export class DashboardService {
       try {
     const dateFilter = this.getDateFilter(dateFrom, dateTo);
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const IST_OFFSET_MS = 330 * 60 * 1000;
+    const nowIST = new Date(new Date().getTime() + IST_OFFSET_MS);
+    const y = nowIST.getUTCFullYear();
+    const mo = nowIST.getUTCMonth();
+    const dy = nowIST.getUTCDate();
+    // Midnight IST in UTC = midnight IST - 5h30m
+    const today = new Date(Date.UTC(y, mo, dy) - IST_OFFSET_MS);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    const startOfMonth = new Date(Date.UTC(y, mo, 1) - IST_OFFSET_MS);
     
     const sevenDaysFromNow = new Date(today);
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
@@ -105,8 +109,10 @@ export class DashboardService {
           tenantId,
           deletedAt: null,
           paymentStatus: PaymentStatus.PAID,
-          paidAt: { gte: startOfMonth },
-          ...dateFilter,
+          OR: [
+            { paidAt: { gte: startOfMonth } },
+            { paidAt: null, createdAt: { gte: startOfMonth } },
+          ],
         },
         _sum: { amount: true },
       }),
@@ -394,11 +400,15 @@ export class DashboardService {
     const { dateFrom, dateTo } = query;
     const dateFilter = this.getDateFilter(dateFrom, dateTo);
 
-    const today = new Date();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
+    const IST_OFFSET_MS = 330 * 60 * 1000;
+    const nowIST = new Date(new Date().getTime() + IST_OFFSET_MS);
+    const yr = nowIST.getUTCFullYear();
+    const mn = nowIST.getUTCMonth();
+    const startOfMonth = new Date(Date.UTC(yr, mn, 1) - IST_OFFSET_MS);
+    const startOfWeek = new Date(Date.UTC(yr, mn, nowIST.getUTCDate()) - IST_OFFSET_MS);
+    // Subtract day-of-week offset (0=Sunday)
+    const dow = nowIST.getUTCDay();
+    startOfWeek.setTime(startOfWeek.getTime() - dow * 24 * 60 * 60 * 1000);
 
     const [totalRevenueAgg, monthlyRevenueAgg, weeklyRevenueAgg, methodAggs] =
       await this.prisma.$transaction([
@@ -416,7 +426,10 @@ export class DashboardService {
             tenantId,
             deletedAt: null,
             paymentStatus: PaymentStatus.PAID,
-            paidAt: { gte: startOfMonth },
+            OR: [
+              { paidAt: { gte: startOfMonth } },
+              { paidAt: null, createdAt: { gte: startOfMonth } },
+            ],
             ...dateFilter,
           },
           _sum: { amount: true },
@@ -426,7 +439,10 @@ export class DashboardService {
             tenantId,
             deletedAt: null,
             paymentStatus: PaymentStatus.PAID,
-            paidAt: { gte: startOfWeek },
+            OR: [
+              { paidAt: { gte: startOfWeek } },
+              { paidAt: null, createdAt: { gte: startOfWeek } },
+            ],
             ...dateFilter,
           },
           _sum: { amount: true },

@@ -15,6 +15,7 @@ export class SubscriptionDto {
   updatedAt: Date;
   member?: {
     id: string;
+    memberCode?: string | null;
     firstName: string;
     lastName: string;
     email: string;

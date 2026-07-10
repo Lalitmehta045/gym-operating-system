@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth"
 
 export default function PlansPage() {
   const { user } = useAuth()
-  const isOwner = user?.role === "OWNER"
+  const canManage = user?.role === "OWNER"
 
   const [search, setSearch] = React.useState("")
   const [planType, setPlanType] = React.useState("")
@@ -41,7 +41,7 @@ export default function PlansPage() {
           <h1 className="text-[32px] font-bold text-[var(--on-primary)] leading-none">Membership Plans</h1>
           <p className="text-sm text-[var(--mute)]">Manage your gym's membership packages</p>
         </div>
-        {isOwner && (
+        {canManage && (
           <Link href="/plans/new">
             <button className="flex items-center gap-2 px-5 py-2.5 bg-[#6C47FF] hover:bg-[#5b3ce0] text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
               <Plus className="w-4 h-4" />

@@ -3,10 +3,15 @@
 import { usePlans } from "@/hooks/api/usePlans"
 import { useDashboardOverview } from "@/hooks/api/useDashboard"
 import { ClipboardList, CheckCircle2, Archive, Users } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 export function PlanDashboardCards() {
-  const { data: plansData, isLoading: plansLoading } = usePlans()
-  const { data: overviewData, isLoading: overLoading } = useDashboardOverview()
+  const { user } = useAuth()
+  const canViewMetrics = user?.role === 'OWNER' || user?.role === 'MANAGER'
+  const { data: plansData, isLoading: plansLoading, isError: plansError } = usePlans()
+  const { data: overviewData, isLoading: overLoading, isError: overError } = useDashboardOverview()
+
+  if (!canViewMetrics || plansError || overError) return null;
 
   if (plansLoading || overLoading) {
     return (

@@ -3,12 +3,16 @@
 import { useDashboardSubscriptions } from "@/hooks/api/useDashboard"
 import { LoadingState, ErrorState } from "@/components/ui/States"
 import { ClipboardList, CheckCircle2, Clock, XCircle } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 export function SubscriptionDashboardCards() {
+  const { user } = useAuth()
+  const canViewMetrics = user?.role === 'OWNER' || user?.role === 'MANAGER'
+  
   const { data, isLoading, isError } = useDashboardSubscriptions()
 
+  if (!canViewMetrics || isError) return null;
   if (isLoading) return <LoadingState />
-  if (isError) return <ErrorState title="Failed to load subscription metrics" />
 
   const activeCount = data?.activeSubscriptions || 0;
   const pendingCount = data?.pendingSubscriptions || 0;
@@ -27,7 +31,7 @@ export function SubscriptionDashboardCards() {
       sparklineColor: "#6C47FF",
       gradientId: "gradSubPurple",
       gradientColors: ["#6C47FF", "#ffffff"],
-      path: "M0 25 Q 15 15, 30 25 T 60 20 T 90 30 T 120 20 T 150 25 T 180 20 T 200 25"
+      path: "M 0 35 C 40 30, 60 20, 100 25 C 140 30, 160 10, 200 15"
     },
     { 
       title: "Active Subscriptions", 
@@ -39,7 +43,7 @@ export function SubscriptionDashboardCards() {
       sparklineColor: "#22C55E",
       gradientId: "gradSubGreen",
       gradientColors: ["#22C55E", "#ffffff"],
-      path: "M0 30 Q 20 20, 40 25 T 80 15 T 120 25 T 160 10 T 200 20"
+      path: "M 0 25 C 50 15, 80 35, 130 20 C 160 10, 180 25, 200 20"
     },
     { 
       title: "Pending Subscriptions", 
@@ -51,7 +55,7 @@ export function SubscriptionDashboardCards() {
       sparklineColor: "#F59E0B",
       gradientId: "gradSubOrange",
       gradientColors: ["#F59E0B", "#ffffff"],
-      path: "M0 20 Q 25 10, 50 25 T 100 20 T 150 30 T 200 20"
+      path: "M 0 20 C 40 30, 80 10, 120 25 C 160 40, 180 15, 200 20"
     },
     { 
       title: "Expired Subscriptions", 
@@ -63,7 +67,7 @@ export function SubscriptionDashboardCards() {
       sparklineColor: "#EF4444",
       gradientId: "gradSubRed",
       gradientColors: ["#EF4444", "#ffffff"],
-      path: "M0 25 Q 20 30, 40 20 T 80 25 T 120 15 T 160 25 T 200 15"
+      path: "M 0 30 C 30 15, 70 35, 110 25 C 150 15, 170 30, 200 25"
     },
   ]
 

@@ -10,11 +10,10 @@ import { User, Shield, Building2, Plug, Activity, Users } from "lucide-react";
 
 const settingsNavigation = [
   { name: "Profile", href: "/settings/profile", icon: User, roles: ["OWNER", "MANAGER", "TRAINER"] },
-  { name: "Account", href: "/settings/account", icon: Shield, roles: ["OWNER", "MANAGER", "TRAINER"] },
-  { name: "Gym", href: "/settings/gym", icon: Building2, roles: ["OWNER", "MANAGER", "TRAINER"] }, // assuming all can see gym
-  { name: "Staff", href: "/settings/staff", icon: Users, roles: ["OWNER"] },
+  { name: "Account", href: "/settings/account", icon: Shield, roles: ["OWNER"] },
+  { name: "Gym", href: "/settings/gym", icon: Building2, roles: ["OWNER", "MANAGER"] }, 
   { name: "Integrations", href: "/settings/integrations", icon: Plug, roles: ["OWNER"] },
-  { name: "Audit Logs", href: "/settings/audit", icon: Activity, roles: ["OWNER", "MANAGER", "TRAINER"] },
+  { name: "Audit Logs", href: "/settings/audit", icon: Activity, roles: ["OWNER"] },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

@@ -677,20 +677,19 @@ export class AttendanceService implements AttendanceServiceInterface {
     if (!tenantId)
       throw new ForbiddenException('Tenant-scoped access is required');
 
-    const todayIST = new Date(
-      new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
-    );
-    const startOfTodayIST = new Date(
-      todayIST.getFullYear(), 
-      todayIST.getMonth(), 
-      todayIST.getDate()
-    );
-    const endOfTodayIST = new Date(
-      todayIST.getFullYear(), 
-      todayIST.getMonth(), 
-      todayIST.getDate(), 
-      23, 59, 59, 999
-    );
+    // IST is UTC+5:30. Compute today's IST calendar date, then produce
+    // the UTC boundaries that correspond to 00:00 IST and 23:59:59.999 IST.
+    const nowUTC = new Date();
+    // Offset IST = UTC + 5h30m = 330 minutes
+    const IST_OFFSET_MS = 330 * 60 * 1000;
+    const nowIST = new Date(nowUTC.getTime() + IST_OFFSET_MS);
+    // IST calendar date parts
+    const y = nowIST.getUTCFullYear();
+    const m = nowIST.getUTCMonth();
+    const d = nowIST.getUTCDate();
+    // Midnight IST in UTC = midnight IST - 5h30m
+    const startOfTodayUTC = new Date(Date.UTC(y, m, d) - IST_OFFSET_MS);
+    const endOfTodayUTC = new Date(startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000 - 1);
 
     const [totalMembers, attGroups] = await Promise.all([
       this.prisma.member.count({
@@ -702,8 +701,8 @@ export class AttendanceService implements AttendanceServiceInterface {
           tenantId,
           deletedAt: null,
           attendanceDate: {
-            gte: startOfTodayIST,
-            lte: endOfTodayIST
+            gte: startOfTodayUTC,
+            lte: endOfTodayUTC
           }
         },
         _count: true,

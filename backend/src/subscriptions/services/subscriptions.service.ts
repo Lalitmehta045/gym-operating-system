@@ -99,6 +99,7 @@ export class SubscriptionsService {
           member: {
             select: {
               id: true,
+              memberCode: true,
               firstName: true,
               lastName: true,
               email: true,
@@ -152,6 +153,7 @@ export class SubscriptionsService {
         member: {
           select: {
             id: true,
+            memberCode: true,
             firstName: true,
             lastName: true,
             email: true,
@@ -371,6 +373,7 @@ export class SubscriptionsService {
       member: sub.member
         ? {
             id: sub.member.id,
+            memberCode: sub.member.memberCode,
             firstName: sub.member.firstName,
             lastName: sub.member.lastName,
             email: sub.member.email,

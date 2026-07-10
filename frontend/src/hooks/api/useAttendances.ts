@@ -39,8 +39,8 @@ export interface GetAttendancesParams {
   limit?: number;
   status?: string;
   memberId?: string;
-  startDate?: string;
-  endDate?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface DailyAttendanceReport {

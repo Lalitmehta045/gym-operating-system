@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/Input"
 import { Select } from "@/components/ui/Select"
 import { Button } from "@/components/ui/Button"
 import { CreateMemberDto, Member } from "@/hooks/api/useMembers"
-import { Loader2 } from "lucide-react"
+import { Loader2, Upload, X, Pencil } from "lucide-react"
+import api from "@/lib/axios"
 
 const memberSchema = z.object({
   memberCode: z.string().min(1, "Member code is required"),
@@ -43,7 +44,7 @@ type MemberFormValues = z.infer<typeof memberSchema>
 
 interface MemberFormProps {
   initialData?: Member;
-  onSubmit: (data: CreateMemberDto | any) => void;
+  onSubmit: (data: CreateMemberDto | any, photoFile?: File) => void;
   isLoading: boolean;
   isEdit?: boolean;
 }
@@ -73,7 +74,25 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
     },
   })
 
-  const handleSubmit = (values: MemberFormValues) => {
+  const photoInputRef = React.useRef<HTMLInputElement>(null)
+  const [photoPreview, setPhotoPreview] = React.useState<string | null>(initialData?.photoUrl || null)
+  const [photoFile, setPhotoFile] = React.useState<File | null>(null)
+  const [photoUploading, setPhotoUploading] = React.useState(false)
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoFile(file)
+    setPhotoPreview(URL.createObjectURL(file))
+  }
+
+  const clearPhoto = () => {
+    setPhotoFile(null)
+    setPhotoPreview(initialData?.photoUrl || null)
+    if (photoInputRef.current) photoInputRef.current.value = ""
+  }
+
+  const handleSubmit = async (values: MemberFormValues) => {
     // Clean up empty optional selects
     const payload: any = { ...values }
     if (payload.source === "") delete payload.source;
@@ -84,7 +103,23 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
     if (payload.weightKg !== undefined && payload.weightKg !== "") payload.weightKg = Number(payload.weightKg);
     else delete payload.weightKg;
 
-    onSubmit(payload)
+    // If editing and a new photo was selected, upload it first
+    if (isEdit && initialData?.id && photoFile) {
+      try {
+        setPhotoUploading(true)
+        const formData = new FormData()
+        formData.append('file', photoFile)
+        await api.post(`/members/${initialData.id}/profile-photo`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+      } catch (err) {
+        console.error('Photo upload failed:', err)
+      } finally {
+        setPhotoUploading(false)
+      }
+    }
+
+    onSubmit(payload, photoFile ?? undefined)
   }
 
   return (
@@ -219,11 +254,45 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1 md:col-span-2">
             <label className="text-sm font-medium text-[var(--ink-soft)] block">Profile Photo</label>
-            <div className="border-2 border-dashed border-[var(--hairline)] rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-[var(--canvas-paper)] transition cursor-pointer bg-[var(--canvas-light)]">
-              <svg className="w-8 h-8 text-[var(--ash)] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-              <p className="text-sm font-medium text-[var(--ink-soft)]">Click to upload photo</p>
-              <p className="text-xs text-[var(--mute)] mt-1">PNG, JPG up to 5MB</p>
-            </div>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+            {photoPreview ? (
+              <div className="relative w-28 h-28">
+                <img
+                  src={photoPreview}
+                  alt="Profile preview"
+                  className="w-28 h-28 rounded-full object-cover border-2 border-[var(--hairline-soft)]"
+                />
+                <button
+                  type="button"
+                  onClick={clearPhoto}
+                  className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-[var(--canvas-light)] border border-[var(--hairline-soft)] flex items-center justify-center hover:bg-[var(--canvas-paper)] transition-colors shadow-sm"
+                >
+                  <Pencil className="w-3 h-3 text-[var(--ash)]" />
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => photoInputRef.current?.click()}
+                className="border-2 border-dashed border-[var(--hairline)] rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-[var(--canvas-paper)] transition cursor-pointer bg-[var(--canvas-light)]"
+              >
+                <Upload className="w-8 h-8 text-[var(--ash)] mb-2" />
+                <p className="text-sm font-medium text-[var(--ink-soft)]">Click to upload photo</p>
+                <p className="text-xs text-[var(--mute)] mt-1">PNG, JPG, WebP up to 5MB</p>
+              </div>
+            )}
           </div>
           <div className="space-y-1 md:col-span-2">
             <label className="text-sm font-medium text-[var(--ink-soft)] block">Notes</label>

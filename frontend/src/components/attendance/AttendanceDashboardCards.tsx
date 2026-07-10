@@ -4,13 +4,17 @@ import { useAttendanceReportsDaily } from "@/hooks/api/useAttendances"
 import { useDashboardOverview } from "@/hooks/api/useDashboard"
 import { LoadingState, ErrorState } from "@/components/ui/States"
 import { Users, UserCheck, UserX, Calendar } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 export function AttendanceDashboardCards() {
+  const { user } = useAuth()
+  const canViewMetrics = user?.role === 'OWNER' || user?.role === 'MANAGER'
   const { data: attendanceData, isLoading: attLoading, isError: attError } = useAttendanceReportsDaily()
   const { data: overviewData, isLoading: overLoading, isError: overError } = useDashboardOverview()
 
+  if (!canViewMetrics || attError || overError) return null;
+
   if (attLoading || overLoading) return <LoadingState />
-  if (attError || overError) return <ErrorState title="Failed to load attendance report" />
   // If data is missing we just use safe fallbacks to avoid crash
   
   const totalMembers = overviewData?.totalMembers ?? 0;
