@@ -27,6 +27,7 @@ export interface Member {
   joinedAt: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface MembersResponse {
