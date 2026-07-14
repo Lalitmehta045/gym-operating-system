@@ -78,8 +78,8 @@ import { StaffModule } from './staff/staff.module.js';
     StaffModule,
     ThrottlerModule.forRoot([
       {
-        ttl: 60000,
-        limit: 100, // Standard API rate limit: 100 req/min
+        ttl: parseInt(process.env.THROTTLE_TTL as string, 10) || 60000,
+        limit: parseInt(process.env.THROTTLE_LIMIT as string, 10) || 20,
       },
     ]),
   ],

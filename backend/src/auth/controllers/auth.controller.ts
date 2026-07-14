@@ -13,9 +13,13 @@ import {
   Post,
   Req,
   Res,
+  UseFilters,
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle, ThrottlerException } from '@nestjs/throttler';
 import { AuthService } from '../services/auth.service.js';
 import { RegisterOwnerDto } from '../dto/register.dto.js';
 import { LoginDto } from '../dto/login.dto.js';
@@ -31,6 +35,21 @@ import { AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
 import { AuditLog } from '../../audit/decorators/audit-log.decorator.js';
 import * as crypto from 'crypto';
 
+@Catch(ThrottlerException)
+export class AuthThrottlerExceptionFilter implements ExceptionFilter {
+  catch(exception: ThrottlerException, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+
+    response.status(429).json({
+      statusCode: 429,
+      message: 'Too many login attempts. Please wait 60 seconds before trying again.',
+      retryAfter: 60,
+    });
+  }
+}
+
+@UseFilters(AuthThrottlerExceptionFilter)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -72,7 +91,7 @@ export class AuthController {
    */
   @Public()
   @Post('register')
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async register(
     @Body() dto: RegisterOwnerDto,
     @Req() request: Request,
@@ -93,7 +112,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @AuditLog(AuditEntity.USER, AuditAction.LOGIN, '🔓 User Logged In')
   async login(
     @Body() dto: LoginDto,
@@ -114,7 +133,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   async refresh(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
