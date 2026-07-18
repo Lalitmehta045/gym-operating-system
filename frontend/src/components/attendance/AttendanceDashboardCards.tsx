@@ -1,29 +1,56 @@
 "use client"
 
-import { useAttendanceReportsDaily } from "@/hooks/api/useAttendances"
-import { useDashboardOverview } from "@/hooks/api/useDashboard"
-import { LoadingState, ErrorState } from "@/components/ui/States"
-import { Users, UserCheck, UserX, Calendar } from "lucide-react"
+import * as React from "react"
+import { useAttendances, useCheckOut } from "@/hooks/api/useAttendances"
+import { useDashboardOverview, useDashboardAttendance } from "@/hooks/api/useDashboard"
+import { LoadingState } from "@/components/ui/States"
+import { Users, UserCheck, UserX, Calendar, MapPin, Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
+import { Button } from "@/components/ui/Button"
+import { format } from "date-fns"
+import { useSectionFilter } from "@/hooks/useSectionFilter"
 
 export function AttendanceDashboardCards() {
   const { user } = useAuth()
   const canViewMetrics = user?.role === 'OWNER' || user?.role === 'MANAGER'
-  const { data: attendanceData, isLoading: attLoading, isError: attError } = useAttendanceReportsDaily()
-  const { data: overviewData, isLoading: overLoading, isError: overError } = useDashboardOverview()
-
-  if (!canViewMetrics || attError || overError) return null;
-
-  if (attLoading || overLoading) return <LoadingState />
-  // If data is missing we just use safe fallbacks to avoid crash
   
-  const totalMembers = overviewData?.totalMembers ?? 0;
-  const presentCount = attendanceData?.presentCount ?? 0;
-  const absentCount = attendanceData?.absentCount ?? 0;
-  const rate = attendanceData?.attendanceRate ?? 0;
+  const { dateRange } = useSectionFilter("attendance")
+  const dateParams = {
+    dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  }
 
-  const presentPercentage = totalMembers > 0 ? Math.min((presentCount / totalMembers) * 100, 100).toFixed(1) : "0.0";
-  const absentPercentage = totalMembers > 0 ? Math.min((absentCount / totalMembers) * 100, 100).toFixed(1) : "0.0";
+  const { data: attendanceData, isLoading: attLoading, isError: attError } = useDashboardAttendance(dateParams)
+  const { data: overviewData, isLoading: overLoading, isError: overError } = useDashboardOverview(dateParams)
+  
+  // "Currently Inside" widget should NEVER use historical filters
+  const { data: insideData, isLoading: insideLoading, isError: insideError } = useAttendances({
+    isInside: true,
+    limit: 100
+  })
+
+  const checkOutMutation = useCheckOut()
+
+  const handleCheckOut = async (attendanceId: string) => {
+    try {
+      await checkOutMutation.mutateAsync({ id: attendanceId })
+    } catch (e) {
+      console.error("Check-out failed:", e)
+    }
+  }
+
+  if (!canViewMetrics || attError || overError || insideError) return null;
+
+  if (attLoading || overLoading || insideLoading) return <LoadingState />
+
+  const totalMembers = overviewData?.totalMembers ?? 0
+  const presentCount = attendanceData?.todayPresent ?? 0
+  const absentCount = attendanceData?.todayAbsent ?? 0
+  const rate = attendanceData?.attendanceRate ?? 0
+  const insideMembers = insideData?.data ?? []
+
+  const presentPercentage = totalMembers > 0 ? Math.min((presentCount / totalMembers) * 100, 100).toFixed(1) : "0.0"
+  const absentPercentage = totalMembers > 0 ? Math.min((absentCount / totalMembers) * 100, 100).toFixed(1) : "0.0"
 
   const cards = [
     { 
@@ -81,7 +108,7 @@ export function AttendanceDashboardCards() {
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-6 items-start">
       {cards.map((card, i) => {
         const Icon = card.icon
         return (
@@ -95,7 +122,7 @@ export function AttendanceDashboardCards() {
                   <div className="flex items-center gap-3 mb-2">
                     <div className={`relative flex items-center justify-center w-12 h-12 rounded-full ${card.iconBg}`}>
                       {card.animated && (
-                        <div className={`absolute inset-0 rounded-full animate-ping opacity-30 ${card.iconBg.replace('bg-', 'bg-').replace('100', '400')}`} style={{ backgroundColor: card.sparklineColor }}></div>
+                        <div className="absolute inset-0 rounded-full animate-ping opacity-30 bg-[#22C55E]"></div>
                       )}
                       <Icon className={`w-6 h-6 ${card.iconColor}`} />
                     </div>
@@ -135,6 +162,54 @@ export function AttendanceDashboardCards() {
           </div>
         )
       })}
+
+      {/* Currently Inside Gym Card */}
+      <div className="flex flex-col bg-[var(--canvas-light)] rounded-xl border border-[var(--hairline-soft)] shadow-sm overflow-hidden min-h-[220px]">
+        <div className="p-5 pb-2">
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600">
+              {insideMembers.length > 0 && (
+                <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-blue-500"></div>
+              )}
+              <MapPin className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[var(--mute)] mb-0.5">Currently Inside Gym</p>
+              <h3 className="text-3xl font-bold text-[var(--on-primary)] leading-none">{insideMembers.length}</h3>
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable list of members inside */}
+        <div className="border-t border-[var(--hairline-soft)] p-4 pt-3 flex-1 flex flex-col justify-start">
+          <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {insideMembers.length === 0 ? (
+              <p className="text-xs text-[var(--mute)] py-6 text-center">No members inside currently</p>
+            ) : (
+              insideMembers.map((record) => (
+                <div key={record.id} className="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-gray-50 last:border-b-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-[var(--on-primary)] truncate">
+                      {record.memberName || `${record.member?.firstName ?? ''} ${record.member?.lastName ?? ''}`.trim() || 'Unknown'}
+                    </p>
+                    <p className="text-[10px] text-[var(--mute)] mt-0.5">
+                      {record.checkInAt ? format(new Date(record.checkInAt), 'h:mm a') : '-'}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-7 px-2 bg-[var(--canvas-light)] border border-[#6C47FF] text-[#6C47FF] hover:bg-purple-50 rounded-lg text-[10px] font-semibold cursor-pointer shrink-0 transition-colors"
+                    onClick={() => handleCheckOut(record.id)}
+                    disabled={checkOutMutation.isPending}
+                  >
+                    Check Out
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

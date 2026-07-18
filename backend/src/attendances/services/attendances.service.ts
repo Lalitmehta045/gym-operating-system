@@ -35,23 +35,32 @@ export class AttendanceService implements AttendanceServiceInterface {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   // Check-in by memberId — used by /attendances/check-in
   async checkIn(
     tenantId: string,
     markedByUserId: string,
     memberId: string,
+    checkInTime?: string,
+    checkOutTime?: string,
+    notes?: string,
   ): Promise<AttendanceDto> {
     if (!tenantId)
       throw new ForbiddenException('Tenant-scoped access is required');
 
-    // attendanceDate = current date (calendar date)
-    const today = new Date();
+    const checkInAtObj = checkInTime ? new Date(checkInTime) : new Date();
+    const checkOutAtObj = checkOutTime ? new Date(checkOutTime) : null;
+
+    if (checkOutAtObj && checkOutAtObj <= checkInAtObj) {
+      throw new BadRequestException('Check-out time must be after check-in time');
+    }
+
+    // attendanceDate = current date (calendar date of check-in time)
     const attendanceDate = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
+      checkInAtObj.getFullYear(),
+      checkInAtObj.getMonth(),
+      checkInAtObj.getDate(),
     );
 
     // validate member is active and in good standing
@@ -88,9 +97,11 @@ export class AttendanceService implements AttendanceServiceInterface {
         tenantId,
         memberId,
         markedByUserId,
-        checkInAt: new Date(),
+        checkInAt: checkInAtObj,
+        checkOutAt: checkOutAtObj,
         attendanceDate,
         status: AttendanceStatus.PRESENT,
+        notes: notes ?? null,
       },
     });
 
@@ -238,8 +249,8 @@ export class AttendanceService implements AttendanceServiceInterface {
       new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
     );
     const attendanceDate = new Date(
-      nowIST.getFullYear(), 
-      nowIST.getMonth(), 
+      nowIST.getFullYear(),
+      nowIST.getMonth(),
       nowIST.getDate()
     );
 
@@ -451,13 +462,16 @@ export class AttendanceService implements AttendanceServiceInterface {
       ...(query?.status ? { status: query.status } : {}),
       ...(query?.dateFrom && query?.dateTo
         ? {
-            attendanceDate: {
-              gte: new Date(query.dateFrom),
-              lte: new Date(query.dateTo),
-            },
-          }
+          attendanceDate: {
+            gte: new Date(query.dateFrom),
+            lte: new Date(query.dateTo),
+          },
+        }
         : {}),
       ...(query?.includeDeleted ? {} : { deletedAt: null }),
+      ...(query?.isInside !== undefined
+        ? { checkOutAt: query.isInside ? null : { not: null } }
+        : {}),
     };
 
     const sortBy =
@@ -811,7 +825,7 @@ export class AttendanceService implements AttendanceServiceInterface {
         lastName: a.member.lastName,
         memberCode: a.member.memberCode,
       } : undefined,
-      memberName: a.member 
+      memberName: a.member
         ? `${a.member.firstName} ${a.member.lastName}`.trim()
         : 'Unknown',
     };

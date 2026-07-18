@@ -8,6 +8,534 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model PlatformPlan {
+  id                  String               @id @default(uuid()) @db.Uuid
+  name                String               @db.VarChar(120)
+  description         String?
+  price               Decimal              @db.Decimal(10, 2)
+  billingCycle        String               @map("billing_cycle") @db.VarChar(50)
+  features            Json?
+  isActive            Boolean              @default(true) @map("is_active")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  tenantSubscriptions TenantSubscription[]
+
+  @@index([isActive, price], map: "idx_platform_plan_active_price")
+  @@map("platform_plans")
+}
+
+model Tenant {
+  id                        String                     @id @default(uuid()) @db.Uuid
+  name                      String                     @db.VarChar(255)
+  email                     String                     @unique @db.VarChar(255)
+  phone                     String?                    @db.VarChar(20)
+  address                   String?
+  isActive                  Boolean                    @default(false)
+  createdAt                 DateTime                   @default(now()) @map("created_at")
+  updatedAt                 DateTime                   @updatedAt @map("updated_at")
+  deletedAt                 DateTime?                  @map("deleted_at")
+  country                   String?                    @db.VarChar(100)
+  state                     String?                    @db.VarChar(100)
+  city                      String?                    @db.VarChar(100)
+  gymLogoUrl                String?                    @map("gym_logo_url") @db.VarChar(2048)
+  gymDescription            String?                    @map("gym_description")
+  gymWebsite                String?                    @map("gym_website") @db.VarChar(2048)
+  gstNumber                 String?                    @map("gst_number") @db.VarChar(15)
+  timezone                  String                     @default("Asia/Kolkata") @db.VarChar(64)
+  currency                  String                     @default("INR") @db.VarChar(3)
+  businessHours             Json?                      @map("business_hours")
+  status                    TenantStatus               @default(PENDING) @map("status")
+  attendances               Attendance[]
+  invoices                  Invoice[]
+  media                     Media[]
+  members                   Member[]
+  membershipPlans           MembershipPlan[]
+  notifications             Notification[]
+  payments                  Payment[]
+  subscriptions             Subscription[]
+  tenantIntegrationSettings TenantIntegrationSettings?
+  tenantInvoices            TenantInvoice[]
+  tenantStorage             TenantStorage?
+  tenantSubscriptions       TenantSubscription[]
+  users                     User[]
+  whatsappLogs              WhatsAppLog[]
+
+  @@index([deletedAt], map: "idx_tenant_deleted_at")
+  @@index([isActive, deletedAt], map: "idx_tenant_active_status")
+  @@index([gstNumber], map: "idx_tenant_gst_number")
+  @@index([country, state, city], map: "idx_tenant_geo_reporting")
+  @@index([country, state, deletedAt], map: "idx_tenant_geo_active_reporting")
+  @@index([status, deletedAt], map: "idx_tenant_status_lookup")
+  @@index([createdAt, deletedAt], map: "idx_tenant_global_created")
+  @@map("tenants")
+}
+
+model User {
+  id                     String         @id @default(uuid()) @db.Uuid
+  tenantId               String?        @map("tenant_id") @db.Uuid
+  firstName              String         @map("first_name") @db.VarChar(100)
+  lastName               String         @map("last_name") @db.VarChar(100)
+  email                  String         @db.VarChar(255)
+  passwordHash           String         @map("password_hash") @db.VarChar(255)
+  role                   Role           @default(TRAINER)
+  isActive               Boolean        @default(true)
+  lastLoginAt            DateTime?      @map("last_login_at")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+  deletedAt              DateTime?      @map("deleted_at")
+  failedLoginAttempts    Int            @default(0) @map("failed_login_attempts")
+  lockedUntil            DateTime?      @map("locked_until")
+  passwordResetExpiresAt DateTime?      @map("password_reset_expires_at")
+  passwordResetToken     String?        @map("password_reset_token") @db.VarChar(255)
+  attendancesMarked      Attendance[]   @relation("AttendanceMarkedBy")
+  mediaUploaded          Media[]
+  members                Member[]
+  refreshTokens          RefreshToken[]
+  tenant                 Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email], name: "uq_user_tenant_email")
+  @@index([passwordResetToken], map: "idx_user_password_reset")
+  @@index([tenantId, role, deletedAt], map: "idx_user_tenant_role")
+  @@index([tenantId, isActive, deletedAt], map: "idx_user_tenant_active")
+  @@index([email, deletedAt], map: "idx_user_email_lookup")
+  @@index([deletedAt], map: "idx_user_deleted_at")
+  @@index([role], map: "idx_user_role")
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  familyId  String    @map("family_id") @db.Uuid
+  ipAddress String?   @map("ip_address") @db.VarChar(45)
+  userAgent String?   @map("user_agent") @db.VarChar(500)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt], map: "idx_refresh_token_user")
+  @@index([expiresAt], map: "idx_refresh_token_expiry")
+  @@index([familyId], map: "idx_refresh_token_family")
+  @@map("refresh_tokens")
+}
+
+model MembershipPlan {
+  id            String         @id @default(uuid()) @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  name          String         @db.VarChar(120)
+  description   String?
+  planType      PlanType       @map("plan_type")
+  durationDays  Int            @map("duration_days")
+  price         Decimal        @db.Decimal(10, 2)
+  displayOrder  Int            @default(0) @map("display_order")
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  deletedAt     DateTime?      @map("deleted_at")
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@index([tenantId, deletedAt], map: "idx_membership_plan_tenant_deleted")
+  @@index([tenantId, isActive, deletedAt], map: "idx_membership_plan_tenant_active")
+  @@index([tenantId, name, deletedAt], map: "idx_membership_plan_tenant_name")
+  @@index([tenantId, durationDays, deletedAt], map: "idx_membership_plan_tenant_duration")
+  @@index([tenantId, planType, deletedAt], map: "idx_membership_plan_tenant_type")
+  @@index([tenantId, displayOrder, deletedAt], map: "idx_membership_plan_tenant_display")
+  @@index([tenantId, isActive, displayOrder, deletedAt], map: "idx_membership_plan_tenant_catalog")
+  @@map("membership_plans")
+}
+
+model Member {
+  id                       String         @id @default(uuid()) @db.Uuid
+  tenantId                 String         @map("tenant_id") @db.Uuid
+  firstName                String         @map("first_name") @db.VarChar(100)
+  lastName                 String         @map("last_name") @db.VarChar(100)
+  email                    String         @db.VarChar(255)
+  phone                    String         @db.VarChar(20)
+  gender                   Gender
+  dateOfBirth              DateTime?      @map("date_of_birth") @db.Date
+  photoUrl                 String?        @map("photo_url") @db.VarChar(2048)
+  status                   MemberStatus   @default(ACTIVE)
+  isActive                 Boolean        @default(true)
+  fitnessGoal              String?        @map("fitness_goal") @db.VarChar(255)
+  notes                    String?        @db.Text
+  source                   MemberSource?
+  occupation               String?        @db.VarChar(100)
+  createdAt                DateTime       @default(now()) @map("created_at")
+  updatedAt                DateTime       @updatedAt @map("updated_at")
+  deletedAt                DateTime?      @map("deleted_at")
+  bloodGroup               BloodGroup?
+  emergencyContactName     String         @map("emergency_contact_name") @db.VarChar(150)
+  emergencyContactPhone    String         @map("emergency_contact_phone") @db.VarChar(20)
+  emergencyContactRelation String         @map("emergency_contact_relation") @db.VarChar(100)
+  heightCm                 Decimal?       @map("height_cm") @db.Decimal(5, 2)
+  joinedAt                 DateTime       @default(now()) @map("joined_at")
+  memberCode               String         @db.VarChar(50)
+  weightKg                 Decimal?       @map("weight_kg") @db.Decimal(5, 2)
+  assignedTrainerId        String?        @map("assigned_trainer_id") @db.Uuid
+  experienceLevel          String?        @map("experience_level") @db.VarChar(50)
+  fitnessNotes             String?        @map("fitness_notes") @db.Text
+  medicalNotes             String?        @map("medical_notes") @db.Text
+  preferredTime            String?        @map("preferred_time") @db.VarChar(50)
+  whatsappNumber           String?        @map("whatsapp_number") @db.VarChar(20)
+  attendances              Attendance[]
+  invoices                 Invoice[]
+  media                    Media[]
+  users                    User?          @relation(fields: [assignedTrainerId], references: [id])
+  tenant                   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  notifications            Notification[]
+  payments                 Payment[]
+  subscriptions            Subscription[]
+  whatsappLogs             WhatsAppLog[]
+
+  @@unique([tenantId, memberCode], name: "uq_member_tenant_code")
+  @@unique([tenantId, id], name: "uq_member_tenant_id")
+  @@index([tenantId, isActive, deletedAt], map: "idx_member_tenant_active")
+  @@index([tenantId, status, deletedAt], map: "idx_member_tenant_status")
+  @@index([tenantId, joinedAt, deletedAt], map: "idx_member_tenant_joined")
+  @@index([tenantId, phone, deletedAt], map: "idx_member_tenant_phone")
+  @@index([tenantId, lastName, firstName, deletedAt], map: "idx_member_tenant_name")
+  @@index([tenantId, fitnessGoal, deletedAt], map: "idx_member_tenant_fitness_goal")
+  @@index([tenantId, status, isActive, deletedAt], map: "idx_member_tenant_status_active")
+  @@index([gender])
+  @@index([tenantId, source, deletedAt], map: "idx_member_tenant_source")
+  @@index([tenantId, occupation, deletedAt], map: "idx_member_tenant_occupation")
+  @@index([tenantId, bloodGroup, deletedAt], map: "idx_member_tenant_blood_group")
+  @@index([tenantId, createdAt, deletedAt], map: "idx_member_tenant_created")
+  @@index([tenantId, email, deletedAt], map: "idx_member_tenant_email")
+  @@index([memberCode], map: "idx_member_code")
+  @@index([deletedAt], map: "idx_member_deleted_at")
+  @@index([assignedTrainerId], map: "idx_member_assigned_trainer")
+  @@map("members")
+}
+
+model Attendance {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @map("tenant_id") @db.Uuid
+  memberId       String           @map("member_id") @db.Uuid
+  markedByUserId String?          @map("marked_by_user_id") @db.Uuid
+  checkInAt      DateTime         @map("check_in_at") @db.Timestamptz(6)
+  checkOutAt     DateTime?        @map("check_out_at") @db.Timestamptz(6)
+  attendanceDate DateTime         @map("attendance_date") @db.Date
+  status         AttendanceStatus
+  notes          String?
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?        @map("deleted_at") @db.Timestamptz(6)
+  markedBy       User?            @relation("AttendanceMarkedBy", fields: [markedByUserId], references: [id])
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member         Member           @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([tenantId, memberId, deletedAt], map: "idx_attendance_tenant_member")
+  @@index([tenantId, memberId, checkInAt, deletedAt], map: "idx_attendance_tenant_member_checkin")
+  @@index([tenantId, status, deletedAt], map: "idx_attendance_tenant_status")
+  @@index([tenantId, checkInAt, deletedAt], map: "idx_attendance_tenant_checkin")
+  @@index([tenantId, checkInAt, status], map: "idx_attendance_tenant_checkin_status")
+  @@index([tenantId, attendanceDate, deletedAt], map: "idx_attendance_tenant_date")
+  @@index([tenantId, attendanceDate, memberId, deletedAt], map: "idx_attendance_tenant_date_member")
+  @@index([markedByUserId, deletedAt], map: "idx_attendance_marked_by_user")
+  @@index([memberId, deletedAt], map: "idx_member_attendance_lookup")
+  @@index([checkInAt, deletedAt], map: "idx_attendance_checkin_date")
+  @@index([tenantId, createdAt, deletedAt], map: "idx_attendance_tenant_created")
+  @@index([tenantId, memberId, checkOutAt, deletedAt], map: "idx_attendance_active_checkin")
+  @@index([tenantId, memberId, attendanceDate])
+  @@map("attendances")
+}
+
+model Subscription {
+  id               String             @id @default(uuid()) @db.Uuid
+  tenantId         String             @map("tenant_id") @db.Uuid
+  memberId         String             @map("member_id") @db.Uuid
+  membershipPlanId String             @map("membership_plan_id") @db.Uuid
+  startDate        DateTime           @map("start_date") @db.Date
+  endDate          DateTime           @map("end_date") @db.Date
+  amount           Decimal            @db.Decimal(10, 2)
+  status           SubscriptionStatus @default(PENDING)
+  autoRenew        Boolean            @default(false) @map("auto_renew")
+  notes            String?
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt        DateTime?          @map("deleted_at") @db.Timestamptz(6)
+  invoices         Invoice[]
+  payments         Payment[]
+  membershipPlan   MembershipPlan     @relation(fields: [membershipPlanId], references: [id])
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member           Member             @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([status, endDate], map: "idx_subscription_global_cron")
+  @@index([tenantId, deletedAt], map: "idx_subscription_tenant_deleted")
+  @@index([tenantId, memberId, deletedAt], map: "idx_subscription_tenant_member")
+  @@index([tenantId, status, deletedAt], map: "idx_subscription_tenant_status")
+  @@index([tenantId, endDate, deletedAt], map: "idx_subscription_tenant_end_date")
+  @@index([membershipPlanId], map: "idx_subscription_plan")
+  @@index([tenantId, createdAt, deletedAt], map: "idx_subscription_tenant_created")
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                   String        @id @default(uuid()) @db.Uuid
+  tenantId             String        @map("tenant_id") @db.Uuid
+  memberId             String        @map("member_id") @db.Uuid
+  subscriptionId       String?       @map("subscription_id") @db.Uuid
+  invoiceId            String?       @map("invoice_id") @db.Uuid
+  amount               Decimal       @db.Decimal(10, 2)
+  paymentMethod        PaymentMethod @map("payment_method")
+  paymentStatus        PaymentStatus @map("payment_status")
+  transactionReference String?       @map("transaction_reference") @db.VarChar(100)
+  razorpayOrderId      String?       @map("razorpay_order_id") @db.VarChar(100)
+  razorpayPaymentId    String?       @map("razorpay_payment_id") @db.VarChar(100)
+  razorpaySignature    String?       @map("razorpay_signature") @db.VarChar(255)
+  gateway              String?       @db.VarChar(50)
+  gatewayStatus        String?       @map("gateway_status") @db.VarChar(50)
+  gatewayPayload       Json?         @map("gateway_payload")
+  paidAt               DateTime?     @map("paid_at") @db.Timestamptz(6)
+  notes                String?
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  invoice              Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  subscription         Subscription? @relation(fields: [subscriptionId], references: [id])
+  tenant               Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member               Member        @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([razorpayOrderId], map: "idx_payment_razorpay_order")
+  @@index([razorpayPaymentId])
+  @@index([paymentStatus], map: "idx_payment_global_cron")
+  @@index([tenantId, deletedAt], map: "idx_payment_tenant_deleted")
+  @@index([tenantId, memberId, deletedAt], map: "idx_payment_tenant_member")
+  @@index([tenantId, paymentStatus, deletedAt], map: "idx_payment_tenant_status")
+  @@index([tenantId, paidAt, deletedAt], map: "idx_payment_tenant_paid_at")
+  @@index([subscriptionId], map: "idx_payment_subscription")
+  @@index([invoiceId], map: "idx_payment_invoice")
+  @@index([tenantId, createdAt, deletedAt], map: "idx_payment_tenant_created")
+  @@map("payments")
+}
+
+model Invoice {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  memberId       String        @map("member_id") @db.Uuid
+  subscriptionId String?       @map("subscription_id") @db.Uuid
+  invoiceNumber  String        @map("invoice_number") @db.VarChar(50)
+  amount         Decimal       @db.Decimal(10, 2)
+  status         InvoiceStatus @default(DUE)
+  issuedAt       DateTime      @default(now()) @map("issued_at") @db.Timestamptz(6)
+  notes          String?
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  payments       Payment[]
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member         Member        @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, invoiceNumber], name: "uq_invoice_tenant_number")
+  @@index([tenantId, memberId], map: "idx_invoice_tenant_member")
+  @@index([tenantId, issuedAt], map: "idx_invoice_tenant_issued_at")
+  @@index([subscriptionId], map: "idx_invoice_subscription")
+  @@index([status], map: "idx_invoice_status")
+  @@map("invoices")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  memberId  String?          @map("member_id") @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(255)
+  message   String
+  isRead    Boolean          @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member    Member?          @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_notification_tenant")
+  @@index([tenantId, memberId], map: "idx_notification_tenant_member")
+  @@index([tenantId, isRead], map: "idx_notification_tenant_is_read")
+  @@index([tenantId, type], map: "idx_notification_tenant_type")
+  @@index([tenantId, createdAt], map: "idx_notification_tenant_created_at")
+  @@map("notifications")
+}
+
+model TenantSubscription {
+  id             String                   @id @default(uuid()) @db.Uuid
+  tenantId       String                   @map("tenant_id") @db.Uuid
+  platformPlanId String                   @map("platform_plan_id") @db.Uuid
+  status         TenantSubscriptionStatus @default(PENDING)
+  startDate      DateTime                 @map("start_date") @db.Date
+  endDate        DateTime                 @map("end_date") @db.Date
+  autoRenew      Boolean                  @default(false) @map("auto_renew")
+  trialEndsAt    DateTime?                @map("trial_ends_at") @db.Date
+  cancelledAt    DateTime?                @map("cancelled_at") @db.Timestamptz(6)
+  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  invoices       TenantInvoice[]
+  platformPlan   PlatformPlan             @relation(fields: [platformPlanId], references: [id])
+  tenant         Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([status, endDate], map: "idx_tenant_sub_global_cron")
+  @@index([tenantId, status], map: "idx_tenant_sub_tenant_status")
+  @@index([tenantId, endDate], map: "idx_tenant_sub_tenant_end_date")
+  @@index([status], map: "idx_tenant_sub_global_status")
+  @@index([platformPlanId])
+  @@map("tenant_subscriptions")
+}
+
+model TenantInvoice {
+  id                   String              @id @default(uuid()) @db.Uuid
+  tenantId             String              @map("tenant_id") @db.Uuid
+  tenantSubscriptionId String?             @map("tenant_subscription_id") @db.Uuid
+  platformPlanId       String?             @map("platform_plan_id") @db.Uuid
+  invoiceNumber        String              @map("invoice_number") @db.VarChar(50)
+  amount               Decimal             @db.Decimal(10, 2)
+  status               PaymentStatus       @default(PENDING)
+  razorpayOrderId      String?             @map("razorpay_order_id") @db.VarChar(100)
+  razorpayPaymentId    String?             @map("razorpay_payment_id") @db.VarChar(100)
+  razorpaySignature    String?             @map("razorpay_signature") @db.VarChar(255)
+  gateway              String?             @db.VarChar(50)
+  gatewayStatus        String?             @map("gateway_status") @db.VarChar(50)
+  gatewayPayload       Json?               @map("gateway_payload")
+  paidAt               DateTime?           @map("paid_at") @db.Timestamptz(6)
+  notes                String?
+  issuedAt             DateTime            @default(now()) @map("issued_at") @db.Timestamptz(6)
+  createdAt            DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant               Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantSubscription   TenantSubscription? @relation(fields: [tenantSubscriptionId], references: [id])
+
+  @@unique([tenantId, invoiceNumber], name: "uq_tenant_invoice_number")
+  @@index([invoiceNumber], map: "idx_tenant_invoice_number")
+  @@index([tenantId, issuedAt], map: "idx_tenant_invoice_tenant_issued")
+  @@index([tenantId, status], map: "idx_tenant_invoice_tenant_status")
+  @@index([tenantSubscriptionId])
+  @@index([razorpayOrderId], map: "idx_tenant_invoice_order_id")
+  @@index([status, paidAt], map: "idx_tenant_invoice_revenue_lookup")
+  @@index([platformPlanId, status], map: "idx_tenant_invoice_plan_reporting")
+  @@map("tenant_invoices")
+}
+
+model WhatsAppLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  memberId  String?  @map("member_id") @db.Uuid
+  messageId String?  @map("message_id") @db.VarChar(255)
+  type      String   @db.VarChar(50)
+  status    String   @default("QUEUED") @db.VarChar(50)
+  templateName String? @map("template_name") @db.VarChar(100)
+  payload   Json?
+  retryCount Int     @default(0) @map("retry_count")
+  nextRetryAt DateTime? @map("next_retry_at") @db.Timestamptz(6)
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member    Member?  @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([tenantId, memberId], map: "idx_whatsapp_log_tenant_member")
+  @@index([tenantId, type], map: "idx_whatsapp_log_tenant_type")
+  @@index([status, nextRetryAt], map: "idx_whatsapp_log_queue")
+  @@index([messageId], map: "idx_whatsapp_log_message_id")
+  @@index([tenantId, memberId, type, createdAt], map: "idx_whatsapp_log_throttle")
+  @@map("whatsapp_logs")
+}
+
+model Media {
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  memberId     String?       @map("member_id") @db.Uuid
+  uploadedById String?       @map("uploaded_by_id") @db.Uuid
+  type         MediaType
+  category     MediaCategory
+  originalName String        @map("original_name") @db.VarChar(255)
+  fileName     String        @map("file_name") @db.VarChar(255)
+  mimeType     String        @map("mime_type") @db.VarChar(100)
+  size         Int
+  width        Int?
+  height       Int?
+  storageKey   String        @map("storage_key") @db.VarChar(1024)
+  publicUrl    String?       @map("public_url") @db.VarChar(2048)
+  thumbnailUrl String?       @map("thumbnail_url") @db.VarChar(2048)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt    DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  member       Member?       @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
+  uploadedBy   User?         @relation(fields: [uploadedById], references: [id])
+
+  @@index([tenantId, deletedAt], map: "idx_media_tenant_deleted")
+  @@index([tenantId, memberId, category, deletedAt], map: "idx_media_tenant_member_category")
+  @@index([tenantId, category, deletedAt], map: "idx_media_tenant_category")
+  @@index([uploadedById])
+  @@map("media")
+}
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  memberId    String?     @map("member_id") @db.Uuid
+  entity      AuditEntity
+  entityId    String      @map("entity_id") @db.Uuid
+  action      AuditAction
+  description String
+  metadata    Json?
+  ipAddress   String?     @map("ip_address") @db.VarChar(45)
+  userAgent   String?     @map("user_agent")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId], map: "idx_audit_log_tenant")
+  @@index([userId], map: "idx_audit_log_user")
+  @@index([memberId], map: "idx_audit_log_member")
+  @@index([entity], map: "idx_audit_log_entity")
+  @@index([action])
+  @@index([createdAt], map: "idx_audit_log_created_at")
+  @@index([tenantId, createdAt], map: "idx_audit_log_tenant_created")
+  @@index([tenantId, memberId, createdAt], map: "idx_audit_log_tenant_member_created")
+  @@index([tenantId, userId, createdAt], map: "idx_audit_log_tenant_user_created")
+  @@map("audit_logs")
+}
+
+model TenantStorage {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @unique @map("tenant_id") @db.Uuid
+  usedStorageBytes  Float    @default(0) @map("used_storage_bytes")
+  storageLimitBytes Float    @map("storage_limit_bytes")
+  totalFiles        Int      @default(0) @map("total_files")
+  totalImages       Int      @default(0) @map("total_images")
+  totalDocuments    Int      @default(0) @map("total_documents")
+  lastCalculatedAt  DateTime @default(now()) @map("last_calculated_at") @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([usedStorageBytes], map: "idx_tenant_storage_used")
+  @@map("tenant_storage")
+}
+
+model TenantIntegrationSettings {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @unique @map("tenant_id") @db.Uuid
+  razorpayKeyId         String?  @map("razorpay_key_id") @db.VarChar(100)
+  razorpayKeySecret     String?  @map("razorpay_key_secret") @db.VarChar(255)
+  razorpayWebhookSecret String?  @map("razorpay_webhook_secret") @db.VarChar(255)
+  razorpayEnabled       Boolean  @default(false) @map("razorpay_enabled")
+  whatsappPhoneNumberId String?  @map("whatsapp_phone_number_id") @db.VarChar(100)
+  whatsappAccessToken   String?  @map("whatsapp_access_token")
+  whatsappBusinessId    String?  @map("whatsapp_business_id") @db.VarChar(100)
+  whatsappEnabled       Boolean  @default(false) @map("whatsapp_enabled")
+  notifyExpiringDays    Int      @default(7) @map("notify_expiring_days")
+  notifyOnPayment       Boolean  @default(true) @map("notify_on_payment")
+  notifyOnExpiry        Boolean  @default(true) @map("notify_on_expiry")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_tenant_integration_tenant")
+  @@map("tenant_integration_settings")
+}
+
 enum Role {
   SUPER_ADMIN
   OWNER
@@ -29,23 +557,6 @@ enum TenantSubscriptionStatus {
   EXPIRED
   CANCELLED
   PENDING
-}
-
-model PlatformPlan {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String   @db.VarChar(120)
-  description  String?  @db.Text
-  price        Decimal  @db.Decimal(10, 2)
-  billingCycle String   @map("billing_cycle") @db.VarChar(50)
-  features     Json?    @db.JsonB
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  tenantSubscriptions TenantSubscription[]
-
-  @@index([isActive, price], name: "idx_platform_plan_active_price")
-  @@map("platform_plans")
 }
 
 enum PlanType {
@@ -78,6 +589,10 @@ enum MemberSource {
   REFERRAL
   WEBSITE
   OTHER
+  GOOGLE
+  YOUTUBE
+  NEWSPAPER
+  FRIEND_FAMILY
 }
 
 enum BloodGroup {
@@ -127,6 +642,14 @@ enum NotificationType {
   SYSTEM
 }
 
+enum InvoiceStatus {
+  DUE
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
 enum MediaType {
   IMAGE
   DOCUMENT
@@ -145,476 +668,6 @@ enum MediaCategory {
   PROGRESS_PHOTO
   INVOICE_ATTACHMENT
   OTHER
-}
-
-model Tenant {
-  id             String  @id @default(uuid()) @db.Uuid
-  name           String  @db.VarChar(255)
-  email          String  @unique @db.VarChar(255)
-  phone          String? @db.VarChar(20)
-  address        String? @db.Text
-  country        String? @db.VarChar(100)
-  state          String? @db.VarChar(100)
-  city           String? @db.VarChar(100)
-  gymLogoUrl     String? @map("gym_logo_url") @db.VarChar(2048)
-  gymDescription String? @map("gym_description") @db.Text
-  gymWebsite     String? @map("gym_website") @db.VarChar(2048)
-  gstNumber      String? @map("gst_number") @db.VarChar(15)
-  timezone       String  @default("Asia/Kolkata") @db.VarChar(64)
-  currency       String  @default("INR") @db.VarChar(3)
-  businessHours  Json?   @map("business_hours")
-
-  status   TenantStatus @default(PENDING) @map("status")
-  isActive Boolean      @default(false)
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  users               User[]
-  membershipPlans     MembershipPlan[]
-  members             Member[]
-  attendances         Attendance[]
-  subscriptions       Subscription[]
-  payments            Payment[]
-  invoices            Invoice[]
-  notifications       Notification[]
-  whatsappLogs        WhatsAppLog[]
-  tenantSubscriptions TenantSubscription[]
-  tenantInvoices      TenantInvoice[]
-  media               Media[]
-  tenantStorage       TenantStorage?
-  tenantIntegrationSettings TenantIntegrationSettings?
-
-  @@index([deletedAt], name: "idx_tenant_deleted_at")
-  @@index([isActive, deletedAt], name: "idx_tenant_active_status")
-  @@index([gstNumber], name: "idx_tenant_gst_number")
-  @@index([country, state, city], name: "idx_tenant_geo_reporting")
-  @@index([country, state, deletedAt], name: "idx_tenant_geo_active_reporting")
-  @@index([status, deletedAt], name: "idx_tenant_status_lookup")
-  @@index([createdAt, deletedAt], name: "idx_tenant_global_created")
-  @@map("tenants")
-}
-
-model User {
-  id           String  @id @default(uuid()) @db.Uuid
-  tenantId     String? @map("tenant_id") @db.Uuid
-  firstName    String  @map("first_name") @db.VarChar(100)
-  lastName     String  @map("last_name") @db.VarChar(100)
-  email        String  @db.VarChar(255)
-  passwordHash String  @map("password_hash") @db.VarChar(255)
-  role         Role    @default(TRAINER)
-
-  isActive    Boolean   @default(true)
-  lastLoginAt DateTime? @map("last_login_at")
-
-  failedLoginAttempts    Int       @default(0) @map("failed_login_attempts")
-  lockedUntil            DateTime? @map("locked_until")
-  passwordResetToken     String?   @map("password_reset_token") @db.VarChar(255)
-  passwordResetExpiresAt DateTime? @map("password_reset_expires_at")
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  tenant            Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  refreshTokens     RefreshToken[]
-  attendancesMarked Attendance[]   @relation("AttendanceMarkedBy")
-  mediaUploaded     Media[]
-
-  @@unique([tenantId, email], name: "uq_user_tenant_email")
-  @@index([passwordResetToken], name: "idx_user_password_reset")
-  @@index([tenantId, role, deletedAt], name: "idx_user_tenant_role")
-  @@index([tenantId, isActive, deletedAt], name: "idx_user_tenant_active")
-  @@index([email, deletedAt], name: "idx_user_email_lookup")
-  @@index([deletedAt], name: "idx_user_deleted_at")
-  @@index([role], name: "idx_user_role")
-  @@map("users")
-}
-
-model RefreshToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  tokenHash String    @map("token_hash") @db.VarChar(255)
-  familyId  String    @map("family_id") @db.Uuid
-  expiresAt DateTime  @map("expires_at")
-  revokedAt DateTime? @map("revoked_at")
-  createdAt DateTime  @default(now()) @map("created_at")
-  userAgent String?   @map("user_agent") @db.VarChar(500)
-  ipAddress String?   @map("ip_address") @db.VarChar(45)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([tokenHash], name: "uq_refresh_token_hash")
-  @@index([userId, revokedAt], name: "idx_refresh_token_user")
-  @@index([expiresAt], name: "idx_refresh_token_expiry")
-  @@index([familyId], name: "idx_refresh_token_family")
-  @@map("refresh_tokens")
-}
-
-model MembershipPlan {
-  id           String   @id @default(uuid()) @db.Uuid
-  tenantId     String   @map("tenant_id") @db.Uuid
-  name         String   @db.VarChar(120)
-  description  String?  @db.Text
-  planType     PlanType @map("plan_type")
-  durationDays Int      @map("duration_days")
-  price        Decimal  @db.Decimal(10, 2)
-  displayOrder Int      @default(0) @map("display_order")
-  isActive     Boolean  @default(true)
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  subscriptions Subscription[]
-
-  @@index([tenantId, deletedAt], name: "idx_membership_plan_tenant_deleted")
-  @@index([tenantId, isActive, deletedAt], name: "idx_membership_plan_tenant_active")
-  @@index([tenantId, name, deletedAt], name: "idx_membership_plan_tenant_name")
-  @@index([tenantId, durationDays, deletedAt], name: "idx_membership_plan_tenant_duration")
-  @@index([tenantId, planType, deletedAt], name: "idx_membership_plan_tenant_type")
-  @@index([tenantId, displayOrder, deletedAt], name: "idx_membership_plan_tenant_display")
-  @@index([tenantId, isActive, displayOrder, deletedAt], name: "idx_membership_plan_tenant_catalog")
-  @@map("membership_plans")
-}
-
-model Member {
-  id String @id @default(uuid()) @db.Uuid
-
-  tenantId   String @map("tenant_id") @db.Uuid
-  memberCode String @db.VarChar(50)
-
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  attendances   Attendance[]
-  subscriptions Subscription[]
-  payments      Payment[]
-  invoices      Invoice[]
-  notifications Notification[]
-  whatsappLogs  WhatsAppLog[]
-  media         Media[]
-
-  firstName   String    @map("first_name") @db.VarChar(100)
-  lastName    String    @map("last_name") @db.VarChar(100)
-  email       String    @db.VarChar(255)
-  phone       String    @db.VarChar(20)
-  gender      Gender
-  dateOfBirth DateTime? @map("date_of_birth") @db.Date
-  photoUrl    String?   @map("photo_url") @db.VarChar(2048)
-
-  emergencyContactName     String @map("emergency_contact_name") @db.VarChar(150)
-  emergencyContactPhone    String @map("emergency_contact_phone") @db.VarChar(20)
-  emergencyContactRelation String @map("emergency_contact_relation") @db.VarChar(100)
-
-  heightCm    Decimal? @map("height_cm") @db.Decimal(5, 2)
-  weightKg    Decimal? @map("weight_kg") @db.Decimal(5, 2)
-  fitnessGoal String?  @map("fitness_goal") @db.VarChar(255)
-  notes       String?  @db.Text
-
-  source MemberSource?
-
-  occupation String? @db.VarChar(100)
-
-  bloodGroup BloodGroup?
-
-  status   MemberStatus @default(ACTIVE)
-  isActive Boolean      @default(true)
-
-  joinedAt  DateTime  @default(now()) @map("joined_at")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  @@unique([tenantId, memberCode], name: "uq_member_tenant_code")
-  @@unique([tenantId, id], name: "uq_member_tenant_id")
-  @@index([tenantId, isActive, deletedAt], name: "idx_member_tenant_active")
-  @@index([tenantId, status, deletedAt], name: "idx_member_tenant_status")
-  @@index([tenantId, joinedAt, deletedAt], name: "idx_member_tenant_joined")
-  @@index([tenantId, phone, deletedAt], name: "idx_member_tenant_phone")
-  @@index([tenantId, lastName, firstName, deletedAt], name: "idx_member_tenant_name")
-  @@index([tenantId, fitnessGoal, deletedAt], name: "idx_member_tenant_fitness_goal")
-  @@index([tenantId, status, isActive, deletedAt], name: "idx_member_tenant_status_active")
-  @@index([gender])
-  @@index([tenantId, source, deletedAt], name: "idx_member_tenant_source")
-  @@index([tenantId, occupation, deletedAt], name: "idx_member_tenant_occupation")
-  @@index([tenantId, bloodGroup, deletedAt], name: "idx_member_tenant_blood_group")
-  @@index([tenantId, createdAt, deletedAt], name: "idx_member_tenant_created")
-  @@index([tenantId, email, deletedAt], name: "idx_member_tenant_email")
-  @@index([memberCode], name: "idx_member_code")
-  @@index([deletedAt], name: "idx_member_deleted_at")
-  @@map("members")
-}
-
-model Attendance {
-  id             String           @id @default(uuid()) @db.Uuid
-  tenantId       String           @map("tenant_id") @db.Uuid
-  memberId       String           @map("member_id") @db.Uuid
-  markedByUserId String?          @map("marked_by_user_id") @db.Uuid
-  checkInAt      DateTime         @map("check_in_at") @db.Timestamptz(6)
-  checkOutAt     DateTime?        @map("check_out_at") @db.Timestamptz(6)
-  attendanceDate DateTime         @map("attendance_date") @db.Date // Calendar date only, for daily/monthly reporting
-  status         AttendanceStatus
-  notes          String?          @db.Text
-
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
-
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member   Member @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
-  markedBy User?  @relation("AttendanceMarkedBy", fields: [markedByUserId], references: [id], onDelete: SetNull)
-
-  @@index([tenantId, memberId, deletedAt], name: "idx_attendance_tenant_member")
-  @@index([tenantId, memberId, checkInAt, deletedAt], name: "idx_attendance_tenant_member_checkin")
-  @@index([tenantId, status, deletedAt], name: "idx_attendance_tenant_status")
-  @@index([tenantId, checkInAt, deletedAt], name: "idx_attendance_tenant_checkin")
-  @@index([tenantId, checkInAt, status], name: "idx_attendance_tenant_checkin_status")
-  @@index([tenantId, attendanceDate, deletedAt], name: "idx_attendance_tenant_date") // Daily reporting
-  @@index([tenantId, attendanceDate, memberId, deletedAt], name: "idx_attendance_tenant_date_member") // Daily member reporting
-  @@index([markedByUserId, deletedAt], name: "idx_attendance_marked_by_user") // Audit queries
-  @@index([memberId, deletedAt], name: "idx_member_attendance_lookup")
-  @@index([checkInAt, deletedAt], name: "idx_attendance_checkin_date")
-  @@index([tenantId, createdAt, deletedAt], name: "idx_attendance_tenant_created")
-  @@index([tenantId, memberId, checkOutAt, deletedAt], name: "idx_attendance_active_checkin")
-  @@index([tenantId, memberId, attendanceDate])
-  @@map("attendances")
-}
-
-model Subscription {
-  id               String             @id @default(uuid()) @db.Uuid
-  tenantId         String             @map("tenant_id") @db.Uuid
-  memberId         String             @map("member_id") @db.Uuid
-  membershipPlanId String             @map("membership_plan_id") @db.Uuid
-  startDate        DateTime           @map("start_date") @db.Date
-  endDate          DateTime           @map("end_date") @db.Date
-  amount           Decimal            @db.Decimal(10, 2)
-  status           SubscriptionStatus @default(PENDING)
-  autoRenew        Boolean            @default(false) @map("auto_renew")
-  notes            String?            @db.Text
-
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
-
-  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member         Member         @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
-  membershipPlan MembershipPlan @relation(fields: [membershipPlanId], references: [id], onDelete: Restrict)
-  payments       Payment[]
-  invoices       Invoice[]
-
-  @@index([status, endDate], name: "idx_subscription_global_cron")
-  @@index([tenantId, deletedAt], name: "idx_subscription_tenant_deleted")
-  @@index([tenantId, memberId, deletedAt], name: "idx_subscription_tenant_member")
-  @@index([tenantId, status, deletedAt], name: "idx_subscription_tenant_status")
-  @@index([tenantId, endDate, deletedAt], name: "idx_subscription_tenant_end_date")
-  @@index([membershipPlanId], name: "idx_subscription_plan")
-  @@index([tenantId, createdAt, deletedAt], name: "idx_subscription_tenant_created")
-  @@map("subscriptions")
-}
-
-model Payment {
-  id                   String        @id @default(uuid()) @db.Uuid
-  tenantId             String        @map("tenant_id") @db.Uuid
-  memberId             String        @map("member_id") @db.Uuid
-  subscriptionId       String?       @map("subscription_id") @db.Uuid
-  amount               Decimal       @db.Decimal(10, 2)
-  paymentMethod        PaymentMethod @map("payment_method")
-  paymentStatus        PaymentStatus @map("payment_status")
-  transactionReference String?       @map("transaction_reference") @db.VarChar(100)
-
-  razorpayOrderId   String? @map("razorpay_order_id") @db.VarChar(100)
-  razorpayPaymentId String? @map("razorpay_payment_id") @db.VarChar(100)
-  razorpaySignature String? @map("razorpay_signature") @db.VarChar(255)
-  gateway           String? @db.VarChar(50)
-  gatewayStatus     String? @map("gateway_status") @db.VarChar(50)
-  gatewayPayload    Json?   @map("gateway_payload") @db.JsonB
-
-  paidAt DateTime? @map("paid_at") @db.Timestamptz(6)
-  notes  String?   @db.Text
-
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
-
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member       Member        @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
-  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  invoices     Invoice[]
-
-  @@index([razorpayOrderId], name: "idx_payment_razorpay_order")
-  @@index([razorpayPaymentId])
-  @@index([paymentStatus], name: "idx_payment_global_cron")
-  @@index([tenantId, deletedAt], name: "idx_payment_tenant_deleted")
-  @@index([tenantId, memberId, deletedAt], name: "idx_payment_tenant_member")
-  @@index([tenantId, paymentStatus, deletedAt], name: "idx_payment_tenant_status")
-  @@index([tenantId, paidAt, deletedAt], name: "idx_payment_tenant_paid_at")
-  @@index([subscriptionId], name: "idx_payment_subscription")
-  @@index([tenantId, createdAt, deletedAt], name: "idx_payment_tenant_created")
-  @@map("payments")
-}
-
-model Invoice {
-  id             String   @id @default(uuid()) @db.Uuid
-  tenantId       String   @map("tenant_id") @db.Uuid
-  memberId       String   @map("member_id") @db.Uuid
-  subscriptionId String?  @map("subscription_id") @db.Uuid
-  paymentId      String?  @map("payment_id") @db.Uuid
-  invoiceNumber  String   @map("invoice_number") @db.VarChar(50)
-  amount         Decimal  @db.Decimal(10, 2)
-  issuedAt       DateTime @default(now()) @map("issued_at") @db.Timestamptz(6)
-  notes          String?  @db.Text
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member       Member        @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
-  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  payment      Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-
-  @@unique([tenantId, invoiceNumber], name: "uq_invoice_tenant_number")
-  @@index([tenantId, memberId], name: "idx_invoice_tenant_member")
-  @@index([tenantId, issuedAt], name: "idx_invoice_tenant_issued_at")
-  @@index([subscriptionId], name: "idx_invoice_subscription")
-  @@index([paymentId], name: "idx_invoice_payment")
-  @@map("invoices")
-}
-
-model Notification {
-  id       String           @id @default(uuid()) @db.Uuid
-  tenantId String           @map("tenant_id") @db.Uuid
-  memberId String?          @map("member_id") @db.Uuid
-  type     NotificationType
-  title    String           @db.VarChar(255)
-  message  String           @db.Text
-  isRead   Boolean          @default(false) @map("is_read")
-  metadata Json?            @db.JsonB
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member Member? @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
-
-  @@index([tenantId], name: "idx_notification_tenant")
-  @@index([tenantId, memberId], name: "idx_notification_tenant_member")
-  @@index([tenantId, isRead], name: "idx_notification_tenant_is_read")
-  @@index([tenantId, type], name: "idx_notification_tenant_type")
-  @@index([tenantId, createdAt], name: "idx_notification_tenant_created_at")
-  @@map("notifications")
-}
-
-model TenantSubscription {
-  id             String                   @id @default(uuid()) @db.Uuid
-  tenantId       String                   @map("tenant_id") @db.Uuid
-  platformPlanId String                   @map("platform_plan_id") @db.Uuid
-  status         TenantSubscriptionStatus @default(PENDING)
-  startDate      DateTime                 @map("start_date") @db.Date
-  endDate        DateTime                 @map("end_date") @db.Date
-  autoRenew      Boolean                  @default(false) @map("auto_renew")
-  trialEndsAt    DateTime?                @map("trial_ends_at") @db.Date
-  cancelledAt    DateTime?                @map("cancelled_at") @db.Timestamptz(6)
-  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  platformPlan PlatformPlan    @relation(fields: [platformPlanId], references: [id], onDelete: Restrict)
-  invoices     TenantInvoice[]
-
-  @@index([status, endDate], name: "idx_tenant_sub_global_cron")
-  @@index([tenantId, status], name: "idx_tenant_sub_tenant_status")
-  @@index([tenantId, endDate], name: "idx_tenant_sub_tenant_end_date")
-  @@index([status], name: "idx_tenant_sub_global_status")
-  @@index([platformPlanId])
-  @@map("tenant_subscriptions")
-}
-
-model TenantInvoice {
-  id                   String        @id @default(uuid()) @db.Uuid
-  tenantId             String        @map("tenant_id") @db.Uuid
-  tenantSubscriptionId String?       @map("tenant_subscription_id") @db.Uuid
-  platformPlanId       String?       @map("platform_plan_id") @db.Uuid
-  invoiceNumber        String        @map("invoice_number") @db.VarChar(50)
-  amount               Decimal       @db.Decimal(10, 2)
-  status               PaymentStatus @default(PENDING)
-  razorpayOrderId      String?       @map("razorpay_order_id") @db.VarChar(100)
-  razorpayPaymentId    String?       @map("razorpay_payment_id") @db.VarChar(100)
-  razorpaySignature    String?       @map("razorpay_signature") @db.VarChar(255)
-  gateway              String?       @db.VarChar(50)
-  gatewayStatus        String?       @map("gateway_status") @db.VarChar(50)
-  gatewayPayload       Json?         @map("gateway_payload") @db.JsonB
-  paidAt               DateTime?     @map("paid_at") @db.Timestamptz(6)
-  notes                String?       @db.Text
-  issuedAt             DateTime      @default(now()) @map("issued_at") @db.Timestamptz(6)
-  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tenantSubscription TenantSubscription? @relation(fields: [tenantSubscriptionId], references: [id], onDelete: SetNull)
-
-  @@unique([tenantId, invoiceNumber], name: "uq_tenant_invoice_number")
-  @@index([invoiceNumber], name: "idx_tenant_invoice_number")
-  @@index([tenantId, issuedAt], name: "idx_tenant_invoice_tenant_issued")
-  @@index([tenantId, status], name: "idx_tenant_invoice_tenant_status")
-  @@index([tenantSubscriptionId])
-  @@index([razorpayOrderId], name: "idx_tenant_invoice_order_id")
-  @@index([status, paidAt], name: "idx_tenant_invoice_revenue_lookup")
-  @@index([platformPlanId, status], name: "idx_tenant_invoice_plan_reporting")
-  @@map("tenant_invoices")
-}
-
-model WhatsAppLog {
-  id        String  @id @default(uuid()) @db.Uuid
-  tenantId  String  @map("tenant_id") @db.Uuid
-  memberId  String? @map("member_id") @db.Uuid
-  messageId String? @map("message_id") @db.VarChar(255)
-  type      String  @db.VarChar(50) // e.g. 'EXPIRING_7_DAYS', 'PAYMENT_SUCCESS', 'WELCOME'
-  status    String  @default("SENT") @db.VarChar(50) // 'SENT', 'DELIVERED', 'READ', 'FAILED'
-  metadata  Json?   @db.JsonB
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member Member? @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
-
-  @@index([tenantId, memberId], name: "idx_whatsapp_log_tenant_member")
-  @@index([tenantId, type], name: "idx_whatsapp_log_tenant_type")
-  @@index([messageId], name: "idx_whatsapp_log_message_id")
-  @@index([tenantId, memberId, type, createdAt], name: "idx_whatsapp_log_throttle")
-  @@map("whatsapp_logs")
-}
-
-model Media {
-  id           String        @id @default(uuid()) @db.Uuid
-  tenantId     String        @map("tenant_id") @db.Uuid
-  memberId     String?       @map("member_id") @db.Uuid
-  uploadedById String?       @map("uploaded_by_id") @db.Uuid
-  type         MediaType
-  category     MediaCategory
-  originalName String        @map("original_name") @db.VarChar(255)
-  fileName     String        @map("file_name") @db.VarChar(255)
-  mimeType     String        @map("mime_type") @db.VarChar(100)
-  size         Int
-  width        Int?
-  height       Int?
-  storageKey   String        @map("storage_key") @db.VarChar(1024)
-  publicUrl    String?       @map("public_url") @db.VarChar(2048)
-  thumbnailUrl String?       @map("thumbnail_url") @db.VarChar(2048)
-
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
-
-  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  member     Member? @relation(fields: [tenantId, memberId], references: [tenantId, id], onDelete: Cascade)
-  uploadedBy User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-
-  @@index([tenantId, deletedAt], name: "idx_media_tenant_deleted")
-  @@index([tenantId, memberId, category, deletedAt], name: "idx_media_tenant_member_category")
-  @@index([tenantId, category, deletedAt], name: "idx_media_tenant_category")
-  @@index([uploadedById])
-  @@map("media")
 }
 
 enum AuditEntity {
@@ -647,80 +700,4 @@ enum AuditAction {
   SUBSCRIPTION_RENEWED
   SUSPEND
   ACTIVATE
-}
-
-model AuditLog {
-  id          String      @id @default(uuid()) @db.Uuid
-  tenantId    String      @map("tenant_id") @db.Uuid
-  userId      String      @map("user_id") @db.Uuid
-  memberId    String?     @map("member_id") @db.Uuid
-  entity      AuditEntity
-  entityId    String      @map("entity_id") @db.Uuid
-  action      AuditAction
-  description String      @db.Text
-  metadata    Json?       @db.JsonB
-  ipAddress   String?     @map("ip_address") @db.VarChar(45)
-  userAgent   String?     @map("user_agent") @db.Text
-
-  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  @@index([tenantId], name: "idx_audit_log_tenant")
-  @@index([userId], name: "idx_audit_log_user")
-  @@index([memberId], name: "idx_audit_log_member")
-  @@index([entity], name: "idx_audit_log_entity")
-  @@index([action])
-  @@index([createdAt], name: "idx_audit_log_created_at")
-  @@index([tenantId, createdAt], name: "idx_audit_log_tenant_created")
-  @@index([tenantId, memberId, createdAt], name: "idx_audit_log_tenant_member_created")
-  @@index([tenantId, userId, createdAt], name: "idx_audit_log_tenant_user_created")
-  @@map("audit_logs")
-}
-
-model TenantStorage {
-  id                String   @id @default(uuid()) @db.Uuid
-  tenantId          String   @unique @map("tenant_id") @db.Uuid
-  usedStorageBytes  Float    @default(0) @map("used_storage_bytes")
-  storageLimitBytes Float    @map("storage_limit_bytes")
-  totalFiles        Int      @default(0) @map("total_files")
-  totalImages       Int      @default(0) @map("total_images")
-  totalDocuments    Int      @default(0) @map("total_documents")
-  lastCalculatedAt  DateTime @default(now()) @map("last_calculated_at") @db.Timestamptz(6)
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([usedStorageBytes], name: "idx_tenant_storage_used")
-  @@map("tenant_storage")
-}
-
-model TenantIntegrationSettings {
-  id       String @id @default(uuid()) @db.Uuid
-  tenantId String @unique @map("tenant_id") @db.Uuid
-
-  // Razorpay credentials (per-tenant)
-  razorpayKeyId          String?  @map("razorpay_key_id") @db.VarChar(100)
-  razorpayKeySecret      String?  @map("razorpay_key_secret") @db.VarChar(255)
-  razorpayWebhookSecret  String?  @map("razorpay_webhook_secret") @db.VarChar(255)
-  razorpayEnabled        Boolean  @default(false) @map("razorpay_enabled")
-
-  // Meta WhatsApp Cloud API credentials (per-tenant)
-  whatsappPhoneNumberId   String?  @map("whatsapp_phone_number_id") @db.VarChar(100)
-  whatsappAccessToken     String?  @map("whatsapp_access_token") @db.Text
-  whatsappBusinessId      String?  @map("whatsapp_business_id") @db.VarChar(100)
-  whatsappEnabled         Boolean  @default(false) @map("whatsapp_enabled")
-
-  // Notification preferences
-  notifyExpiringDays  Int  @default(7) @map("notify_expiring_days")
-  notifyOnPayment     Boolean @default(true) @map("notify_on_payment")
-  notifyOnExpiry      Boolean @default(true) @map("notify_on_expiry")
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId], name: "idx_tenant_integration_tenant")
-  @@map("tenant_integration_settings")
 }

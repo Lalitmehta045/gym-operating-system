@@ -4,10 +4,19 @@ import { useDashboardRevenue } from "@/hooks/api/useDashboard"
 import { useGymProfile } from "@/hooks/api/useSettings"
 import { LoadingState, ErrorState } from "@/components/ui/States"
 import { formatCurrency } from "@/lib/utils"
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts"
+import { useSectionFilter } from "@/hooks/useSectionFilter"
+import { DateFilter } from "@/components/ui/DateFilter"
+import { format } from "date-fns"
 import { TrendingUp, Wallet, Smartphone, CreditCard, Landmark } from "lucide-react"
 
 export function RevenueAnalytics() {
-  const { data, isLoading, isError } = useDashboardRevenue()
+  const { dateRange } = useSectionFilter("revenue")
+  const dateParams = {
+    dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  }
+  const { data, isLoading, isError } = useDashboardRevenue(dateParams)
   const { data: gymProfile } = useGymProfile()
 
   if (isLoading) return <LoadingState />
@@ -26,11 +35,14 @@ export function RevenueAnalytics() {
   return (
     <div className="bg-[var(--canvas-light)] rounded-2xl border border-[var(--hairline-soft)] p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-[#6C47FF]/10 flex items-center justify-center">
-          <TrendingUp className="w-4 h-4 text-[#6C47FF]" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#6C47FF]/10 flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-[#6C47FF]" />
+          </div>
+          <h2 className="text-[15px] font-semibold text-[var(--on-primary)]">Revenue Analytics</h2>
         </div>
-        <h2 className="text-[15px] font-semibold text-[var(--on-primary)]">Revenue Analytics</h2>
+        <DateFilter paramPrefix="revenue" />
       </div>
 
       {/* Revenue Summary */}

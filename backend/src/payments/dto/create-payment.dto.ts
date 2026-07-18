@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
   IsUUID,
   Max,
@@ -23,8 +24,13 @@ export class CreatePaymentDto {
   @IsOptional()
   subscriptionId?: string;
 
+  @IsUUID('4')
+  @IsNotEmpty()
+  invoiceId: string;
+
   @IsNumber()
-  @Min(0)
+  @IsPositive({ message: 'Payment amount must be a positive number' })
+  @Min(1, { message: 'Payment amount must be at least ₹1' })
   @Max(99999999.99)
   @IsNotEmpty()
   amount: number;

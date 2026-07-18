@@ -33,6 +33,20 @@ export function useRazorpay() {
     }
   };
 
+  const createPaymentLink = async (subscriptionId: string, memberId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.post('/api/v1/razorpay/payment-link', { subscriptionId, memberId });
+      return response.data;
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to generate payment link');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const verifyPayment = async (data: {
     subscriptionId: string;
     razorpay_order_id: string;
@@ -52,10 +66,26 @@ export function useRazorpay() {
     }
   };
 
+  const simulateMockSuccess = async (orderId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.post('/api/v1/mock/payment/success', { orderId });
+      return response.data;
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to trigger mock webhook');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     loadRazorpayScript,
     createOrder,
+    createPaymentLink,
     verifyPayment,
+    simulateMockSuccess,
     isLoading,
     error,
   };

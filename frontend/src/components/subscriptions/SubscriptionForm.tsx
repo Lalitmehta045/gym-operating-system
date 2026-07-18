@@ -124,16 +124,6 @@ export function SubscriptionForm({ initialValues, onSubmit, isLoading, submitLab
           {errors.amount && <p className="text-red-500 text-sm">{errors.amount.message}</p>}
         </div>
 
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-[var(--ink-soft)] block">Payment Method</label>
-          <Select className="w-full">
-            <option value="CASH">Cash</option>
-            <option value="UPI">UPI</option>
-            <option value="CARD">Card</option>
-            <option value="BANK_TRANSFER">Bank Transfer</option>
-          </Select>
-        </div>
-
         <div className="space-y-1 md:col-span-2">
           <label className="text-sm font-medium text-[var(--ink-soft)] block">Notes</label>
           <textarea

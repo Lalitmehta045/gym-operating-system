@@ -58,6 +58,17 @@ api.interceptors.response.use(
       }
     }
 
+    // Swallow 403 Forbidden on GET requests to silently hide
+    // RBAC-gated sections instead of showing error boxes.
+    // All other 4xx errors (400, 404, 422) propagate normally.
+    if (
+      error.response &&
+      error.response.status === 403 &&
+      originalRequest.method?.toUpperCase() === 'GET'
+    ) {
+      return Promise.resolve({ data: null });
+    }
+
     return Promise.reject(error)
   }
 )

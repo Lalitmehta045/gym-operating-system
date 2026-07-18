@@ -23,9 +23,12 @@ export default function AttendanceHistoryPage() {
     page: 1,
     limit: 50,
     memberId: memberSearch ? memberSearch : undefined,
-    status: status ? status : undefined,
     dateFrom: dateFrom ? dateFrom : undefined,
     dateTo: dateTo ? dateTo : undefined,
+    ...(status === "INSIDE" ? { isInside: true } : {}),
+    ...(status === "COMPLETED" ? { isInside: false, status: "PRESENT" } : {}),
+    ...(status === "ABSENT" ? { status: "ABSENT" } : {}),
+    ...(status === "MANUAL" ? { status: "MISSED" } : {}),
   })
 
   const checkOutMutation = useCheckOut()

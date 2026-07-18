@@ -49,6 +49,9 @@ export interface AttendanceServiceInterface {
     tenantId: string,
     markedByUserId: string,
     memberId: string,
+    checkInTime?: string,
+    checkOutTime?: string,
+    notes?: string,
   ): Promise<AttendanceDto>;
   checkOut(
     tenantId: string,

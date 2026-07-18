@@ -12,6 +12,8 @@ export interface Invoice {
   paymentId?: string;
   invoiceNumber: string;
   amount: number;
+  amountDue?: number;
+  status?: string;
   issuedAt: string;
   notes?: string;
   createdAt: string;
@@ -20,6 +22,7 @@ export interface Invoice {
   member?: Member;
   subscription?: Subscription;
   payment?: Payment;
+  payments?: Payment[];
 }
 
 export interface InvoicesResponse {

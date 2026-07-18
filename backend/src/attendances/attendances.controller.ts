@@ -38,7 +38,7 @@ import { Public } from '../auth/decorators/public.decorator.js';
   ':tenantId:/api/v1/dashboard*',
 ])
 export class AttendancesController {
-  constructor(private readonly attendanceService: AttendanceService) {}
+  constructor(private readonly attendanceService: AttendanceService) { }
 
   // Note: This endpoint should be rate-limited at the nginx/gateway level
   @Public()
@@ -67,6 +67,9 @@ export class AttendancesController {
       user.tenantId,
       user.sub,
       body.memberId,
+      body.checkInTime,
+      body.checkOutTime,
+      body.notes,
     );
   }
 

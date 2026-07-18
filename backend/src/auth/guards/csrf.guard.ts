@@ -25,6 +25,8 @@ export class CsrfGuard implements CanActivate {
       '/api/v1/auth/refresh',
       '/api/v1/auth/forgot-password',
       '/api/v1/auth/reset-password',
+      '/api/v1/webhooks/razorpay',
+      '/webhooks/razorpay',
     ];
 
     if (publicAuthEndpoints.includes(path)) {

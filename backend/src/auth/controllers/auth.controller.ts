@@ -112,7 +112,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @AuditLog(AuditEntity.USER, AuditAction.LOGIN, '🔓 User Logged In')
   async login(
     @Body() dto: LoginDto,

@@ -40,7 +40,16 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user: JwtPayload = request.user;
 
-    if (!user || !requiredRoles.includes(user.role)) {
+    if (!user || !user.role) {
+      throw new ForbiddenException(
+        'You do not have permission to access this resource',
+      );
+    }
+
+    const userRole = user.role.toString().toUpperCase();
+    const allowed = requiredRoles.map((r) => r.toString().toUpperCase());
+
+    if (!allowed.includes(userRole)) {
       throw new ForbiddenException(
         'You do not have permission to access this resource',
       );

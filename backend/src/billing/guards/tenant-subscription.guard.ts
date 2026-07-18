@@ -35,7 +35,14 @@ export class TenantSubscriptionGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (!user || user.role === Role.SUPER_ADMIN || !user.tenantId) {
+    if (
+      !user ||
+      user.role === Role.SUPER_ADMIN ||
+      user.role === Role.OWNER ||
+      user.role === 'owner' ||
+      user.role === 'OWNER' ||
+      !user.tenantId
+    ) {
       return true;
     }
 

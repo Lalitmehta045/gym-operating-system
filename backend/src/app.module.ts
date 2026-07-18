@@ -43,6 +43,7 @@ import { AuditLogInterceptor } from './audit/interceptors/audit-log.interceptor.
 import { TenantStorageModule } from './storage/tenant-storage.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { StaffModule } from './staff/staff.module.js';
+import { FinancialsModule } from './financials/financials.module.js';
 
 @Module({
   imports: [
@@ -76,10 +77,11 @@ import { StaffModule } from './staff/staff.module.js';
     TenantStorageModule,
     SettingsModule,
     StaffModule,
+    FinancialsModule,
     ThrottlerModule.forRoot([
       {
         ttl: parseInt(process.env.THROTTLE_TTL as string, 10) || 60000,
-        limit: parseInt(process.env.THROTTLE_LIMIT as string, 10) || 20,
+        limit: parseInt(process.env.THROTTLE_LIMIT as string, 10) || 200,
       },
     ]),
   ],

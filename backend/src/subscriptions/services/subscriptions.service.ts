@@ -51,18 +51,63 @@ export class SubscriptionsService {
       );
     }
 
-    const subscription = await this.prisma.subscription.create({
-      data: {
-        tenantId,
-        memberId: dto.memberId,
-        membershipPlanId: dto.membershipPlanId,
-        startDate: new Date(dto.startDate),
-        endDate: new Date(dto.endDate),
-        amount: dto.amount,
-        status: dto.status || SubscriptionStatus.PENDING,
-        autoRenew: dto.autoRenew || false,
-        notes: dto.notes,
-      },
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${randomUUID().slice(-8).toUpperCase()}`;
+
+    const subscription = await this.prisma.$transaction(async (tx) => {
+      // Default to ACTIVE as subscription is a contract, not a payment status
+      const sub = await tx.subscription.create({
+        data: {
+          tenantId,
+          memberId: dto.memberId,
+          membershipPlanId: dto.membershipPlanId,
+          startDate: new Date(dto.startDate),
+          endDate: new Date(dto.endDate),
+          amount: dto.amount,
+          status: dto.status || SubscriptionStatus.ACTIVE,
+          autoRenew: dto.autoRenew || false,
+          notes: dto.notes,
+        },
+      });
+
+      let invoiceStatus: 'DUE' | 'PARTIALLY_PAID' | 'PAID' = 'DUE';
+      // Guard: clamp paidAmount to not exceed the subscription amount
+      const paidAmt = Math.min(dto.paidAmount ?? 0, dto.amount);
+      if (dto.paymentMethod && paidAmt > 0) {
+        if (paidAmt >= dto.amount) {
+          invoiceStatus = 'PAID';
+        } else {
+          invoiceStatus = 'PARTIALLY_PAID';
+        }
+      }
+
+      const invoice = await tx.invoice.create({
+        data: {
+          tenantId,
+          memberId: dto.memberId,
+          subscriptionId: sub.id,
+          invoiceNumber,
+          amount: dto.amount,
+          status: invoiceStatus,
+        },
+      });
+
+      if (dto.paymentMethod && paidAmt > 0) {
+        await tx.payment.create({
+          data: {
+            tenantId,
+            memberId: dto.memberId,
+            subscriptionId: sub.id,
+            invoiceId: invoice.id,
+            amount: paidAmt,
+            paymentMethod: dto.paymentMethod,
+            paymentStatus: PaymentStatus.PAID,
+            paidAt: new Date(),
+            notes: 'Initial subscription payment',
+          },
+        });
+      }
+
+      return sub;
     });
 
     return this.mapToDto(subscription);
@@ -285,52 +330,60 @@ export class SubscriptionsService {
     id: string,
     dto: RenewSubscriptionDto,
   ): Promise<SubscriptionDto> {
-    const oldSubscription = await this.prisma.subscription.findFirst({
-      where: { id, tenantId, deletedAt: null },
-      include: { membershipPlan: true },
-    });
-    if (!oldSubscription) throw new NotFoundException('Subscription not found');
-
-    const planDuration = oldSubscription.membershipPlan.durationDays;
-
-    // Start date is the day after the old end date
-    const newStartDate = new Date(oldSubscription.endDate);
-    newStartDate.setDate(newStartDate.getDate() + 1);
-
-    const newEndDate = new Date(newStartDate);
-    newEndDate.setDate(newEndDate.getDate() + planDuration);
-
     const result = await this.prisma.$transaction(async (tx) => {
-      // Create new subscription
-      const newSubscription = await tx.subscription.create({
-        data: {
-          tenantId,
-          memberId: oldSubscription.memberId,
-          membershipPlanId: oldSubscription.membershipPlanId,
-          startDate: newStartDate,
-          endDate: newEndDate,
-          amount: oldSubscription.amount, // Or fetch current plan price?
-          status: SubscriptionStatus.ACTIVE,
-          notes: dto.notes,
-        },
-      });
+      // Lock the subscription row for update to prevent concurrent double-renewals
+      await tx.$executeRaw`SELECT * FROM subscriptions WHERE id = ${id}::uuid FOR UPDATE`;
 
-      // Update old subscription status to EXPIRED
-      await tx.subscription.update({
+      const oldSubscription = await tx.subscription.findFirst({
+        where: { id, tenantId, deletedAt: null },
+        include: { membershipPlan: true },
+      });
+      if (!oldSubscription) throw new NotFoundException('Subscription not found');
+
+      const planDuration = oldSubscription.membershipPlan.durationDays;
+      // Use CURRENT plan price, not stale subscription amount
+      const currentPlanPrice = Number(oldSubscription.membershipPlan.price);
+
+      // Start date is the day after the old end date (for context, notes, etc.)
+      const newStartDate = new Date(oldSubscription.endDate);
+      newStartDate.setDate(newStartDate.getDate() + 1);
+
+      const newEndDate = new Date(oldSubscription.endDate);
+      newEndDate.setDate(newEndDate.getDate() + planDuration);
+
+      // Update existing subscription
+      const updatedSubscription = await tx.subscription.update({
         where: { id: oldSubscription.id },
-        data: { status: SubscriptionStatus.EXPIRED },
+        data: {
+          endDate: newEndDate,
+          status: SubscriptionStatus.ACTIVE,
+          notes: dto.notes ? `${oldSubscription.notes ? oldSubscription.notes + '\n' : ''}${dto.notes}` : oldSubscription.notes,
+        },
       });
 
       // Generate invoice number
       const invoiceNumber = `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${randomUUID().slice(-8).toUpperCase()}`;
 
-      // Create Payment
-      const payment = await tx.payment.create({
+      // Create new Invoice for the renewal cycle
+      const invoice = await tx.invoice.create({
         data: {
           tenantId,
           memberId: oldSubscription.memberId,
-          subscriptionId: newSubscription.id,
-          amount: newSubscription.amount,
+          subscriptionId: updatedSubscription.id,
+          invoiceNumber,
+          amount: currentPlanPrice,
+          status: 'PAID', // Paid immediately below
+        },
+      });
+
+      // Create Payment linked to the Invoice
+      await tx.payment.create({
+        data: {
+          tenantId,
+          memberId: oldSubscription.memberId,
+          subscriptionId: updatedSubscription.id,
+          invoiceId: invoice.id,
+          amount: currentPlanPrice,
           paymentMethod: dto.paymentMethod,
           paymentStatus: PaymentStatus.PAID,
           paidAt: new Date(),
@@ -338,19 +391,7 @@ export class SubscriptionsService {
         },
       });
 
-      // Create Invoice
-      await tx.invoice.create({
-        data: {
-          tenantId,
-          memberId: oldSubscription.memberId,
-          subscriptionId: newSubscription.id,
-          paymentId: payment.id,
-          invoiceNumber,
-          amount: payment.amount,
-        },
-      });
-
-      return newSubscription;
+      return updatedSubscription;
     });
 
     return this.mapToDto(result);

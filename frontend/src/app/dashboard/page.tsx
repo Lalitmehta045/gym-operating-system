@@ -9,6 +9,7 @@ import { SubscriptionAnalytics } from "@/components/dashboard/SubscriptionAnalyt
 import { TopMembersTable } from "@/components/dashboard/TopMembersTable"
 import { RevenueOverview } from "@/components/dashboard/RevenueOverview"
 import { QuickActions } from "@/components/dashboard/QuickActions"
+import { DateFilter } from "@/components/ui/DateFilter"
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -17,9 +18,11 @@ export default function DashboardPage() {
   if (isTrainer) {
     return (
       <div className="flex flex-col gap-y-6 pb-8">
-        <div className="flex flex-col gap-y-1 pt-2">
-          <h1 className="text-[26px] font-bold tracking-tight text-[var(--on-primary)]">Dashboard</h1>
-          <p className="text-[14px] text-[var(--ash)]">Welcome back, {user?.email?.split('@')[0]}! 👋</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pt-2">
+          <div className="flex flex-col gap-y-1">
+            <h1 className="text-[26px] font-bold tracking-tight text-[var(--on-primary)]">Dashboard</h1>
+            <p className="text-[14px] text-[var(--ash)]">Welcome back, {user?.email?.split('@')[0]}! 👋</p>
+          </div>
         </div>
         
         <div className="bg-[var(--canvas-light)] p-8 rounded-xl border border-[var(--hairline-soft)] text-center shadow-sm">
@@ -42,9 +45,13 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-y-6 pb-8">
       {/* Page Header */}
-      <div className="flex flex-col gap-y-1 pt-2">
-        <h1 className="text-[26px] font-bold tracking-tight text-[var(--on-primary)]">Dashboard</h1>
-        <p className="text-[14px] text-[var(--ash)]">Welcome to GymOS 👋</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 pt-2">
+        <div className="flex flex-col gap-y-1">
+          <h1 className="text-[26px] font-bold tracking-tight text-[var(--on-primary)]">Dashboard</h1>
+          <p className="text-[14px] text-[var(--ash)]">Welcome to GymOS 👋</p>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+        </div>
       </div>
 
       {/* 9 Metric Cards (3×3 Grid) */}

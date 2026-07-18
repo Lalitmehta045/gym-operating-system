@@ -49,6 +49,7 @@ export interface GetPaymentsParams {
 
 export interface CreatePaymentDto {
   memberId: string;
+  invoiceId: string;
   subscriptionId?: string;
   amount: number;
   paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'BANK_TRANSFER';

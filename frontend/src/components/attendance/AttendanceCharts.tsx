@@ -1,18 +1,28 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Area, AreaChart,
   PieChart, Pie, Cell
 } from 'recharts';
-import { ChevronDown, Users, Calendar, TrendingUp, Loader2 } from 'lucide-react';
+import { Users, Calendar, TrendingUp, Loader2 } from 'lucide-react';
 import { useDashboardAttendance } from '@/hooks/api/useDashboard';
 import { useAuth } from '@/hooks/useAuth';
+import { useSectionFilter } from '@/hooks/useSectionFilter';
+import { DateFilter } from '@/components/ui/DateFilter';
+import { format } from "date-fns"
 
 export function AttendanceCharts() {
   const { user } = useAuth();
   const canViewMetrics = user?.role === 'OWNER' || user?.role === 'MANAGER';
-  const { data, isLoading, isError } = useDashboardAttendance();
+  
+  const { dateRange } = useSectionFilter("attendance")
+  const dateParams = {
+    dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  }
+
+  const { data, isLoading, isError } = useDashboardAttendance(dateParams);
 
   if (!canViewMetrics || isError) return null;
 
@@ -30,13 +40,11 @@ export function AttendanceCharts() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-      {/* Today's Attendance Overview */}
+      {/* Attendance Overview */}
       <div className="bg-[var(--canvas-light)] rounded-xl border border-[var(--hairline-soft)] shadow-sm p-6">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-bold text-[var(--on-primary)]">Today's Attendance Overview</h2>
-          <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] bg-[var(--canvas-light)] border border-[var(--hairline)] rounded-lg hover:bg-[var(--canvas-paper)] transition-colors">
-            Today <ChevronDown className="w-4 h-4 text-[var(--mute)]" />
-          </button>
+          <h2 className="text-lg font-bold text-[var(--on-primary)]">Attendance Overview</h2>
+          <DateFilter paramPrefix="attendance" />
         </div>
         
         <div className="flex items-center gap-4 mb-6">
@@ -108,9 +116,7 @@ export function AttendanceCharts() {
       <div className="bg-[var(--canvas-light)] rounded-xl border border-[var(--hairline-soft)] shadow-sm p-6 flex flex-col">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-[var(--on-primary)]">Attendance by Plan</h2>
-          <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] bg-[var(--canvas-light)] border border-[var(--hairline)] rounded-lg hover:bg-[var(--canvas-paper)] transition-colors">
-            This Month <ChevronDown className="w-4 h-4 text-[var(--mute)]" />
-          </button>
+          <DateFilter paramPrefix="attendance" />
         </div>
         
         <div className="flex-1 flex items-center justify-between">
@@ -173,9 +179,9 @@ export function AttendanceCharts() {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5 text-[var(--mute)] text-xs font-medium">
               <Calendar className="w-4 h-4" />
-              <span>This Month</span>
+              <span>Period</span>
             </div>
-            <span className="text-sm font-semibold text-[var(--on-primary)] mt-0.5">{currentMonth}</span>
+            <span className="text-sm font-semibold text-[var(--on-primary)] mt-0.5">{dateRange.label}</span>
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5 text-[var(--mute)] text-xs font-medium">

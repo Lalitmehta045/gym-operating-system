@@ -1,6 +1,6 @@
 import * as React from "react"
 import Link from "next/link"
-import { Eye, MoreVertical, Search, Filter, Smartphone, CreditCard, Landmark } from "lucide-react"
+import { Eye, MoreVertical, Search, Filter } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { Subscription } from "@/hooks/api/useSubscriptions"
 import { format, differenceInDays } from "date-fns"
@@ -31,17 +31,6 @@ const getAvatarColor = (name: string) => {
   ];
   const charCode = name.charCodeAt(0) || 0;
   return colors[charCode % colors.length];
-}
-
-const getPaymentMethodMock = (id: string) => {
-  // Just deterministic mocking based on ID for visual representation
-  const methods = [
-    { name: "UPI", icon: Smartphone, color: "text-[#6C47FF]", bg: "bg-[#F3F0FF]" },
-    { name: "Card", icon: CreditCard, color: "text-[#3B82F6]", bg: "bg-[#DBEAFE]" },
-    { name: "Net Banking", icon: Landmark, color: "text-[#22C55E]", bg: "bg-[#DCFCE7]" }
-  ];
-  const charCode = id.charCodeAt(id.length - 1) || 0;
-  return methods[charCode % methods.length];
 }
 
 export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, onPageChange, onRenew, onCancel, onPay }: SubscriptionTableProps) {
@@ -99,17 +88,6 @@ export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, on
             <option>Pending</option>
             <option>Expired</option>
           </select>
-          <select className="bg-transparent text-sm text-[var(--ink-soft)] font-medium focus:outline-none cursor-pointer border-l border-[var(--hairline-soft)] pl-3">
-            <option>All Plans</option>
-            <option>Premium Plan</option>
-            <option>Standard Plan</option>
-            <option>Basic Plan</option>
-          </select>
-          <select className="bg-transparent text-sm text-[var(--ink-soft)] font-medium focus:outline-none cursor-pointer border-l border-[var(--hairline-soft)] pl-3 hidden sm:block">
-            <option>All Payment Methods</option>
-            <option>UPI</option>
-            <option>Card</option>
-          </select>
           <button onClick={() => {}} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] rounded-lg border-l border-[var(--hairline-soft)] transition-colors">
             <Filter className="w-4 h-4" />
             Filters
@@ -129,7 +107,6 @@ export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, on
                 <th className="px-6 py-4 font-medium">Start Date</th>
                 <th className="px-6 py-4 font-medium">Next Billing</th>
                 <th className="px-6 py-4 font-medium">Amount</th>
-                <th className="px-6 py-4 font-medium">Payment Method</th>
                 <th className="px-6 py-4 font-medium text-right">Action</th>
               </tr>
             </thead>
@@ -139,7 +116,6 @@ export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, on
                 const lastName = sub.member?.lastName || ""
                 const fullName = `${firstName} ${lastName}`.trim()
                 const avatarClass = getAvatarColor(firstName)
-                const paymentInfo = getPaymentMethodMock(sub.id)
                 const endDate = new Date(sub.endDate)
                 const daysDiff = differenceInDays(endDate, new Date())
 
@@ -154,7 +130,8 @@ export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, on
                           <div className="font-semibold text-[var(--on-primary)]">{fullName}</div>
                           <div className="text-xs text-[var(--mute)]">
                             {sub.member?.memberCode && <span className="font-medium mr-1">#{sub.member.memberCode} •</span>}
-                            {sub.member?.email || `${firstName.toLowerCase()}@example.com`}
+                            {/* BUG-19 FIX: "No email" instead of fake email */}
+                            {sub.member?.email || "No email"}
                           </div>
                         </div>
                       </div>
@@ -184,7 +161,8 @@ export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, on
                       )}
                       {sub.status === "CANCELLED" && (
                         <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-[var(--canvas-paper)] text-[var(--slate-soft)] text-xs font-medium">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--canvas-paper)]0 mr-1.5"></div>
+                          {/* BUG-17 FIX: Removed trailing 0 from CSS class */}
+                          <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1.5"></div>
                           Cancelled
                         </div>
                       )}
@@ -210,13 +188,8 @@ export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, on
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-[var(--on-primary)]">₹{Number(sub.amount).toLocaleString()} / month</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className={`inline-flex items-center px-2.5 py-1.5 rounded-lg ${paymentInfo.bg} ${paymentInfo.color} text-xs font-medium`}>
-                        <paymentInfo.icon className="w-3.5 h-3.5 mr-1.5" />
-                        {paymentInfo.name}
-                      </div>
+                      {/* BUG-08 FIX: Removed / month */}
+                      <div className="font-medium text-[var(--on-primary)]">₹{Number(sub.amount).toLocaleString()}</div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

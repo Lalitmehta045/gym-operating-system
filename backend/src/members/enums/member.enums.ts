@@ -41,6 +41,10 @@ export enum MemberSource {
   FACEBOOK = 'FACEBOOK',
   REFERRAL = 'REFERRAL',
   WEBSITE = 'WEBSITE',
+  GOOGLE = 'GOOGLE',
+  YOUTUBE = 'YOUTUBE',
+  NEWSPAPER = 'NEWSPAPER',
+  FRIEND_FAMILY = 'FRIEND_FAMILY',
   OTHER = 'OTHER',
 }
 
@@ -51,10 +55,48 @@ export const MemberSourceOptions = [
   MemberSource.FACEBOOK,
   MemberSource.REFERRAL,
   MemberSource.WEBSITE,
+  MemberSource.GOOGLE,
+  MemberSource.YOUTUBE,
+  MemberSource.NEWSPAPER,
+  MemberSource.FRIEND_FAMILY,
   MemberSource.OTHER,
 ] as const;
 
 export type MemberSourceType = (typeof MemberSourceOptions)[number];
+
+export enum ExperienceLevel {
+  BEGINNER = 'BEGINNER',
+  INTERMEDIATE = 'INTERMEDIATE',
+  ADVANCED = 'ADVANCED',
+}
+
+export const ExperienceLevelOptions = [
+  ExperienceLevel.BEGINNER,
+  ExperienceLevel.INTERMEDIATE,
+  ExperienceLevel.ADVANCED,
+] as const;
+
+export type ExperienceLevelType = (typeof ExperienceLevelOptions)[number];
+
+export enum PreferredTime {
+  EARLY_MORNING = 'EARLY_MORNING',
+  MORNING = 'MORNING',
+  AFTERNOON = 'AFTERNOON',
+  EVENING = 'EVENING',
+  NIGHT = 'NIGHT',
+  FLEXIBLE = 'FLEXIBLE',
+}
+
+export const PreferredTimeOptions = [
+  PreferredTime.EARLY_MORNING,
+  PreferredTime.MORNING,
+  PreferredTime.AFTERNOON,
+  PreferredTime.EVENING,
+  PreferredTime.NIGHT,
+  PreferredTime.FLEXIBLE,
+] as const;
+
+export type PreferredTimeType = (typeof PreferredTimeOptions)[number];
 
 export enum BloodGroup {
   A_POSITIVE = 'A_POSITIVE',

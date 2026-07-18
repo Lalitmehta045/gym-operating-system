@@ -7,18 +7,17 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { CacheTTL } from '@nestjs/cache-manager';
+
 import { InvoicesService } from '../services/invoices.service.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import { Role } from '../../../generated/prisma/client.js';
-import { HttpCacheInterceptor } from '../../common/interceptors/http-cache.interceptor.js';
+
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 import { ListInvoicesQueryDto } from '../dto/list-invoices-query.dto.js';
 
 @Controller('invoices')
 @Roles(Role.OWNER, Role.MANAGER)
-@UseInterceptors(HttpCacheInterceptor)
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
@@ -30,7 +29,6 @@ export class InvoicesController {
   }
 
   @Get()
-  @CacheTTL(900000) // 15 minutes
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListInvoicesQueryDto,
@@ -39,7 +37,6 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  @CacheTTL(900000) // 15 minutes
   findOne(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,

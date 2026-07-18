@@ -4,6 +4,7 @@ import {
   Query,
   ForbiddenException,
   UseInterceptors,
+  Res,
 } from '@nestjs/common';
 import { CacheTTL } from '@nestjs/cache-manager';
 import { ReportsService } from '../services/reports.service.js';
@@ -11,12 +12,10 @@ import { ExpiringMembersQueryDto } from '../dto/expiring-members-query.dto.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import { Role } from '../../../generated/prisma/client.js';
-import { HttpCacheInterceptor } from '../../common/interceptors/http-cache.interceptor.js';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 
 @Controller('reports')
 @Roles(Role.OWNER, Role.MANAGER)
-@UseInterceptors(HttpCacheInterceptor)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
@@ -27,20 +26,32 @@ export class ReportsController {
     return user.tenantId;
   }
 
+  @Get('dashboard')
+  getDashboardAnalytics(@CurrentUser() user: JwtPayload) {
+    return this.reportsService.getDashboardAnalytics(this.getTenantId(user));
+  }
+
+  @Get('export/pdf')
+  async exportPdfReport(
+    @CurrentUser() user: JwtPayload,
+    @Query('type') type: string,
+    @Res() res: any,
+  ) {
+    const reportType = type || 'dashboard';
+    return this.reportsService.generatePdfReport(this.getTenantId(user), reportType, res);
+  }
+
   @Get('revenue')
-  @CacheTTL(60000) // 1 minute
   getRevenueReport(@CurrentUser() user: JwtPayload) {
     return this.reportsService.getRevenueReport(this.getTenantId(user));
   }
 
   @Get('subscriptions')
-  @CacheTTL(60000) // 1 minute
   getSubscriptionReport(@CurrentUser() user: JwtPayload) {
     return this.reportsService.getSubscriptionReport(this.getTenantId(user));
   }
 
   @Get('expiring-members')
-  @CacheTTL(60000) // 1 minute
   getExpiringMembersReport(
     @CurrentUser() user: JwtPayload,
     @Query() query: ExpiringMembersQueryDto,

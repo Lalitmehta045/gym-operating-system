@@ -11,6 +11,18 @@ export function useGetStaff() {
   });
 }
 
+export function useGetTrainers() {
+  return useQuery({
+    queryKey: ['staff', 'trainers'],
+    queryFn: async () => {
+      const { data } = await api.get('/staff', {
+        params: { role: 'TRAINER' },
+      });
+      return data;
+    },
+  });
+}
+
 export function useCreateStaff() {
   const queryClient = useQueryClient();
   return useMutation({

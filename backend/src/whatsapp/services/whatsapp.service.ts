@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import axios from 'axios';
-import { ExternalServiceCall } from '../../common/utils/circuit-breaker.util.js';
 
 interface RenewalReminderRecipient {
   tenantId: string;
@@ -17,205 +15,255 @@ interface RenewalReminderRecipient {
 @Injectable()
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
-  private readonly apiUrl = 'https://graph.facebook.com/v19.0'; // Or whichever version is current
 
   constructor(private prisma: PrismaService) {}
 
-  private get isConfigured(): boolean {
-    return !!(
-      process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID
+  /**
+   * Core enqueue function replacing direct sending.
+   * Inserts into WhatsAppLog for the Background Queue Processor to handle.
+   */
+  private async enqueueTemplate(
+    tenantId: string,
+    memberId: string,
+    to: string,
+    type: string,
+    templateName: string,
+    components: any[] = [],
+    languageCode: string = 'en'
+  ) {
+    if (!to) {
+      this.logger.warn(`Skipping WhatsApp ${type} enqueue - No phone number provided`);
+      return;
+    }
+
+    try {
+      await this.prisma.whatsAppLog.create({
+        data: {
+          tenantId,
+          memberId,
+          type,
+          templateName,
+          status: 'QUEUED',
+          retryCount: 0,
+          payload: {
+            to,
+            languageCode,
+            components
+          },
+        },
+      });
+      this.logger.log(`Queued WhatsApp template '${templateName}' for member ${memberId}`);
+    } catch (error) {
+      this.logger.error(`Failed to enqueue WhatsApp message of type ${type}`, error);
+    }
+  }
+
+  // --- Business Logic ---
+
+  async sendWelcomeMessage(tenantId: string, memberId: string) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!member || !member.phone) return;
+
+    // Throttle check
+    const existing = await this.prisma.whatsAppLog.findFirst({
+      where: { tenantId, memberId, type: 'WELCOME' }
+    });
+    if (existing) return;
+
+    await this.enqueueTemplate(
+      tenantId,
+      memberId,
+      member.phone,
+      'WELCOME',
+      'welcome_message',
+      [
+        {
+          type: 'body',
+          parameters: [{ type: 'text', text: member.firstName }]
+        }
+      ]
     );
   }
 
-  async sendMessage(
-    to: string,
-    text: string,
-    tenantId?: string,
-    memberId?: string,
-    type?: string,
-  ) {
-    if (!this.isConfigured) {
-      this.logger.warn('WhatsApp is not configured. Message not sent.');
-      return null;
+  async sendInvoiceGenerated(tenantId: string, memberId: string, invoiceId: string, amount: number, invoiceLink?: string) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!member || !member.phone) return;
+
+    const components: any[] = [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: member.firstName },
+          { type: 'text', text: amount.toString() }
+        ]
+      }
+    ];
+
+    if (invoiceLink) {
+      components[0].parameters.push({ type: 'text', text: invoiceLink });
     }
 
-    try {
-      const response = await ExternalServiceCall.execute(
-        'whatsapp-send-message',
-        () => axios.post(
-          `${this.apiUrl}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-          {
-            messaging_product: 'whatsapp',
-            to,
-            type: 'text',
-            text: { body: text },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        ),
-        (err) => {
-          this.logger.error('WhatsApp API unavailable. Gracefully degrading.', err);
-          return {
-            data: { messages: [] },
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config: {} as any,
-          };
-        },
-        { timeout: 5000 }
-      );
-
-      const messageId = response.data.messages?.[0]?.id;
-
-      if (tenantId && type) {
-        await this.prisma.whatsAppLog.create({
-          data: {
-            tenantId,
-            memberId,
-            messageId,
-            type,
-            status: 'SENT',
-          },
-        });
-      }
-
-      return response.data;
-    } catch (error: any) {
-      this.logger.error(
-        'Failed to send WhatsApp message',
-        error.response?.data || error.message,
-      );
-
-      if (tenantId && type) {
-        await this.prisma.whatsAppLog.create({
-          data: {
-            tenantId,
-            memberId,
-            type,
-            status: 'FAILED',
-            metadata: { error: error.response?.data || error.message },
-          },
-        });
-      }
-      throw error;
-    }
-  }
-
-  async sendTemplate(
-    to: string,
-    templateName: string,
-    languageCode: string,
-    components: any[] = [],
-    tenantId?: string,
-    memberId?: string,
-    type?: string,
-  ) {
-    if (!this.isConfigured) {
-      this.logger.warn('WhatsApp is not configured. Template not sent.');
-      return null;
-    }
-
-    try {
-      const response = await ExternalServiceCall.execute(
-        'whatsapp-send-template',
-        () => axios.post(
-          `${this.apiUrl}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-          {
-            messaging_product: 'whatsapp',
-            to,
-            type: 'template',
-            template: {
-              name: templateName,
-              language: { code: languageCode },
-              components,
-            },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        ),
-        (err) => {
-          this.logger.error('WhatsApp API unavailable for template. Gracefully degrading.', err);
-          return {
-            data: { messages: [] },
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config: {} as any,
-          };
-        },
-        { timeout: 5000 }
-      );
-
-      const messageId = response.data.messages?.[0]?.id;
-
-      if (tenantId && type) {
-        await this.prisma.whatsAppLog.create({
-          data: {
-            tenantId,
-            memberId,
-            messageId,
-            type,
-            status: 'SENT',
-          },
-        });
-      }
-
-      return response.data;
-    } catch (error: any) {
-      this.logger.error(
-        'Failed to send WhatsApp template',
-        error.response?.data || error.message,
-      );
-
-      if (tenantId && type) {
-        await this.prisma.whatsAppLog.create({
-          data: {
-            tenantId,
-            memberId,
-            type,
-            status: 'FAILED',
-            metadata: { error: error.response?.data || error.message },
-          },
-        });
-      }
-      throw error;
-    }
-  }
-
-  private async canSendMessage(
-    tenantId: string,
-    memberId: string,
-    type: string,
-    timeframeDays: number = 0,
-  ): Promise<boolean> {
-    const whereClause: any = {
+    await this.enqueueTemplate(
       tenantId,
       memberId,
-      type,
-    };
-
-    if (timeframeDays > 0) {
-      const date = new Date();
-      date.setDate(date.getDate() - timeframeDays);
-      whereClause.createdAt = { gte: date };
-    }
-
-    const existingLog = await this.prisma.whatsAppLog.findFirst({
-      where: whereClause,
-    });
-
-    return !existingLog;
+      member.phone,
+      'INVOICE_GENERATED',
+      'invoice_generated',
+      components
+    );
   }
 
+  async sendPaymentLink(tenantId: string, memberId: string, amount: number, paymentLink: string) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!member || !member.phone) return;
+
+    await this.enqueueTemplate(
+      tenantId,
+      memberId,
+      member.phone,
+      'PAYMENT_LINK',
+      'payment_link',
+      [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: member.firstName },
+            { type: 'text', text: amount.toString() },
+            { type: 'text', text: paymentLink }
+          ]
+        }
+      ]
+    );
+  }
+
+  async sendPaymentSuccess(tenantId: string, memberId: string, amount: number) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!member || !member.phone) return;
+
+    await this.enqueueTemplate(
+      tenantId,
+      memberId,
+      member.phone,
+      'PAYMENT_SUCCESS',
+      'payment_success',
+      [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: member.firstName },
+            { type: 'text', text: amount.toString() }
+          ]
+        }
+      ]
+    );
+  }
+
+  async sendPaymentFailed(tenantId: string, memberId: string, amount: number, reason?: string) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!member || !member.phone) return;
+
+    await this.enqueueTemplate(
+      tenantId,
+      memberId,
+      member.phone,
+      'PAYMENT_FAILED',
+      'payment_failed',
+      [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: member.firstName },
+            { type: 'text', text: amount.toString() },
+            { type: 'text', text: reason || 'Transaction failed' }
+          ]
+        }
+      ]
+    );
+  }
+
+  async sendReceiptConfirmation(tenantId: string, memberId: string, receiptId: string, amount: number) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!member || !member.phone) return;
+
+    await this.enqueueTemplate(
+      tenantId,
+      memberId,
+      member.phone,
+      'RECEIPT_CONFIRMATION',
+      'receipt_confirmation',
+      [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: member.firstName },
+            { type: 'text', text: receiptId },
+            { type: 'text', text: amount.toString() }
+          ]
+        }
+      ]
+    );
+  }
+
+  async sendAttendanceReminder(tenantId: string, memberId: string) {
+    const member = await this.prisma.member.findFirst({
+      where: { id: memberId, tenantId },
+    });
+    if (!member || !member.phone) return;
+
+    await this.enqueueTemplate(
+      tenantId,
+      memberId,
+      member.phone,
+      'ATTENDANCE_REMINDER',
+      'attendance_reminder',
+      [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: member.firstName }
+          ]
+        }
+      ]
+    );
+  }
+
+  async sendStorageWarning(tenantId: string, warningLevel: number) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+    if (!tenant || !tenant.phone) return;
+
+    await this.enqueueTemplate(
+      tenantId,
+      null as any, // memberId is null for tenant
+      tenant.phone,
+      'SYSTEM_ALERT',
+      'storage_warning',
+      [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: tenant.name },
+            { type: 'text', text: warningLevel.toString() }
+          ]
+        }
+      ]
+    );
+  }
+
+  // Renewal and Expiry
   async sendRenewalReminder(
     tenantId: string,
     memberId: string,
@@ -248,30 +296,22 @@ export class WhatsappService {
   async sendRenewalRemindersBatch(
     reminders: RenewalReminderRecipient[],
   ): Promise<void> {
-    const candidates = reminders
-      .filter((reminder) => reminder.member.phone)
-      .map((reminder) => {
-        const { type, text } = this.buildRenewalReminderMessage(
-          reminder.member,
-          reminder.daysRemaining,
-          reminder.paymentLink,
-        );
-        return { ...reminder, type, text };
-      });
-
-    if (candidates.length === 0) return;
+    if (reminders.length === 0) return;
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
 
     const existingLogs = await this.prisma.whatsAppLog.findMany({
       where: {
-        OR: candidates.map((candidate) => ({
-          tenantId: candidate.tenantId,
-          memberId: candidate.memberId,
-          type: candidate.type,
-          createdAt: { gte: cutoff },
-        })),
+        OR: reminders.map((candidate) => {
+          const type = candidate.daysRemaining <= 0 ? 'MEMBERSHIP_EXPIRED' : 'MEMBERSHIP_RENEWAL';
+          return {
+            tenantId: candidate.tenantId,
+            memberId: candidate.memberId,
+            type,
+            createdAt: { gte: cutoff },
+          };
+        }),
       },
       select: {
         tenantId: true,
@@ -286,88 +326,41 @@ export class WhatsappService {
       ),
     );
 
-    const remindersByType = new Map<string, typeof candidates>();
+    for (const candidate of reminders) {
+      if (!candidate.member.phone) continue;
 
-    for (const candidate of candidates) {
-      const key = `${candidate.tenantId}:${candidate.memberId}:${candidate.type}`;
+      const isExpired = candidate.daysRemaining <= 0;
+      const type = isExpired ? 'MEMBERSHIP_EXPIRED' : 'MEMBERSHIP_RENEWAL';
+      const templateName = isExpired ? 'membership_expired' : 'membership_renewal';
+      
+      const key = `${candidate.tenantId}:${candidate.memberId}:${type}`;
       if (existingKeys.has(key)) {
-        this.logger.log(
-          `Skipping duplicate WhatsApp reminder of type ${candidate.type} for member ${candidate.memberId}`,
-        );
         continue;
       }
 
-      const group = remindersByType.get(candidate.type) ?? [];
-      group.push(candidate);
-      remindersByType.set(candidate.type, group);
-    }
+      const components: any[] = [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: candidate.member.firstName },
+            { type: 'text', text: candidate.daysRemaining.toString() }
+          ]
+        }
+      ];
 
-    for (const remindersForType of remindersByType.values()) {
-      await Promise.all(
-        remindersForType.map((reminder) =>
-          this.sendMessage(
-            reminder.member.phone,
-            reminder.text,
-            reminder.tenantId,
-            reminder.memberId,
-            reminder.type,
-          ),
-        ),
+      if (candidate.paymentLink) {
+        components[0].parameters.push({ type: 'text', text: candidate.paymentLink });
+      }
+
+      await this.enqueueTemplate(
+        candidate.tenantId,
+        candidate.memberId,
+        candidate.member.phone,
+        type,
+        templateName,
+        components
       );
     }
-  }
-
-  private buildRenewalReminderMessage(
-    member: { firstName: string },
-    daysRemaining: number,
-    paymentLink?: string,
-  ) {
-    let type = '';
-    let text = '';
-
-    if (daysRemaining === 0) {
-      type = 'EXPIRING_0_DAYS';
-      text = `Hi ${member.firstName}, your gym membership has expired today. `;
-    } else {
-      type = `EXPIRING_${daysRemaining}_DAYS`;
-      text = `Hi ${member.firstName}, your gym membership expires in ${daysRemaining} day(s). `;
-    }
-
-    if (paymentLink) {
-      text += `Renew here: ${paymentLink}`;
-    } else {
-      text += `Please renew soon to continue access.`;
-    }
-
-    return { type, text };
-  }
-
-  async sendPaymentSuccess(tenantId: string, memberId: string, amount: number) {
-    const member = await this.prisma.member.findFirst({
-      where: { id: memberId, tenantId },
-    });
-    if (!member || !member.phone) return;
-
-    const type = 'PAYMENT_SUCCESS';
-    const text = `Hi ${member.firstName}, we have successfully received your payment of ${amount}. Thank you!`;
-
-    await this.sendMessage(member.phone, text, tenantId, memberId, type);
-  }
-
-  async sendWelcomeMessage(tenantId: string, memberId: string) {
-    const type = 'WELCOME';
-    const [member, canSend] = await Promise.all([
-      this.prisma.member.findFirst({
-        where: { id: memberId, tenantId },
-      }),
-      this.canSendMessage(tenantId, memberId, type),
-    ]);
-
-    if (!member || !member.phone || !canSend) return;
-
-    const text = `Hi ${member.firstName}, welcome to the gym! We are excited to have you onboard.`;
-
-    await this.sendMessage(member.phone, text, tenantId, memberId, type);
   }
 
   async sendTenantRenewalReminder(
@@ -380,73 +373,32 @@ export class WhatsappService {
     });
     if (!tenant || !tenant.phone) return;
 
-    let type = '';
-    let text = '';
+    const isExpired = daysRemaining <= 0;
+    const type = isExpired ? 'TENANT_EXPIRED' : 'TENANT_RENEWAL';
+    const templateName = isExpired ? 'tenant_expired' : 'tenant_renewal';
 
-    if (daysRemaining === 0) {
-      type = 'TENANT_EXPIRING_0_DAYS';
-      text = `Hi ${tenant.name}, your NexUp Fit subscription has expired today. `;
-    } else {
-      type = `TENANT_EXPIRING_${daysRemaining}_DAYS`;
-      text = `Hi ${tenant.name}, your NexUp Fit subscription expires in ${daysRemaining} day(s). `;
-    }
+    const components: any[] = [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: tenant.name },
+          { type: 'text', text: daysRemaining.toString() }
+        ]
+      }
+    ];
 
     if (paymentLink) {
-      text += `Renew here: ${paymentLink}`;
-    } else {
-      text += `Please renew soon to continue access.`;
+      components[0].parameters.push({ type: 'text', text: paymentLink });
     }
 
-    await this.sendMessage(tenant.phone, text, tenantId, undefined, type);
-  }
-
-  async sendWithCredentials(
-    phoneNumber: string,
-    message: string,
-    credentials: {
-      phoneNumberId: string;
-      accessToken: string;
-    },
-  ) {
-    try {
-      const response = await ExternalServiceCall.execute(
-        'whatsapp-send-with-credentials',
-        () => axios.post(
-          `${this.apiUrl}/${credentials.phoneNumberId}/messages`,
-          {
-            messaging_product: 'whatsapp',
-            to: phoneNumber,
-            type: 'text',
-            text: { body: message },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${credentials.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        ),
-        (err) => {
-          this.logger.error('WhatsApp API unavailable. Gracefully degrading.', err);
-          return {
-            data: { messages: [] },
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config: {} as any,
-          };
-        },
-        { timeout: 5000 }
-      );
-
-      return response.data;
-    } catch (error: any) {
-      this.logger.error(
-        'Failed to send WhatsApp message with credentials',
-        error.response?.data || error.message,
-      );
-      throw error;
-    }
+    await this.enqueueTemplate(
+      tenantId,
+      null as any,
+      tenant.phone,
+      type,
+      templateName,
+      components
+    );
   }
 
   async processWebhook(body: any) {

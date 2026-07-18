@@ -40,10 +40,10 @@ export function AttendanceFilters({
             className="h-[42px] w-full"
           >
             <option value="">All Status</option>
-            <option value="PRESENT">Present</option>
+            <option value="INSIDE">Inside</option>
+            <option value="COMPLETED">Completed</option>
             <option value="ABSENT">Absent</option>
-            <option value="LATE">Late</option>
-            <option value="MISSED">Missed</option>
+            <option value="MANUAL">Manual</option>
           </Select>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">

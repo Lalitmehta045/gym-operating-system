@@ -6,10 +6,108 @@ import {
   SubscriptionStatus,
 } from '../../../generated/prisma/client.js';
 import { ExpiringMembersQueryDto } from '../dto/expiring-members-query.dto.js';
+import { FinancialMetricsService } from '../../financials/services/financial-metrics.service.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const PDFDocument = require('pdfkit');
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly financialMetrics: FinancialMetricsService,
+  ) {}
+
+  async getDashboardAnalytics(tenantId: string) {
+    const revenue = await this.financialMetrics.calculateTotalRevenue(tenantId);
+    const collection = await this.financialMetrics.calculateOutstanding(tenantId);
+    const invoiceCounts = await this.financialMetrics.getInvoiceCounts(tenantId);
+    
+    const members = await this.prisma.member.groupBy({
+      by: ['status'],
+      where: { tenantId, deletedAt: null },
+      _count: true,
+    });
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const attendances = await this.prisma.attendance.count({
+      where: { tenantId, checkInAt: { gte: today }, deletedAt: null }
+    });
+
+    const nextMonth = new Date();
+    nextMonth.setDate(today.getDate() + 30);
+    
+    const upcomingRenewals = await this.prisma.subscription.count({
+      where: { tenantId, endDate: { gte: today, lte: nextMonth }, deletedAt: null, status: 'ACTIVE' }
+    });
+
+    const plans = await this.prisma.subscription.groupBy({
+      by: ['membershipPlanId'],
+      where: { tenantId, deletedAt: null },
+      _count: true,
+    });
+    
+    const staff = await this.prisma.member.groupBy({
+      by: ['assignedTrainerId'],
+      where: { tenantId, deletedAt: null, assignedTrainerId: { not: null } },
+      _count: true,
+    });
+
+    // Get detailed plan names
+    const planDetails = await Promise.all(plans.map(async p => {
+      const plan = await this.prisma.membershipPlan.findUnique({ where: { id: p.membershipPlanId } });
+      return { planName: plan?.name || 'Unknown', count: p._count };
+    }));
+
+    return {
+      financials: { revenue, collection, invoiceCounts },
+      memberships: members,
+      attendance: { today: attendances },
+      renewals: { upcoming: upcomingRenewals },
+      plans: planDetails,
+      staff,
+    };
+  }
+
+  async generatePdfReport(tenantId: string, type: string, res: any) {
+    const doc = new PDFDocument();
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=report-${type}.pdf`);
+    
+    doc.pipe(res);
+    
+    doc.fontSize(20).text(`GymOS Analytics - ${type.toUpperCase()} Report`, { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.moveDown(2);
+    
+    if (type === 'revenue' || type === 'dashboard') {
+      const data = await this.getRevenueReport(tenantId);
+      const dash = await this.getDashboardAnalytics(tenantId);
+
+      doc.fontSize(16).text('Financial Summary');
+      doc.moveDown();
+      doc.fontSize(12).text(`Total Revenue: INR ${dash.financials.revenue}`);
+      doc.text(`Total Outstanding: INR ${dash.financials.collection}`);
+      doc.text(`Total Invoices: ${dash.financials.invoiceCounts.totalInvoices}`);
+      doc.text(`Paid Invoices: ${dash.financials.invoiceCounts.paidInvoices}`);
+      doc.text(`Pending Invoices: ${dash.financials.invoiceCounts.pendingInvoices}`);
+      
+      doc.moveDown(2);
+      doc.fontSize(16).text('Revenue by Payment Method');
+      doc.moveDown();
+      doc.fontSize(12).text(`CASH: INR ${data.byMethod.CASH}`);
+      doc.text(`UPI: INR ${data.byMethod.UPI}`);
+      doc.text(`CARD: INR ${data.byMethod.CARD}`);
+      doc.text(`BANK: INR ${data.byMethod.BANK_TRANSFER}`);
+    } else {
+      doc.fontSize(14).text(`Report type: ${type} is not fully detailed for PDF yet. Please use CSV export on frontend.`);
+    }
+    
+    doc.end();
+  }
 
   async getRevenueReport(tenantId: string) {
     const [totalRevenueAgg, methodAggs] = await Promise.all([

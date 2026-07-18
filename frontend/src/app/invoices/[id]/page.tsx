@@ -9,6 +9,7 @@ import { LoadingState, ErrorState } from '@/components/ui/States';
 import { ArrowLeft, Printer, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { InvoiceTimeline } from '@/components/invoices/InvoiceTimeline';
 
 export default function InvoiceDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,9 +80,9 @@ export default function InvoiceDetailsPage() {
               
               <div className="mt-4">
                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-                  ${invoice.payment?.paymentStatus === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                  ${invoice.status === 'PAID' ? 'bg-green-100 text-green-800' : invoice.status === 'PARTIALLY_PAID' ? 'bg-yellow-100 text-yellow-800' : invoice.status === 'CANCELLED' ? 'bg-neutral-100 text-neutral-600' : 'bg-red-100 text-red-800'}
                 `}>
-                  {invoice.payment?.paymentStatus === 'PAID' ? 'PAID' : 'UNPAID'}
+                  {(invoice.status || 'DUE').replace('_', ' ')}
                 </span>
               </div>
             </div>
@@ -145,18 +146,22 @@ export default function InvoiceDetailsPage() {
                 <span className="font-medium text-[#111111]">{formatCurrency(invoice.amount)}</span>
               </div>
               
-              {invoice.payment && (
-                <div className="flex justify-between py-2 text-[#2b8a3e] text-[15px]">
-                  <span className="flex items-center">
-                    Paid ({invoice.payment.paymentMethod.replace('_', ' ')})
-                  </span>
-                  <span className="font-medium">-{formatCurrency(invoice.amount)}</span>
+              {invoice.payments && invoice.payments.length > 0 && (
+                <div className="space-y-1">
+                  {invoice.payments.filter((p: any) => p.paymentStatus === 'PAID').map((p: any, i: number) => (
+                    <div key={i} className="flex justify-between py-1.5 text-[#2b8a3e] text-[14px]">
+                      <span className="flex items-center">
+                        Payment {i + 1} ({(p.paymentMethod || '').replace('_', ' ')})
+                      </span>
+                      <span className="font-medium">-{formatCurrency(Number(p.amount))}</span>
+                    </div>
+                  ))}
                 </div>
               )}
               
               <div className="flex justify-between pt-4 mt-2 border-t border-neutral-200 font-bold text-[#111111] text-[20px]">
                 <span>Amount Due</span>
-                <span>{invoice.payment?.paymentStatus === 'PAID' ? formatCurrency(0) : formatCurrency(invoice.amount)}</span>
+                <span>{formatCurrency(invoice.amountDue ?? invoice.amount)}</span>
               </div>
             </div>
           </div>
@@ -168,6 +173,10 @@ export default function InvoiceDetailsPage() {
         </div>
       </div>
 
+      <div className="print:hidden">
+        <InvoiceTimeline invoiceId={invoice.id} />
+      </div>
+
       <div className="flex justify-center space-x-4 print:hidden">
         {invoice.member && (
           <Link href={`/members/${invoice.member.id}`}>
@@ -176,8 +185,8 @@ export default function InvoiceDetailsPage() {
             </Button>
           </Link>
         )}
-        {invoice.payment && (
-          <Link href={`/payments/${invoice.payment.id}`}>
+        {invoice.payments && invoice.payments.length > 0 && (
+          <Link href={`/payments/${invoice.payments[0].id}`}>
             <Button variant="secondary">
               <ExternalLink className="h-4 w-4 mr-2" /> View Payment Record
             </Button>

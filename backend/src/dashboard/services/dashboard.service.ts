@@ -85,7 +85,10 @@ export class DashboardService {
         where: {
           tenantId,
           deletedAt: null,
-          attendanceDate: { gte: today, lt: tomorrow },
+          attendanceDate: (dateFrom && dateTo) ? { 
+            gte: new Date(dateFrom), 
+            lte: new Date(new Date(dateTo).setHours(23, 59, 59, 999)) 
+          } : { gte: today, lt: tomorrow },
         },
       }),
       this.prisma.attendance.count({
@@ -254,20 +257,25 @@ export class DashboardService {
   ): Promise<DashboardAttendanceDto> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const startOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-    const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const periodStart = query.dateFrom ? new Date(query.dateFrom) : today;
+    const periodEnd = query.dateTo 
+      ? new Date(new Date(query.dateTo).setHours(23, 59, 59, 999))
+      : new Date(new Date().setHours(23, 59, 59, 999));
 
-    const [attGroups, todayAttendances, monthAttendances, lastMonthCount] = await Promise.all([
+    const durationMs = periodEnd.getTime() - periodStart.getTime();
+    const durationDays = Math.max(1, Math.round(durationMs / (1000 * 60 * 60 * 24)));
+
+    const prevPeriodStart = new Date(periodStart.getTime() - durationMs);
+    const prevPeriodEnd = new Date(periodEnd.getTime() - durationMs);
+
+    const [attGroups, periodAttendances, prevPeriodCount] = await Promise.all([
       this.prisma.attendance.groupBy({
         by: ['status'],
         where: {
           tenantId,
           deletedAt: null,
-          attendanceDate: { gte: today, lt: tomorrow },
+          attendanceDate: { gte: periodStart, lte: periodEnd },
         },
         _count: { _all: true },
         orderBy: { status: 'asc' },
@@ -276,15 +284,7 @@ export class DashboardService {
         where: {
           tenantId,
           deletedAt: null,
-          attendanceDate: { gte: today, lt: tomorrow },
-        },
-        select: { checkInAt: true, checkOutAt: true }
-      }),
-      this.prisma.attendance.findMany({
-        where: {
-          tenantId,
-          deletedAt: null,
-          attendanceDate: { gte: startOfMonth, lt: startOfNextMonth },
+          attendanceDate: { gte: periodStart, lte: periodEnd },
         },
         include: {
           member: {
@@ -301,7 +301,7 @@ export class DashboardService {
         where: {
           tenantId,
           deletedAt: null,
-          attendanceDate: { gte: startOfLastMonth, lt: startOfMonth },
+          attendanceDate: { gte: prevPeriodStart, lte: prevPeriodEnd },
         }
       })
     ]);
@@ -329,36 +329,60 @@ export class DashboardService {
     const attendanceRate =
       totalToday > 0 ? ((todayPresent + todayLate) / totalToday) * 100 : 0;
 
-    // Calculate hourly data (cumulative)
-    const timeBuckets = [
-      { label: '6 AM', hour: 6 },
-      { label: '8 AM', hour: 8 },
-      { label: '10 AM', hour: 10 },
-      { label: '12 PM', hour: 12 },
-      { label: '2 PM', hour: 14 },
-      { label: '4 PM', hour: 16 },
-      { label: '6 PM', hour: 18 },
-      { label: '8 PM', hour: 20 },
-      { label: '10 PM', hour: 22 },
-    ];
+    let hourlyData: any[] = [];
 
-    const hourlyData = timeBuckets.map(bucket => {
-      const bucketTime = new Date(today);
-      bucketTime.setHours(bucket.hour, 0, 0, 0);
-      
-      const checkIns = todayAttendances.filter(a => a.checkInAt <= bucketTime).length;
-      const checkOuts = todayAttendances.filter(a => a.checkOutAt && a.checkOutAt <= bucketTime).length;
-      
-      return {
-        time: bucket.label,
-        checkIns,
-        checkOuts
-      };
-    });
+    if (durationDays <= 1) {
+      // Calculate hourly data (cumulative)
+      const timeBuckets = [
+        { label: '6 AM', hour: 6 },
+        { label: '8 AM', hour: 8 },
+        { label: '10 AM', hour: 10 },
+        { label: '12 PM', hour: 12 },
+        { label: '2 PM', hour: 14 },
+        { label: '4 PM', hour: 16 },
+        { label: '6 PM', hour: 18 },
+        { label: '8 PM', hour: 20 },
+        { label: '10 PM', hour: 22 },
+      ];
+
+      hourlyData = timeBuckets.map(bucket => {
+        const bucketTime = new Date(periodStart);
+        bucketTime.setHours(bucket.hour, 0, 0, 0);
+        
+        const checkIns = periodAttendances.filter(a => a.checkInAt <= bucketTime).length;
+        const checkOuts = periodAttendances.filter(a => a.checkOutAt && a.checkOutAt <= bucketTime).length;
+        
+        return {
+          time: bucket.label,
+          checkIns,
+          checkOuts
+        };
+      });
+    } else {
+      // Calculate daily data
+      const days: Date[] = [];
+      for (let d = new Date(periodStart); d <= periodEnd; d.setDate(d.getDate() + 1)) {
+        days.push(new Date(d));
+      }
+
+      hourlyData = days.map(day => {
+        const nextDay = new Date(day);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        const dayCheckIns = periodAttendances.filter(a => a.checkInAt >= day && a.checkInAt < nextDay).length;
+        const dayCheckOuts = periodAttendances.filter(a => a.checkOutAt && a.checkOutAt >= day && a.checkOutAt < nextDay).length;
+        
+        return {
+          time: day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          checkIns: dayCheckIns,
+          checkOuts: dayCheckOuts
+        };
+      });
+    }
 
     // Calculate plan data
     const planCounts: Record<string, number> = {};
-    for (const att of monthAttendances) {
+    for (const att of periodAttendances) {
       const planName = att.member.subscriptions[0]?.membershipPlan?.name || 'No Plan';
       planCounts[planName] = (planCounts[planName] || 0) + 1;
     }
@@ -371,10 +395,10 @@ export class DashboardService {
     })).sort((a, b) => b.value - a.value);
 
     // Calculate growth
-    const totalCheckInsThisMonth = monthAttendances.length;
+    const totalCheckInsThisMonth = periodAttendances.length;
     let growthPercentage = 0;
-    if (lastMonthCount > 0) {
-      growthPercentage = ((totalCheckInsThisMonth - lastMonthCount) / lastMonthCount) * 100;
+    if (prevPeriodCount > 0) {
+      growthPercentage = ((totalCheckInsThisMonth - prevPeriodCount) / prevPeriodCount) * 100;
     } else if (totalCheckInsThisMonth > 0) {
       growthPercentage = 100;
     }
@@ -410,7 +434,7 @@ export class DashboardService {
     const dow = nowIST.getUTCDay();
     startOfWeek.setTime(startOfWeek.getTime() - dow * 24 * 60 * 60 * 1000);
 
-    const [totalRevenueAgg, monthlyRevenueAgg, weeklyRevenueAgg, methodAggs] =
+    const [totalRevenueAgg, monthlyRevenueAgg, weeklyRevenueAgg, methodAggs, periodPayments] =
       await this.prisma.$transaction([
         this.prisma.payment.aggregate({
           where: {
@@ -458,6 +482,15 @@ export class DashboardService {
           _sum: { amount: true },
           orderBy: { paymentMethod: 'asc' },
         }),
+        this.prisma.payment.findMany({
+          where: {
+            tenantId,
+            deletedAt: null,
+            paymentStatus: PaymentStatus.PAID,
+            ...dateFilter,
+          },
+          select: { amount: true, paidAt: true, createdAt: true },
+        }),
       ]);
 
     const totalRevenue = Number(totalRevenueAgg._sum?.amount || 0);
@@ -484,11 +517,65 @@ export class DashboardService {
       }
     }
 
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    const effectiveStart = query.dateFrom ? new Date(query.dateFrom) : new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+    const effectiveEnd = query.dateTo ? new Date(new Date(query.dateTo).setHours(23, 59, 59, 999)) : new Date(new Date().setHours(23, 59, 59, 999));
+    
+    const durationMs = effectiveEnd.getTime() - effectiveStart.getTime();
+    const durationDays = Math.max(1, Math.round(durationMs / (1000 * 60 * 60 * 24)));
+
+    let revenueTrend: { date: string, revenue: number }[] = [];
+
+    if (durationDays <= 31) {
+      const days: Date[] = [];
+      for (let d = new Date(effectiveStart); d <= effectiveEnd; d.setDate(d.getDate() + 1)) {
+        days.push(new Date(d));
+      }
+      revenueTrend = days.map(day => {
+        const nextDay = new Date(day);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const revenue = periodPayments
+          .filter(p => {
+             const date = p.paidAt || p.createdAt;
+             return date >= day && date < nextDay;
+          })
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        return {
+          date: day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          revenue
+        };
+      });
+    } else {
+      const startMonth = new Date(effectiveStart.getFullYear(), effectiveStart.getMonth(), 1);
+      const endMonth = new Date(effectiveEnd.getFullYear(), effectiveEnd.getMonth(), 1);
+      
+      const months: Date[] = [];
+      for (let d = new Date(startMonth); d <= endMonth; d.setMonth(d.getMonth() + 1)) {
+        months.push(new Date(d));
+      }
+      revenueTrend = months.map(month => {
+        const nextMonth = new Date(month);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        const revenue = periodPayments
+          .filter(p => {
+             const date = p.paidAt || p.createdAt;
+             return date >= month && date < nextMonth;
+          })
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        return {
+          date: month.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+          revenue
+        };
+      });
+    }
+
     return {
       totalRevenue,
       monthlyRevenue,
       weeklyRevenue,
       revenueByMethod,
+      revenueTrend,
     };
   }
 
@@ -516,7 +603,7 @@ export class DashboardService {
       });
     };
 
-    const [subGroups, expiring7, expiring15, expiring30] =
+    const [subGroups, expiring7, expiring15, expiring30, renewalCount] =
       await this.prisma.$transaction([
         this.prisma.subscription.groupBy({
           by: ['status'],
@@ -527,6 +614,14 @@ export class DashboardService {
         getExpiringCount(7),
         getExpiringCount(15),
         getExpiringCount(30),
+        // Count renewal invoices created this month (invoices linked to subscriptions created after start of month)
+        this.prisma.invoice.count({
+          where: {
+            tenantId,
+            subscriptionId: { not: null },
+            createdAt: { gte: new Date(today.getFullYear(), today.getMonth(), 1) },
+          },
+        }),
       ]);
 
     let activeSubscriptions = 0;
@@ -547,7 +642,7 @@ export class DashboardService {
       }
     }
 
-    const renewalsThisMonth = 0;
+    const renewalsThisMonth = renewalCount;
     const expiringNext7Days = expiring7;
     const expiringNext15Days = expiring15;
     const expiringNext30Days = expiring30;

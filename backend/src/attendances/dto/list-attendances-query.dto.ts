@@ -73,6 +73,11 @@ export class ListAttendancesQueryDto {
   includeDeleted?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isInside?: boolean;
+
+  @IsOptional()
   @IsEnum(AttendanceSortBy)
   sortBy?: AttendanceSortBy = AttendanceSortBy.AttendanceDate;
 

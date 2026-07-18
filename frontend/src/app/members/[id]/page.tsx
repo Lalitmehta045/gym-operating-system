@@ -10,6 +10,7 @@ import { useMember } from "@/hooks/api/useMembers"
 import { LoadingState, ErrorState } from "@/components/ui/States"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs"
 import { ActivityTimeline } from "@/components/audit/ActivityTimeline"
+import { MemberLedger } from "@/components/members/MemberLedger"
 
 export default function MemberDetailsPage() {
   const params = useParams()
@@ -52,10 +53,14 @@ export default function MemberDetailsPage() {
       <Tabs defaultValue="profile">
         <TabsList className="mb-6">
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="financials">Financials</TabsTrigger>
           <TabsTrigger value="timeline">Activity Timeline</TabsTrigger>
         </TabsList>
         <TabsContent value="profile">
           <MemberProfile member={member} />
+        </TabsContent>
+        <TabsContent value="financials">
+          <MemberLedger memberId={member.id} />
         </TabsContent>
         <TabsContent value="timeline">
           <ActivityTimeline memberId={member.id} />

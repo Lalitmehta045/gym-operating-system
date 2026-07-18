@@ -3,33 +3,22 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { InvoicesTable } from '@/components/invoices/InvoicesTable';
-import { useInvoices } from '@/hooks/api/useInvoices';
+import { useDashboardFinancialMetrics } from '@/hooks/api/useFinancials';
 import { Download, Plus, Search, Calendar, Filter, FileText, CheckCircle2, Clock, XCircle } from 'lucide-react';
 
 export default function InvoicesPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [search, setSearch] = React.useState('');
-  const { data } = useInvoices();
+  const { data: financials } = useDashboardFinancialMetrics();
 
-  React.useEffect(() => {
-    if (user && (user.role === 'TRAINER' || user.role === 'MANAGER')) {
-      toast.error("You don't have permission for this page");
-      router.push('/dashboard');
-    }
-  }, [user, router]);
-
-  if (user?.role === 'TRAINER' || user?.role === 'MANAGER') return null;
-
-
-  const total = data?.meta?.total || 45;
-  const paid = Math.floor(total * 0.711);
-  const pending = Math.floor(total * 0.178);
-  const overdue = total - paid - pending;
+  const total = financials?.totalInvoices || 0;
+  const paid = financials?.paidInvoices || 0;
+  const pending = financials?.pendingInvoices || 0;
+  const overdue = Math.max(0, total - paid - pending);
 
   return (
     <div className="space-y-6">
@@ -80,7 +69,7 @@ export default function InvoicesPage() {
           </div>
           <div className="z-10 mt-2">
             <p className="text-3xl font-bold text-[var(--on-primary)] mb-1">{paid}</p>
-            <p className="text-xs text-[var(--ash)]">71.1% of total</p>
+            <p className="text-xs text-[var(--ash)]">{total > 0 ? `${((paid / total) * 100).toFixed(1)}%` : '0%'} of total</p>
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-12 opacity-60">
             <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full">
@@ -99,7 +88,7 @@ export default function InvoicesPage() {
           </div>
           <div className="z-10 mt-2">
             <p className="text-3xl font-bold text-[var(--on-primary)] mb-1">{pending}</p>
-            <p className="text-xs text-[var(--ash)]">17.8% of total</p>
+            <p className="text-xs text-[var(--ash)]">{total > 0 ? `${((pending / total) * 100).toFixed(1)}%` : '0%'} of total</p>
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-12 opacity-60">
             <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full">
@@ -118,7 +107,7 @@ export default function InvoicesPage() {
           </div>
           <div className="z-10 mt-2">
             <p className="text-3xl font-bold text-[var(--on-primary)] mb-1">{overdue}</p>
-            <p className="text-xs text-[var(--ash)]">11.1% of total</p>
+            <p className="text-xs text-[var(--ash)]">{total > 0 ? `${((overdue / total) * 100).toFixed(1)}%` : '0%'} of total</p>
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-12 opacity-60">
             <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="w-full h-full">

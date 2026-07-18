@@ -12,7 +12,6 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { WhatsappService } from '../services/whatsapp.service.js';
-import { SendWhatsappMessageDto } from '../dto/send-whatsapp.dto.js';
 import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { Role } from '../../../generated/prisma/client.js';
 
@@ -55,10 +54,4 @@ export class WhatsappController {
     }
   }
 
-  @Post('test')
-  @Roles(Role.OWNER, Role.MANAGER)
-  async sendTestMessage(@Body() body: SendWhatsappMessageDto) {
-    const result = await this.whatsappService.sendMessage(body.to, body.text);
-    return { success: true, result };
-  }
 }

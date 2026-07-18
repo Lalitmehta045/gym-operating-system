@@ -26,6 +26,12 @@ export class RazorpayController {
     return this.razorpayService.createOrder(tenantId, dto);
   }
 
+  @Post('payment-link')
+  async createPaymentLink(@Req() req: any, @Body() dto: { subscriptionId: string; memberId: string }) {
+    const tenantId = req.tenantId || req.user?.tenantId;
+    return this.razorpayService.createPaymentLink(tenantId, dto.subscriptionId, dto.memberId);
+  }
+
   @Post('verify')
   async verifyPayment(@Req() req: any, @Body() dto: VerifyPaymentDto) {
     const tenantId = req.tenantId || req.user?.tenantId;

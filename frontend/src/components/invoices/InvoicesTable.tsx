@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/DataTable';
 import { Button } from '@/components/ui/Button';
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { Eye, FileText, Smartphone, CreditCard, Banknote, Building2, MoreVertical } from 'lucide-react';
 
 interface InvoicesTableProps {
@@ -22,9 +22,18 @@ interface InvoicesTableProps {
 
 export function InvoicesTable({ search }: InvoicesTableProps) {
   const router = useRouter();
+  const [page, setPage] = React.useState(1);
+
   const { data, isLoading, isError } = useInvoices({
     search,
+    page,
+    limit: 20,
   });
+
+  // Reset page when search changes
+  React.useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   if (isLoading) {
     return <LoadingState />;
@@ -45,51 +54,37 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
     );
   }
 
+  // BUG-06 FIX: Trust the server-sent status — no fake overdue logic
   const getStatusDetails = (invoice: any) => {
-    let status = invoice.payment?.paymentStatus || 'PENDING';
-    
-    // Calculate mock due date if not provided (assume 3 days after issue)
-    const issueDate = new Date(invoice.issuedAt);
-    const dueDate = new Date(issueDate);
-    dueDate.setDate(issueDate.getDate() + 3);
-    
-    const now = new Date();
-    let isOverdue = false;
-    let overdueDays = 0;
-
-    if (status !== 'PAID' && now > dueDate) {
-      status = 'OVERDUE';
-      isOverdue = true;
-      overdueDays = differenceInDays(now, dueDate);
-    }
+    const status = invoice.status || 'DUE';
 
     let style = 'bg-[var(--canvas-paper)] text-[var(--ink-soft)] border-[var(--hairline)]';
-    let dotColor = 'bg-[var(--canvas-paper)]0';
-    let label = 'Pending';
+    let dotColor = 'bg-gray-400';
+    let label = 'Due';
 
     if (status === 'PAID') {
       style = 'bg-green-50 text-green-700 border-green-200';
       dotColor = 'bg-green-500';
       label = 'Paid';
-    } else if (status === 'PENDING') {
+    } else if (status === 'PARTIALLY_PAID') {
+      style = 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      dotColor = 'bg-yellow-500';
+      label = 'Partially Paid';
+    } else if (status === 'DUE') {
       style = 'bg-orange-50 text-orange-700 border-orange-200';
       dotColor = 'bg-orange-500';
-      label = 'Pending';
+      label = 'Due';
     } else if (status === 'OVERDUE') {
       style = 'bg-red-50 text-red-700 border-red-200';
       dotColor = 'bg-red-500';
       label = 'Overdue';
-    } else if (status === 'FAILED') {
-      style = 'bg-red-50 text-red-700 border-red-200';
-      dotColor = 'bg-red-500';
-      label = 'Failed';
-    } else if (status === 'REFUNDED') {
-      style = 'bg-[var(--canvas-paper)] text-[var(--ink-soft)] border-[var(--hairline)]';
-      dotColor = 'bg-[var(--canvas-paper)]0';
-      label = 'Refunded';
+    } else if (status === 'CANCELLED') {
+      style = 'bg-gray-50 text-gray-500 border-gray-200';
+      dotColor = 'bg-gray-400';
+      label = 'Cancelled';
     }
 
-    return { style, dotColor, label, dueDate, isOverdue, overdueDays };
+    return { style, dotColor, label };
   };
 
   const getMethodIcon = (method?: string) => {
@@ -103,6 +98,9 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
     }
   };
 
+  const meta = data.meta;
+  const totalPages = meta?.totalPages || 1;
+
   return (
     <div className="bg-[var(--canvas-light)] rounded-xl border border-[var(--hairline)] shadow-sm overflow-hidden">
       <Table>
@@ -112,7 +110,6 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
             <TableHead className="font-semibold text-[var(--mute)] py-4">MEMBER</TableHead>
             <TableHead className="font-semibold text-[var(--mute)] py-4">PLAN</TableHead>
             <TableHead className="font-semibold text-[var(--mute)] py-4">DATE</TableHead>
-            <TableHead className="font-semibold text-[var(--mute)] py-4">DUE DATE</TableHead>
             <TableHead className="font-semibold text-[var(--mute)] py-4">AMOUNT</TableHead>
             <TableHead className="font-semibold text-[var(--mute)] py-4">STATUS</TableHead>
             <TableHead className="font-semibold text-[var(--mute)] py-4">PAYMENT METHOD</TableHead>
@@ -128,7 +125,7 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
             const colorIndex = invoice.memberId ? invoice.memberId.charCodeAt(0) % colors.length : 0;
             const avatarColor = colors[colorIndex];
 
-            const { style, dotColor, label, dueDate, isOverdue, overdueDays } = getStatusDetails(invoice);
+            const { style, dotColor, label } = getStatusDetails(invoice);
 
             return (
               <TableRow key={invoice.id} className="hover:bg-[var(--canvas-paper)]/50 transition-colors">
@@ -153,15 +150,16 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
                   </div>
                 </TableCell>
 
+                {/* BUG-07 FIX: Show "—" instead of fake "Standard Plan" */}
                 <TableCell className="py-4">
                   <div>
                     <div className="font-semibold text-[var(--on-primary)]">
-                      {invoice.subscription?.membershipPlan?.name || 'Standard Plan'}
+                      {invoice.subscription?.membershipPlan?.name || '—'}
                     </div>
                     <div className="text-xs text-[var(--mute)] mt-0.5">
                       {invoice.subscription?.membershipPlan?.durationDays 
                         ? Math.round(invoice.subscription.membershipPlan.durationDays / 30) + ' Months' 
-                        : '1 Month'}
+                        : '—'}
                     </div>
                   </div>
                 </TableCell>
@@ -178,19 +176,6 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
                 </TableCell>
 
                 <TableCell className="py-4">
-                  <div>
-                    <div className="text-sm text-[var(--on-primary)]">
-                      {format(dueDate, 'MMM dd, yyyy')}
-                    </div>
-                    {isOverdue && (
-                      <div className="text-xs text-red-500 font-medium mt-0.5">
-                        Overdue by {overdueDays} days
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-
-                <TableCell className="py-4">
                   <div className="font-bold text-[var(--on-primary)]">
                     {new Intl.NumberFormat('en-IN', {
                       style: 'currency',
@@ -198,6 +183,15 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
                       maximumFractionDigits: 0
                     }).format(invoice.amount)}
                   </div>
+                  {invoice.amountDue !== undefined && invoice.amountDue > 0 && (
+                    <div className="text-xs text-orange-500 font-medium mt-0.5">
+                      Due: {new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR',
+                        maximumFractionDigits: 0
+                      }).format(invoice.amountDue)}
+                    </div>
+                  )}
                 </TableCell>
 
                 <TableCell className="py-4">
@@ -208,9 +202,9 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
                 </TableCell>
 
                 <TableCell className="py-4">
-                  {invoice.payment?.paymentMethod ? (
+                  {invoice.payments && invoice.payments.length > 0 ? (
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-[var(--hairline)] bg-[var(--canvas-light)] w-fit">
-                      {getMethodIcon(invoice.payment.paymentMethod)}
+                      {getMethodIcon(invoice.payments[0].paymentMethod)}
                     </div>
                   ) : (
                     <span className="text-[var(--ash)]">—</span>
@@ -242,17 +236,57 @@ export function InvoicesTable({ search }: InvoicesTableProps) {
         </TableBody>
       </Table>
       
+      {/* BUG-05 FIX: Functional pagination */}
       <div className="border-t border-[var(--hairline)] p-4 flex items-center justify-between bg-[var(--canvas-light)]">
-        <span className="text-sm text-[var(--mute)]">Showing 1 to {invoices.length} of {data.meta?.total || invoices.length} invoices</span>
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)]">{'<'}</Button>
-          <Button variant="outline" size="sm" className="h-8 w-8 text-white bg-[#6C47FF] border-[#6C47FF] hover:bg-[#5835e5]">1</Button>
-          <Button variant="outline" size="sm" className="h-8 w-8 text-[var(--slate-soft)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]">2</Button>
-          <Button variant="outline" size="sm" className="h-8 w-8 text-[var(--slate-soft)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]">3</Button>
-          <span className="px-2 text-[var(--ash)]">...</span>
-          <Button variant="outline" size="sm" className="h-8 w-8 text-[var(--slate-soft)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]">9</Button>
-          <Button variant="outline" size="sm" className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]">{'>'}</Button>
-        </div>
+        <span className="text-sm text-[var(--mute)]">
+          Showing <span className="font-medium text-[var(--on-primary)]">{Math.min((page - 1) * 20 + 1, meta?.total || 0)}</span> to{' '}
+          <span className="font-medium text-[var(--on-primary)]">{Math.min(page * 20, meta?.total || 0)}</span> of{' '}
+          <span className="font-medium text-[var(--on-primary)]">{meta?.total || invoices.length}</span> invoices
+        </span>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)]"
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page <= 1}
+            >
+              {'<'}
+            </Button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let p: number;
+              if (totalPages <= 5) p = i + 1;
+              else if (page <= 3) p = i + 1;
+              else if (page >= totalPages - 2) p = totalPages - 4 + i;
+              else p = page - 2 + i;
+              return (
+                <Button
+                  key={p}
+                  variant="outline"
+                  size="sm"
+                  className={`h-8 w-8 ${
+                    p === page
+                      ? 'text-white bg-[#6C47FF] border-[#6C47FF] hover:bg-[#5835e5]'
+                      : 'text-[var(--slate-soft)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]'
+                  }`}
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </Button>
+              );
+            })}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 px-2 text-[var(--mute)] border-[var(--hairline)] bg-[var(--canvas-light)] hover:bg-[var(--canvas-paper)]"
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+            >
+              {'>'}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

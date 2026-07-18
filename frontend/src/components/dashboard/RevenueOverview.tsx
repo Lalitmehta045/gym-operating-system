@@ -6,9 +6,17 @@ import { LoadingState, ErrorState } from "@/components/ui/States"
 import { formatCurrency } from "@/lib/utils"
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts"
 import { TrendingUp } from "lucide-react"
+import { useSectionFilter } from "@/hooks/useSectionFilter"
+import { DateFilter } from "@/components/ui/DateFilter"
+import { format } from "date-fns"
 
 export function RevenueOverview() {
-  const { data, isLoading, isError } = useDashboardRevenue()
+  const { dateRange } = useSectionFilter("revenue")
+  const dateParams = {
+    dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  }
+  const { data, isLoading, isError } = useDashboardRevenue(dateParams)
   const { data: gymProfile } = useGymProfile()
 
   if (isLoading) return <LoadingState />
@@ -17,19 +25,10 @@ export function RevenueOverview() {
 
   const currency = gymProfile?.currency || "INR"
 
-  // Generate sample daily data for the chart (using totalRevenue as context)
-  const now = new Date()
-  const chartData = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(now)
-    date.setDate(now.getDate() - 6 + i)
-    const label = `${date.toLocaleString('default', { month: 'short' })} ${date.getDate()}`
-    // Distribute revenue across days with some variation
-    const dayRevenue = i === 6 ? data.monthlyRevenue : Math.round(data.totalRevenue / 30 * (0.5 + Math.random()))
-    return { date: label, revenue: Math.max(0, dayRevenue) }
-  })
-
   // Calculate the max value for Y axis
-  const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1)
+  const maxRevenue = data.revenueTrend && data.revenueTrend.length > 0 
+    ? Math.max(...data.revenueTrend.map((d: any) => d.revenue), 1) 
+    : 1
   const pctChange = data.totalRevenue > 0 ? 100 : 0
 
   return (
@@ -37,12 +36,7 @@ export function RevenueOverview() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-[15px] font-semibold text-[var(--on-primary)]">Revenue Overview</h2>
-        <div className="flex items-center gap-2 bg-[var(--canvas-paper)] border border-[var(--hairline-soft)] rounded-lg px-3 py-1.5 text-[12px] text-[var(--mute)] font-medium">
-          This Month
-          <svg className="w-3 h-3 text-[var(--ash)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-          </svg>
-        </div>
+        <DateFilter paramPrefix="revenue" />
       </div>
 
       <div className="grid grid-cols-[200px_1fr] gap-6 items-start">
@@ -59,7 +53,7 @@ export function RevenueOverview() {
         {/* Right: Chart */}
         <div className="h-[180px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -10, bottom: 0 }}>
+            <AreaChart data={data.revenueTrend} margin={{ top: 5, right: 0, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#6C47FF" stopOpacity={0.15} />

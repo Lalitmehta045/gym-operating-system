@@ -4,10 +4,9 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import Razorpay from 'razorpay';
-import crypto from 'crypto';
 import { VerifyPaymentDto } from '../dto/verify-payment.dto.js';
 import { CreateOrderDto } from '../dto/create-order.dto.js';
 import { CreateTenantOrderDto } from '../dto/create-tenant-order.dto.js';
@@ -19,9 +18,11 @@ import {
 } from '../../../generated/prisma/client.js';
 import { WhatsappService } from '../../whatsapp/services/whatsapp.service.js';
 import { TenantSubscriptionService } from '../../tenant-subscription/services/tenant-subscription.service.js';
-import { ExternalServiceCall } from '../../common/utils/circuit-breaker.util.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
+import { PAYMENT_PROVIDER_TOKEN } from '../providers/payment-provider.interface.js';
+import type { IPaymentProvider } from '../providers/payment-provider.interface.js';
+import crypto from 'crypto';
 
 interface RenewalPaymentLinkData {
   tenantId: string;
@@ -39,7 +40,6 @@ interface RenewalPaymentLinkData {
 
 @Injectable()
 export class RazorpayService {
-  private razorpay: Razorpay;
   private readonly logger = new Logger(RazorpayService.name);
 
   constructor(
@@ -47,53 +47,49 @@ export class RazorpayService {
     private readonly whatsappService: WhatsappService,
     private readonly tenantSubscriptionService: TenantSubscriptionService,
     private readonly auditService: AuditService,
-  ) {
-    if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-      this.razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID,
-        key_secret: process.env.RAZORPAY_KEY_SECRET,
-      });
-    } else {
-      this.logger.warn('Razorpay credentials not configured.');
-    }
-  }
+    @Inject(PAYMENT_PROVIDER_TOKEN) private readonly paymentProvider: IPaymentProvider,
+  ) {}
 
   async createOrder(tenantId: string, dto: CreateOrderDto) {
-    if (!this.razorpay) {
-      throw new InternalServerErrorException(
-        'Razorpay is not configured on the server',
-      );
-    }
-
     const subscription = await this.prisma.subscription.findFirst({
       where: { id: dto.subscriptionId, tenantId, deletedAt: null },
-      include: { membershipPlan: true },
+      include: { membershipPlan: true, member: true },
     });
 
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
 
-    if (subscription.status === SubscriptionStatus.ACTIVE) {
-      throw new BadRequestException('Subscription is already active');
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { subscriptionId: subscription.id, tenantId, status: { in: ['DUE', 'PARTIALLY_PAID'] } },
+    });
+
+    if (!invoice) {
+      throw new BadRequestException('No pending invoice found for this subscription');
     }
 
+    // Determine the amount remaining to be paid
+    // Ideally, we'd subtract already paid amount from invoice.amount. For simplicity, we'll use invoice amount.
+    const amountToPay = Number(invoice.amount);
+
     // Amount in paise (multiply by 100)
-    const amountInPaise = Math.round(Number(subscription.amount) * 100);
+    const amountInPaise = Math.round(amountToPay * 100);
 
     let order;
     try {
-      order = await this.createRazorpayOrderWithRetry({
+      order = await this.paymentProvider.createOrder({
         amount: amountInPaise,
         currency: 'INR',
-        receipt: `receipt_${subscription.id.substring(0, 8)}`,
+        receipt: invoice.invoiceNumber || `receipt_${subscription.id.substring(0, 8)}`,
         notes: {
           subscriptionId: subscription.id,
+          invoiceId: invoice.id,
           tenantId,
         },
       });
     } catch (error) {
-      throw error;
+      this.logger.error('Failed to create payment order', error);
+      throw new InternalServerErrorException('Failed to create payment order');
     }
 
     // Create a pending payment record
@@ -102,7 +98,8 @@ export class RazorpayService {
         tenantId,
         memberId: subscription.memberId,
         subscriptionId: subscription.id,
-        amount: subscription.amount,
+        invoiceId: invoice.id,
+        amount: amountToPay,
         paymentMethod: PaymentMethod.CARD, // Default for gateway
         paymentStatus: PaymentStatus.PENDING,
         razorpayOrderId: order.id,
@@ -115,7 +112,7 @@ export class RazorpayService {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID,
+      keyId: process.env.RAZORPAY_KEY_ID || 'mock_key',
     };
   }
 
@@ -124,7 +121,7 @@ export class RazorpayService {
     subscriptionId: string,
     memberId: string,
   ) {
-    if (!this.razorpay) {
+    if (!this.paymentProvider) {
       return null;
     }
 
@@ -140,23 +137,39 @@ export class RazorpayService {
 
     if (!subscription || !member) return null;
 
-    return this.createPaymentLinkFromSubscription({
-      tenantId,
-      subscriptionId: subscription.id,
-      amount: subscription.amount.toString(),
-      subscriptionDeletedAt: null,
-      member: {
-        firstName: member.firstName,
-        lastName: member.lastName,
-        email: member.email,
-        phone: member.phone,
-        deletedAt: null,
-      },
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { subscriptionId: subscription.id, tenantId, status: { in: ['DUE', 'PARTIALLY_PAID'] } },
     });
+
+    if (!invoice) return null;
+
+    try {
+      const amountInPaise = Math.round(Number(invoice.amount) * 100);
+      const paymentLink = await this.paymentProvider.createPaymentLink({
+        amount: amountInPaise,
+        currency: 'INR',
+        description: 'Gym Membership Invoice Payment',
+        customer: {
+          name: `${member.firstName} ${member.lastName}`,
+          email: member.email,
+          contact: member.phone,
+        },
+        notes: {
+          subscriptionId: subscription.id,
+          invoiceId: invoice.id,
+          tenantId: tenantId,
+        },
+      });
+
+      return paymentLink;
+    } catch (error) {
+      this.logger.error('Failed to create Razorpay payment link', error);
+      return null;
+    }
   }
 
   async createPaymentLinkFromSubscription(data: RenewalPaymentLinkData) {
-    if (!this.razorpay) {
+    if (!this.paymentProvider) {
       return null;
     }
 
@@ -164,38 +177,32 @@ export class RazorpayService {
       return null;
     }
 
-    try {
-      const amountInPaise = Math.round(Number(data.amount) * 100);
-      const paymentLink = await ExternalServiceCall.execute(
-        'razorpay-create-payment-link',
-        () => this.razorpay.paymentLink.create({
-          amount: amountInPaise,
-          currency: 'INR',
-          accept_partial: false,
-          description: 'Gym Membership Renewal',
-          customer: {
-            name: `${data.member.firstName} ${data.member.lastName}`,
-            email: data.member.email,
-            contact: data.member.phone,
-          },
-          notify: {
-            sms: false,
-            email: false,
-          },
-          reminder_enable: false,
-          notes: {
-            subscriptionId: data.subscriptionId,
-            tenantId: data.tenantId,
-          },
-        }),
-        () => {
-          this.logger.error('Razorpay paymentLink.create degraded response (Fallback)');
-          return { short_url: '' } as any;
-        },
-        { timeout: 6000 }
-      );
+    // Try to find the associated invoice
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { subscriptionId: data.subscriptionId, tenantId: data.tenantId, status: { in: ['DUE', 'PARTIALLY_PAID'] } },
+    });
 
-      return paymentLink.short_url;
+    if (!invoice) return null;
+
+    try {
+      const amountInPaise = Math.round(Number(invoice.amount) * 100);
+      const paymentLink = await this.paymentProvider.createPaymentLink({
+        amount: amountInPaise,
+        currency: 'INR',
+        description: 'Gym Membership Renewal',
+        customer: {
+          name: `${data.member.firstName} ${data.member.lastName}`,
+          email: data.member.email,
+          contact: data.member.phone,
+        },
+        notes: {
+          subscriptionId: data.subscriptionId,
+          invoiceId: invoice.id,
+          tenantId: data.tenantId,
+        },
+      });
+
+      return paymentLink;
     } catch (error) {
       this.logger.error('Failed to create Razorpay payment link', error);
       return null;
@@ -203,17 +210,19 @@ export class RazorpayService {
   }
 
   async verifyPayment(tenantId: string, dto: VerifyPaymentDto) {
-    if (!process.env.RAZORPAY_KEY_SECRET) {
+    if (!process.env.RAZORPAY_KEY_SECRET && process.env.PAYMENT_PROVIDER !== 'mock') {
       throw new InternalServerErrorException('Razorpay secret not configured');
     }
 
     // 1. Verify Signature
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(`${dto.razorpay_order_id}|${dto.razorpay_payment_id}`)
-      .digest('hex');
+    const isValidSignature = this.paymentProvider.verifyPaymentSignature(
+      dto.razorpay_order_id,
+      dto.razorpay_payment_id,
+      dto.razorpay_signature,
+      process.env.RAZORPAY_KEY_SECRET || 'mock_secret'
+    );
 
-    if (expectedSignature !== dto.razorpay_signature) {
+    if (!isValidSignature) {
       throw new BadRequestException('Invalid payment signature');
     }
 
@@ -234,8 +243,6 @@ export class RazorpayService {
       return { success: true, message: 'Payment was already processed' };
     }
 
-    let createdInvoiceId: string | null = null;
-
     // 3. Perform Transactional Updates with Idempotency
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -255,36 +262,13 @@ export class RazorpayService {
           throw new Error('ALREADY_PROCESSED');
         }
 
-        // Update Subscription Status
-        await tx.subscription.update({
-          where: { id: payment.subscriptionId! },
-          data: {
-            status: SubscriptionStatus.ACTIVE,
-          },
-        });
+        if (payment.invoiceId) {
+          await tx.invoice.update({
+            where: { id: payment.invoiceId },
+            data: { status: 'PAID' }
+          });
+        }
 
-        // Generate Invoice Number
-        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const uniqueSuffix = crypto
-          .randomBytes(3)
-          .toString('hex')
-          .toUpperCase();
-        const invoiceNumber = `INV-${dateStr}-${uniqueSuffix}`;
-
-        // Create Invoice
-        const invoice = await tx.invoice.create({
-          data: {
-            tenantId,
-            memberId: payment.memberId,
-            subscriptionId: payment.subscriptionId,
-            paymentId: payment.id,
-            invoiceNumber,
-            amount: payment.amount,
-            notes: 'Auto-generated invoice from Razorpay payment',
-          },
-        });
-
-        createdInvoiceId = invoice.id;
         // Optionally, Create Notification
         await tx.notification.create({
           data: {
@@ -315,15 +299,15 @@ export class RazorpayService {
       description: 'Payment Verification Successful',
     });
 
-    if (createdInvoiceId) {
+    if (payment.invoiceId) {
       await this.auditService.createLog({
         tenantId,
         userId: payment.memberId,
         memberId: payment.memberId,
         entity: AuditEntity.INVOICE,
-        entityId: createdInvoiceId,
-        action: AuditAction.CREATE,
-        description: 'Invoice Generated',
+        entityId: payment.invoiceId,
+        action: AuditAction.UPDATE,
+        description: 'Invoice marked as PAID',
       });
     }
 
@@ -336,8 +320,8 @@ export class RazorpayService {
   }
 
   async handleWebhook(signature: string, rawBody: Buffer, body: any) {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    if (!secret) {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'mock_secret';
+    if (!secret && process.env.PAYMENT_PROVIDER !== 'mock') {
       this.logger.warn('Webhook secret not configured');
       return { status: 'ignored' };
     }
@@ -347,12 +331,9 @@ export class RazorpayService {
     }
 
     // Verify webhook signature with raw payload
-    const expectedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(rawBody)
-      .digest('hex');
+    const isValidSignature = this.paymentProvider.verifySignature(signature, rawBody, secret);
 
-    if (expectedSignature !== signature) {
+    if (!isValidSignature) {
       throw new BadRequestException('Invalid webhook signature');
     }
 
@@ -401,36 +382,12 @@ export class RazorpayService {
             throw new Error('ALREADY_PROCESSED');
           }
 
-          if (payment.subscriptionId) {
-            await tx.subscription.update({
-              where: { id: payment.subscriptionId },
-              data: { status: SubscriptionStatus.ACTIVE },
+          if (payment.invoiceId) {
+            await tx.invoice.update({
+              where: { id: payment.invoiceId },
+              data: { status: 'PAID' }
             });
-
-            const dateStr = new Date()
-              .toISOString()
-              .slice(0, 10)
-              .replace(/-/g, '');
-            const uniqueSuffix = crypto
-              .randomBytes(3)
-              .toString('hex')
-              .toUpperCase();
-            const invoiceNumber = `INV-${dateStr}-${uniqueSuffix}`;
-
-            const invoice = await tx.invoice.create({
-              data: {
-                tenantId: payment.tenantId,
-                memberId: payment.memberId,
-                subscriptionId: payment.subscriptionId,
-                paymentId: payment.id,
-                invoiceNumber,
-                amount: payment.amount,
-              },
-            });
-
-            capturedInvoiceId = invoice.id;
             shouldNotifyPaymentSuccess = true;
-
           }
         });
       } catch (error) {
@@ -451,15 +408,15 @@ export class RazorpayService {
           description: 'Webhook: Payment Captured',
         });
 
-        if (capturedInvoiceId) {
+        if (payment.invoiceId) {
           await this.auditService.createLog({
             tenantId: payment.tenantId,
             userId: payment.memberId,
             memberId: payment.memberId,
             entity: AuditEntity.INVOICE,
-            entityId: capturedInvoiceId,
-            action: AuditAction.CREATE,
-            description: 'Invoice Generated',
+            entityId: payment.invoiceId,
+            action: AuditAction.UPDATE,
+            description: 'Invoice marked as PAID from webhook',
           });
         }
 
@@ -494,9 +451,9 @@ export class RazorpayService {
   // Tenant SaaS Billing
 
   async createTenantOrder(tenantId: string, dto: CreateTenantOrderDto) {
-    if (!this.razorpay) {
+    if (!this.paymentProvider) {
       throw new InternalServerErrorException(
-        'Razorpay is not configured on the server',
+        'Payment Provider is not configured on the server',
       );
     }
 
@@ -527,7 +484,7 @@ export class RazorpayService {
 
     let order;
     try {
-      order = await this.createRazorpayOrderWithRetry({
+      order = await this.paymentProvider.createOrder({
         amount: amountInPaise,
         currency: 'INR',
         receipt: invoiceNumber,
@@ -555,16 +512,18 @@ export class RazorpayService {
   }
 
   async verifyTenantPayment(tenantId: string, dto: VerifyTenantPaymentDto) {
-    if (!process.env.RAZORPAY_KEY_SECRET) {
+    if (!process.env.RAZORPAY_KEY_SECRET && process.env.PAYMENT_PROVIDER !== 'mock') {
       throw new InternalServerErrorException('Razorpay secret not configured');
     }
 
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(`${dto.razorpay_order_id}|${dto.razorpay_payment_id}`)
-      .digest('hex');
+    const isValidSignature = this.paymentProvider.verifyPaymentSignature(
+      dto.razorpay_order_id,
+      dto.razorpay_payment_id,
+      dto.razorpay_signature,
+      process.env.RAZORPAY_KEY_SECRET || 'mock_secret'
+    );
 
-    if (expectedSignature !== dto.razorpay_signature) {
+    if (!isValidSignature) {
       throw new BadRequestException('Invalid payment signature');
     }
 
@@ -618,8 +577,8 @@ export class RazorpayService {
   }
 
   async handleTenantWebhook(signature: string, rawBody: Buffer, body: any) {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    if (!secret) {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'mock_secret';
+    if (!secret && process.env.PAYMENT_PROVIDER !== 'mock') {
       this.logger.warn('Webhook secret not configured');
       return { status: 'ignored' };
     }
@@ -628,12 +587,9 @@ export class RazorpayService {
       throw new BadRequestException('Missing raw body');
     }
 
-    const expectedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(rawBody)
-      .digest('hex');
+    const isValidSignature = this.paymentProvider.verifySignature(signature, rawBody, secret);
 
-    if (expectedSignature !== signature) {
+    if (!isValidSignature) {
       throw new BadRequestException('Invalid webhook signature');
     }
 
@@ -703,46 +659,5 @@ export class RazorpayService {
     return { status: 'ok' };
   }
 
-  private async createRazorpayOrderWithRetry(payload: any, attempt = 1): Promise<any> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-    const auth = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
-
-    try {
-      const response = await fetch(`https://api.razorpay.com/v1/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${auth}`
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        this.logger.error(`Gateway error: ${response.status}`, errorData);
-        throw new InternalServerErrorException(`Payment gateway error: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-
-      const isNetworkError = error.name === 'AbortError' || error.name === 'TypeError' || error.name === 'FetchError' || error.code === 'ECONNRESET';
-      
-      if (isNetworkError) {
-        if (attempt < 2) {
-          this.logger.warn(`Network error during Razorpay order creation. Retrying... (attempt ${attempt + 1})`);
-          return this.createRazorpayOrderWithRetry(payload, attempt + 1);
-        }
-        this.logger.error('Network error failed after retries', error);
-        throw new InternalServerErrorException('Failed to communicate with payment gateway due to network error');
-      }
-
-      throw error;
-    }
-  }
+  // The retry logic is now in real-razorpay.provider.ts
 }

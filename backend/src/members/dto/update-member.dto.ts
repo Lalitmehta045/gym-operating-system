@@ -125,4 +125,34 @@ export class UpdateMemberDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  @Matches(PHONE_PATTERN, { message: PHONE_VALIDATION_MESSAGE })
+  whatsappNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  medicalNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  experienceLevel?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  preferredTime?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  fitnessNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  assignedTrainerId?: string;
 }

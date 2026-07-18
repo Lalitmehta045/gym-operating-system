@@ -191,8 +191,14 @@ export function MemberTable({ members, isLoading, meta, page = 1, onPageChange, 
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-[var(--on-primary)]">{(member as any).planName || "Standard Plan"}</span>
-                        <span className="text-xs text-[var(--mute)]">{(member as any).planPrice || "₹1,499 / month"}</span>
+                        {member.planName ? (
+                          <>
+                            <span className="text-sm font-semibold text-[var(--on-primary)]">{member.planName}</span>
+                            <span className="text-xs text-[var(--mute)]">{member.planPrice}</span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-[var(--mute)] italic">No Plan</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

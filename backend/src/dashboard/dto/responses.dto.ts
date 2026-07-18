@@ -46,6 +46,7 @@ export class DashboardRevenueDto {
     CARD: number;
     BANK_TRANSFER: number;
   };
+  revenueTrend: { date: string; revenue: number }[];
 }
 
 export class DashboardSubscriptionsDto {

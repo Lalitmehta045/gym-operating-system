@@ -23,6 +23,12 @@ export interface MemberDto {
   source: string | null;
   occupation: string | null;
   bloodGroup: string | null;
+  whatsappNumber: string | null;
+  medicalNotes: string | null;
+  experienceLevel: string | null;
+  preferredTime: string | null;
+  fitnessNotes: string | null;
+  assignedTrainerId: string | null;
   status: string;
   isActive: boolean;
   joinedAt: Date;

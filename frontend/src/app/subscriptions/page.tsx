@@ -37,13 +37,21 @@ export default function SubscriptionsPage() {
 
   const handlePay = async (id: string) => {
     try {
+      const orderData = await razorpay.createOrder(id)
+
+      if (orderData.keyId === 'mock_key') {
+        alert("Mock Provider Active: Simulating payment success via webhook...")
+        await razorpay.simulateMockSuccess(orderData.orderId)
+        alert("Mock payment processed! Refreshing...")
+        refetch()
+        return
+      }
+
       const res = await razorpay.loadRazorpayScript()
       if (!res) {
         alert("Failed to load Razorpay SDK. Are you online?")
         return
       }
-
-      const orderData = await razorpay.createOrder(id)
 
       const options = {
         key: orderData.keyId,

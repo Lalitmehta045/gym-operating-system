@@ -24,12 +24,10 @@ import { Roles } from '../../auth/decorators/roles.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import { Role, AuditEntity, AuditAction } from '../../../generated/prisma/client.js';
 import { AuditLogs } from '../../audit/decorators/audit-log.decorator.js';
-import { HttpCacheInterceptor } from '../../common/interceptors/http-cache.interceptor.js';
 import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 
 @Controller('subscriptions')
 @Roles(Role.OWNER, Role.MANAGER)
-@UseInterceptors(HttpCacheInterceptor)
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
@@ -49,7 +47,7 @@ export class SubscriptionsController {
   }
 
   @Get()
-  @CacheTTL(600000) // 10 minutes
+  @Roles(Role.OWNER, Role.MANAGER, Role.TRAINER)
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListSubscriptionsQueryDto,
@@ -61,7 +59,6 @@ export class SubscriptionsController {
   }
 
   @Get('expiring')
-  @CacheTTL(600000) // 10 minutes
   findExpiring(
     @CurrentUser() user: JwtPayload,
     @Query() query: ExpiringSubscriptionsQueryDto,
@@ -73,7 +70,6 @@ export class SubscriptionsController {
   }
 
   @Get(':id')
-  @CacheTTL(600000) // 10 minutes
   findOne(
     @CurrentUser() user: JwtPayload,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,

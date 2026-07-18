@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import api from '@/lib/axios';
 
 // Interfaces based on backend DTOs
@@ -50,6 +50,7 @@ export interface DashboardRevenue {
     CARD: number;
     BANK_TRANSFER: number;
   };
+  revenueTrend?: { date: string; revenue: number }[];
 }
 
 export interface DashboardSubscriptions {
@@ -69,64 +70,108 @@ export interface DashboardTopMember {
   attendancePercentage: number;
 }
 
-// Hooks
+const fetchWithRetry = async (url: string, signal?: AbortSignal) => {
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await api.get(url, { signal });
+      // Backend now returns { data: null, restricted: true } for unauthorized roles
+      // on certain endpoints, but we also handle hard 403s just in case.
+      if (res.data?.restricted) return null;
+      return res.data;
+    } catch (error: any) {
+      if (error.response?.status === 403) return null;
+      if (error.response?.status !== 429) throw error;
+      await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+    }
+  }
+};
 
-export const useDashboardOverview = () => {
+export const useDashboardOverview = (query?: { dateFrom?: string; dateTo?: string }) => {
   return useQuery({
-    queryKey: ['dashboard', 'overview'],
-    queryFn: async () => {
-      const { data } = await api.get<DashboardOverview>('/dashboard/overview');
-      return data;
+    queryKey: ['dashboard', 'overview', query?.dateFrom, query?.dateTo],
+    queryFn: async ({ signal }) => {
+      // Group 1: fire immediately
+      const params = new URLSearchParams()
+      if (query?.dateFrom) params.append('dateFrom', query.dateFrom)
+      if (query?.dateTo) params.append('dateTo', query.dateTo)
+      const queryString = params.toString() ? `?${params.toString()}` : ''
+      return fetchWithRetry(`/dashboard/overview${queryString}`, signal) as Promise<DashboardOverview>;
     },
+    placeholderData: keepPreviousData,
   });
 };
 
-export const useDashboardMembers = () => {
+export const useDashboardMembers = (query?: { dateFrom?: string; dateTo?: string }) => {
   return useQuery({
-    queryKey: ['dashboard', 'members'],
-    queryFn: async () => {
-      const { data } = await api.get<DashboardMembers>('/dashboard/members');
-      return data;
+    queryKey: ['dashboard', 'members', query?.dateFrom, query?.dateTo],
+    queryFn: async ({ signal }) => {
+      await new Promise(r => setTimeout(r, 150));
+      const params = new URLSearchParams()
+      if (query?.dateFrom) params.append('dateFrom', query.dateFrom)
+      if (query?.dateTo) params.append('dateTo', query.dateTo)
+      const queryString = params.toString() ? `?${params.toString()}` : ''
+      return fetchWithRetry(`/dashboard/members${queryString}`, signal) as Promise<DashboardMembers>;
     },
+    placeholderData: keepPreviousData,
   });
 };
 
-export const useDashboardAttendance = () => {
+export const useDashboardAttendance = (query?: { dateFrom?: string; dateTo?: string }) => {
   return useQuery({
-    queryKey: ['dashboard', 'attendance'],
-    queryFn: async () => {
-      const { data } = await api.get<DashboardAttendance>('/dashboard/attendance');
-      return data;
+    queryKey: ['dashboard', 'attendance', query?.dateFrom, query?.dateTo],
+    queryFn: async ({ signal }) => {
+      // Group 1: fire immediately
+      const params = new URLSearchParams()
+      if (query?.dateFrom) params.append('dateFrom', query.dateFrom)
+      if (query?.dateTo) params.append('dateTo', query.dateTo)
+      const queryString = params.toString() ? `?${params.toString()}` : ''
+      return fetchWithRetry(`/dashboard/attendance${queryString}`, signal) as Promise<DashboardAttendance>;
     },
+    placeholderData: keepPreviousData,
   });
 };
 
-export const useDashboardRevenue = () => {
+export const useDashboardRevenue = (query?: { dateFrom?: string; dateTo?: string }) => {
   return useQuery({
-    queryKey: ['dashboard', 'revenue'],
-    queryFn: async () => {
-      const { data } = await api.get<DashboardRevenue>('/dashboard/revenue');
-      return data;
+    queryKey: ['dashboard', 'revenue', query?.dateFrom, query?.dateTo],
+    queryFn: async ({ signal }) => {
+      await new Promise(r => setTimeout(r, 150));
+      const params = new URLSearchParams()
+      if (query?.dateFrom) params.append('dateFrom', query.dateFrom)
+      if (query?.dateTo) params.append('dateTo', query.dateTo)
+      const queryString = params.toString() ? `?${params.toString()}` : ''
+      return fetchWithRetry(`/dashboard/revenue${queryString}`, signal) as Promise<DashboardRevenue>;
     },
+    placeholderData: keepPreviousData,
   });
 };
 
-export const useDashboardSubscriptions = () => {
+export const useDashboardSubscriptions = (query?: { dateFrom?: string; dateTo?: string }) => {
   return useQuery({
-    queryKey: ['dashboard', 'subscriptions'],
-    queryFn: async () => {
-      const { data } = await api.get<DashboardSubscriptions>('/dashboard/subscriptions');
-      return data;
+    queryKey: ['dashboard', 'subscriptions', query?.dateFrom, query?.dateTo],
+    queryFn: async ({ signal }) => {
+      await new Promise(r => setTimeout(r, 300));
+      const params = new URLSearchParams()
+      if (query?.dateFrom) params.append('dateFrom', query.dateFrom)
+      if (query?.dateTo) params.append('dateTo', query.dateTo)
+      const queryString = params.toString() ? `?${params.toString()}` : ''
+      return fetchWithRetry(`/dashboard/subscriptions${queryString}`, signal) as Promise<DashboardSubscriptions>;
     },
+    placeholderData: keepPreviousData,
   });
 };
 
-export const useDashboardTopMembers = () => {
+export const useDashboardTopMembers = (query?: { dateFrom?: string; dateTo?: string }) => {
   return useQuery({
-    queryKey: ['dashboard', 'top-members'],
-    queryFn: async () => {
-      const { data } = await api.get<DashboardTopMember[]>('/dashboard/top-members');
-      return data;
+    queryKey: ['dashboard', 'top-members', query?.dateFrom, query?.dateTo],
+    queryFn: async ({ signal }) => {
+      await new Promise(r => setTimeout(r, 300));
+      const params = new URLSearchParams()
+      if (query?.dateFrom) params.append('dateFrom', query.dateFrom)
+      if (query?.dateTo) params.append('dateTo', query.dateTo)
+      const queryString = params.toString() ? `?${params.toString()}` : ''
+      return fetchWithRetry(`/dashboard/top-members${queryString}`, signal) as Promise<DashboardTopMember[]>;
     },
+    placeholderData: keepPreviousData,
   });
 };

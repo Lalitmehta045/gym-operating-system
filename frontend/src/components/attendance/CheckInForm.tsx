@@ -7,10 +7,18 @@ import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import { Search, UserCheck } from "lucide-react"
 
+const getLocalDateTimeString = (date = new Date()) => {
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+};
+
 export function CheckInForm() {
   const [search, setSearch] = React.useState("")
   const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(null)
-  
+  const [checkInTime, setCheckInTime] = React.useState(getLocalDateTimeString())
+  const [checkOutTime, setCheckOutTime] = React.useState("")
+  const [notes, setNotes] = React.useState("")
+
   // Minimal search using useMembers
   // In a real large scale app, this might be debounced
   const { data: membersData, isLoading: isSearching } = useMembers({
@@ -29,13 +37,26 @@ export function CheckInForm() {
   const handleCheckIn = async () => {
     if (!selectedMemberId) return
     setFeedback(null)
-    
+
+    if (checkOutTime && new Date(checkOutTime) <= new Date(checkInTime)) {
+      setFeedback({ type: 'error', message: 'Check-out time must be after check-in time.' })
+      return
+    }
+
     try {
-      await checkInMutation.mutateAsync({ memberId: selectedMemberId })
+      await checkInMutation.mutateAsync({
+        memberId: selectedMemberId,
+        checkInTime: checkInTime ? new Date(checkInTime).toISOString() : undefined,
+        checkOutTime: checkOutTime ? new Date(checkOutTime).toISOString() : undefined,
+        notes: notes || undefined,
+      })
       setFeedback({ type: 'success', message: 'Member checked in successfully!' })
       // Reset form
       setSearch("")
       setSelectedMemberId(null)
+      setCheckInTime(getLocalDateTimeString())
+      setCheckOutTime("")
+      setNotes("")
       setTimeout(() => setFeedback(null), 3000)
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,7 +74,7 @@ export function CheckInForm() {
           </div>
           <h2 className="text-xl font-bold text-[var(--on-primary)]">Member Check-In</h2>
         </div>
-        
+
         {feedback && (
           <div className={`p-3 text-sm rounded-lg ${feedback.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
             {feedback.message}
@@ -76,8 +97,8 @@ export function CheckInForm() {
               <div className="p-4 text-sm text-[var(--mute)] text-center">Searching...</div>
             ) : membersData?.data && membersData.data.length > 0 ? (
               membersData.data.map(member => (
-                <div 
-                  key={member.id} 
+                <div
+                  key={member.id}
                   className={`flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-[var(--canvas-paper)] ${selectedMemberId === member.id ? 'bg-purple-50/50 border-l-4 border-[#6C47FF]' : 'border-l-4 border-transparent'}`}
                   onClick={() => handleSelectMember(member.id)}
                 >
@@ -102,8 +123,45 @@ export function CheckInForm() {
           </div>
         )}
 
-        <Button 
-          variant="primary" 
+        {/* Optional Fields Section */}
+        <div className="space-y-4 pt-4 border-t border-[var(--hairline-soft)]">
+          <p className="text-xs font-semibold text-[var(--mute)] uppercase tracking-wider">Optional Parameters</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--slate-soft)]">Check In Time</label>
+              <Input
+                type="datetime-local"
+                value={checkInTime}
+                onChange={(e) => setCheckInTime(e.target.value)}
+                className="rounded-lg text-sm"
+              />
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--slate-soft)]">Check Out Time (Optional)</label>
+              <Input
+                type="datetime-local"
+                value={checkOutTime}
+                onChange={(e) => setCheckOutTime(e.target.value)}
+                className="rounded-lg text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-[var(--slate-soft)]">Notes (Optional)</label>
+            <textarea
+              placeholder="Add check-in notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full min-h-[80px] rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-sm p-3 focus:outline-none focus:ring-1 focus:ring-[#6C47FF] focus:border-[#6C47FF] transition-all"
+            />
+          </div>
+        </div>
+
+        <Button
+          variant="primary"
           className={`w-full h-[48px] rounded-xl text-base font-medium flex items-center justify-center gap-2 ${!selectedMemberId ? 'bg-[var(--canvas-paper)] text-[var(--ash)] hover:bg-[var(--canvas-paper)] border-none' : 'bg-[#6C47FF] text-white hover:bg-purple-700'}`}
           disabled={!selectedMemberId || checkInMutation.isPending}
           onClick={handleCheckIn}

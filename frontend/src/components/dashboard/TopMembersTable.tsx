@@ -2,12 +2,20 @@
 
 import { useDashboardTopMembers } from "@/hooks/api/useDashboard"
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/States"
-import { Trophy } from "lucide-react"
+import { Medal, Flame, Trophy } from "lucide-react"
+import { useSectionFilter } from "@/hooks/useSectionFilter"
+import { DateFilter } from "@/components/ui/DateFilter"
+import { format } from "date-fns"
 
 const rankEmojis = ["🥇", "🥈", "🥉"]
 
 export function TopMembersTable() {
-  const { data, isLoading, isError } = useDashboardTopMembers()
+  const { dateRange } = useSectionFilter("attendance")
+  const dateParams = {
+    dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  }
+  const { data, isLoading, isError } = useDashboardTopMembers(dateParams)
 
   if (isLoading) return <LoadingState />
   if (isError) return <ErrorState title="Failed to load top members" />
@@ -16,13 +24,14 @@ export function TopMembersTable() {
   return (
     <div className="bg-[var(--canvas-light)] rounded-2xl border border-[var(--hairline-soft)] p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-5">
-        <div className="w-8 h-8 rounded-lg bg-[#6C47FF]/10 flex items-center justify-center">
-          <Trophy className="w-4 h-4 text-[#6C47FF]" />
-        </div>
-        <div>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#6C47FF]/10 flex items-center justify-center">
+            <Trophy className="w-4 h-4 text-[#6C47FF]" />
+          </div>
           <h2 className="text-[15px] font-semibold text-[var(--on-primary)]">Top Members <span className="text-[#f59e0b] font-normal">(Attendance)</span></h2>
         </div>
+        <DateFilter paramPrefix="attendance" />
       </div>
 
       {data.length === 0 ? (

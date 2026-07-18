@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreatePaymentDto } from '../dto/create-payment.dto.js';
 import { PaymentDto } from '../dto/payment.dto.js';
@@ -21,35 +21,66 @@ export class PaymentsService {
     tenantId: string,
     dto: CreatePaymentDto,
   ): Promise<PaymentDto> {
-    // Parallelize independent DB queries
-    const [member, subscription] = await Promise.all([
-      this.prisma.member.findFirst({
-        where: { id: dto.memberId, tenantId, deletedAt: null },
-      }),
-      dto.subscriptionId
-        ? this.prisma.subscription.findFirst({
-            where: { id: dto.subscriptionId, tenantId, deletedAt: null },
-          })
-        : Promise.resolve(null),
-    ]);
-
-    if (!member) throw new NotFoundException('Member not found');
-    if (dto.subscriptionId && !subscription) {
-      throw new NotFoundException('Subscription not found');
-    }
-
     const status = dto.paymentStatus || PaymentStatus.PENDING;
 
-    // Generate invoice number (same pattern as renewSubscription)
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${randomUUID().slice(-8).toUpperCase()}`;
-
     const payment = await this.prisma.$transaction(async (tx) => {
+      // 1. Idempotency Check: if transactionReference is provided, check if payment already exists
+      if (dto.transactionReference) {
+        const existingPayment = await tx.payment.findFirst({
+          where: {
+            tenantId,
+            transactionReference: dto.transactionReference,
+            paymentStatus: PaymentStatus.PAID,
+          },
+        });
+        if (existingPayment) {
+          return existingPayment;
+        }
+      }
+
+      // 2. Member validation
+      const member = await tx.member.findFirst({
+        where: { id: dto.memberId, tenantId, deletedAt: null },
+      });
+      if (!member) throw new NotFoundException('Member not found');
+
+      // 3. Concurrency Lock: lock the invoice row using FOR UPDATE
+      await tx.$executeRaw`SELECT * FROM invoices WHERE id = ${dto.invoiceId}::uuid FOR UPDATE`;
+
+      const invoice = await tx.invoice.findFirst({
+        where: { id: dto.invoiceId, tenantId },
+        include: { payments: true },
+      });
+      if (!invoice) throw new NotFoundException('Invoice not found');
+
+      // Guard: reject payment on cancelled invoice
+      if (invoice.status === 'CANCELLED') {
+        throw new BadRequestException('Cannot record payment against a cancelled invoice');
+      }
+
+      // Guard: reject payment on already-paid invoice
+      if (invoice.status === 'PAID') {
+        throw new BadRequestException('Invoice is already fully paid');
+      }
+
+      // Calculate outstanding balance
+      const totalPaid = invoice.payments
+        .filter((p) => p.paymentStatus === PaymentStatus.PAID)
+        .reduce((sum, p) => sum + Number(p.amount), 0);
+        
+      const amountDue = Number(invoice.amount) - totalPaid;
+      
+      if (status === PaymentStatus.PAID && dto.amount > amountDue) {
+        throw new BadRequestException(`Payment amount ₹${dto.amount} exceeds outstanding balance ₹${amountDue}`);
+      }
+
       // Step 1: Create payment
       const newPayment = await tx.payment.create({
         data: {
           tenantId,
           memberId: dto.memberId,
-          subscriptionId: dto.subscriptionId ?? null,
+          subscriptionId: invoice.subscriptionId,
+          invoiceId: invoice.id,
           amount: dto.amount,
           paymentMethod: dto.paymentMethod,
           paymentStatus: status,
@@ -59,26 +90,26 @@ export class PaymentsService {
         },
       });
 
-      // Step 2: If payment is PAID and has subscriptionId,
-      // activate the subscription
-      if (status === PaymentStatus.PAID && dto.subscriptionId) {
-        await tx.subscription.update({
-          where: { id: dto.subscriptionId },
-          data: { status: SubscriptionStatus.ACTIVE },
-        });
+      // Step 2: Recalculate invoice status
+      const newTotalPaid = status === PaymentStatus.PAID ? totalPaid + Number(dto.amount) : totalPaid;
+      
+      let newInvoiceStatus = 'DUE';
+      if (newTotalPaid >= Number(invoice.amount)) {
+        newInvoiceStatus = 'PAID';
+      } else if (newTotalPaid > 0) {
+        newInvoiceStatus = 'PARTIALLY_PAID';
       }
 
-      // Step 3: If payment is PAID, generate invoice
-      if (status === PaymentStatus.PAID) {
-        await tx.invoice.create({
-          data: {
-            tenantId,
-            memberId: dto.memberId,
-            subscriptionId: dto.subscriptionId ?? null,
-            paymentId: newPayment.id,
-            invoiceNumber,
-            amount: newPayment.amount,
-          },
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: { status: newInvoiceStatus as any },
+      });
+
+      // Step 3: If invoice is PAID and has subscriptionId, activate the subscription
+      if (newInvoiceStatus === 'PAID' && invoice.subscriptionId) {
+        await tx.subscription.update({
+          where: { id: invoice.subscriptionId },
+          data: { status: SubscriptionStatus.ACTIVE },
         });
       }
 
@@ -105,9 +136,35 @@ export class PaymentsService {
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
+    const where: any = { tenantId, deletedAt: null };
+
+    if (query.status) {
+      where.paymentStatus = query.status;
+    }
+
+    if (query.method) {
+      where.paymentMethod = query.method;
+    }
+
+    if (query.startDate || query.endDate) {
+      where.createdAt = {};
+      if (query.startDate) where.createdAt.gte = new Date(query.startDate);
+      if (query.endDate) where.createdAt.lte = new Date(query.endDate);
+    }
+
+    if (query.search) {
+      where.OR = [
+        { transactionReference: { contains: query.search, mode: 'insensitive' } },
+        { member: { firstName: { contains: query.search, mode: 'insensitive' } } },
+        { member: { lastName: { contains: query.search, mode: 'insensitive' } } },
+        { member: { email: { contains: query.search, mode: 'insensitive' } } },
+        { member: { memberCode: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
+
     const [payments, total] = await this.prisma.$transaction([
       this.prisma.payment.findMany({
-        where: { tenantId, deletedAt: null },
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -136,7 +193,7 @@ export class PaymentsService {
           },
         },
       }),
-      this.prisma.payment.count({ where: { tenantId, deletedAt: null } }),
+      this.prisma.payment.count({ where }),
     ]);
 
     return {

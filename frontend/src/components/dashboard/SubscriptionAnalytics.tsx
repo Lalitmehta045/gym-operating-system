@@ -3,9 +3,17 @@
 import { useDashboardSubscriptions } from "@/hooks/api/useDashboard"
 import { LoadingState, ErrorState } from "@/components/ui/States"
 import { CheckCircle2, Clock, AlertCircle, XCircle, CalendarClock, CalendarDays, CalendarRange } from "lucide-react"
+import { useSectionFilter } from "@/hooks/useSectionFilter"
+import { DateFilter } from "@/components/ui/DateFilter"
+import { format } from "date-fns"
 
 export function SubscriptionAnalytics() {
-  const { data, isLoading, isError } = useDashboardSubscriptions()
+  const { dateRange } = useSectionFilter("subscriptions")
+  const dateParams = {
+    dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  }
+  const { data, isLoading, isError } = useDashboardSubscriptions(dateParams)
 
   if (isLoading) return <LoadingState />
   if (isError) return <ErrorState title="Failed to load subscription analytics" />
@@ -27,8 +35,9 @@ export function SubscriptionAnalytics() {
   return (
     <div className="bg-[var(--canvas-light)] rounded-2xl border border-[var(--hairline-soft)] p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-5">
+      <div className="flex items-center justify-between mb-5">
         <h2 className="text-[15px] font-semibold text-[var(--on-primary)]">Subscription Analytics</h2>
+        <DateFilter paramPrefix="subscriptions" />
       </div>
 
       {/* Status Badges */}

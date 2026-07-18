@@ -128,13 +128,39 @@ export class MembersService implements MemberServiceInterface {
           isActive: true,
           joinedAt: true,
           createdAt: true,
+          source: true,
+          deletedAt: true,
+          subscriptions: {
+            where: {
+              status: 'ACTIVE',
+              deletedAt: null,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              id: true,
+              status: true,
+              startDate: true,
+              endDate: true,
+              amount: true,
+              membershipPlan: {
+                select: {
+                  id: true,
+                  name: true,
+                  price: true,
+                  planType: true,
+                  durationDays: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.member.count({ where }),
     ]);
 
     return {
-      data: members.map((m: any) => this.toDto(m)),
+      data: members.map((m: any) => this.toListDto(m)),
       meta: {
         page,
         limit,
@@ -195,6 +221,12 @@ export class MembersService implements MemberServiceInterface {
         source: dto.source as PrismaMemberSource,
         occupation: dto.occupation,
         bloodGroup: dto.bloodGroup as PrismaBloodGroup,
+        whatsappNumber: dto.whatsappNumber,
+        medicalNotes: dto.medicalNotes,
+        experienceLevel: dto.experienceLevel,
+        preferredTime: dto.preferredTime,
+        fitnessNotes: dto.fitnessNotes,
+        assignedTrainerId: dto.assignedTrainerId,
         status: (dto.status as PrismaMemberStatus) ?? PrismaMemberStatus.ACTIVE,
         isActive: dto.isActive ?? true,
       },
@@ -267,6 +299,12 @@ export class MembersService implements MemberServiceInterface {
         ...(dto.bloodGroup !== undefined && {
           bloodGroup: dto.bloodGroup,
         }),
+        ...(dto.whatsappNumber !== undefined && { whatsappNumber: dto.whatsappNumber }),
+        ...(dto.medicalNotes !== undefined && { medicalNotes: dto.medicalNotes }),
+        ...(dto.experienceLevel !== undefined && { experienceLevel: dto.experienceLevel }),
+        ...(dto.preferredTime !== undefined && { preferredTime: dto.preferredTime }),
+        ...(dto.fitnessNotes !== undefined && { fitnessNotes: dto.fitnessNotes }),
+        ...(dto.assignedTrainerId !== undefined && { assignedTrainerId: dto.assignedTrainerId }),
         ...(dto.status !== undefined && {
           status: dto.status,
         }),
@@ -408,6 +446,26 @@ export class MembersService implements MemberServiceInterface {
     }
   }
 
+  private toListDto(member: any): MemberDto & { planName: string | null; planPrice: string | null; planType: string | null } {
+    const activeSub = member.subscriptions?.[0];
+    const plan = activeSub?.membershipPlan;
+
+    const planTypeLabels: Record<string, string> = {
+      MONTHLY: 'month',
+      QUARTERLY: 'quarter',
+      HALF_YEARLY: '6 months',
+      ANNUAL: 'year',
+      CUSTOM: 'custom',
+    };
+
+    return {
+      ...this.toDto(member),
+      planName: plan?.name ?? null,
+      planPrice: plan ? `₹${Number(plan.price).toLocaleString('en-IN')} / ${planTypeLabels[plan.planType] || plan.planType}` : null,
+      planType: plan?.planType ?? null,
+    };
+  }
+
   private toDto(member: Member): MemberDto {
     return {
       id: member.id,
@@ -430,6 +488,12 @@ export class MembersService implements MemberServiceInterface {
       source: member.source,
       occupation: member.occupation,
       bloodGroup: member.bloodGroup,
+      whatsappNumber: member.whatsappNumber,
+      medicalNotes: member.medicalNotes,
+      experienceLevel: member.experienceLevel,
+      preferredTime: member.preferredTime,
+      fitnessNotes: member.fitnessNotes,
+      assignedTrainerId: member.assignedTrainerId,
       status: member.status,
       isActive: member.isActive,
       joinedAt: member.joinedAt,

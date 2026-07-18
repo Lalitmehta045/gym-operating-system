@@ -48,4 +48,13 @@ export class CreateSubscriptionDto {
   @IsOptional()
   @MaxLength(5000)
   notes?: string;
+
+  @IsEnum(['CASH', 'UPI', 'CARD', 'BANK_TRANSFER'])
+  @IsOptional()
+  paymentMethod?: 'CASH' | 'UPI' | 'CARD' | 'BANK_TRANSFER';
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  paidAmount?: number;
 }

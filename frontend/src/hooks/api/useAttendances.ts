@@ -41,6 +41,7 @@ export interface GetAttendancesParams {
   memberId?: string;
   dateFrom?: string;
   dateTo?: string;
+  isInside?: boolean;
 }
 
 export interface DailyAttendanceReport {
@@ -63,6 +64,9 @@ export interface MemberAttendanceStats {
 
 export interface CheckInDto {
   memberId: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  notes?: string;
 }
 
 export interface CheckOutDto {
@@ -83,8 +87,8 @@ export const useAttendances = (params?: GetAttendancesParams) => {
     queryFn: async () => {
       const filteredParams = params
         ? Object.fromEntries(
-            Object.entries(params).filter(([_, v]) => v !== "" && v !== undefined)
-          )
+          Object.entries(params).filter(([_, v]) => v !== "" && v !== undefined)
+        )
         : {};
       const { data } = await api.get<AttendancesResponse>('/attendances', { params: filteredParams });
       return data;
@@ -142,6 +146,8 @@ export const useCheckOut = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendances'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['attendanceReports'] });
     },
   });
 };

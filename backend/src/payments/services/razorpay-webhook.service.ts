@@ -82,12 +82,36 @@ export class RazorpayWebhookService {
       const amount = paymentEntity.amount / 100; // paise to rupees
       const invoiceNumber = `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${randomUUID().slice(-8).toUpperCase()}`;
 
+      let invoice: any = null;
+      if (subscriptionId) {
+        invoice = await tx.invoice.findFirst({
+          where: { tenantId, subscriptionId, status: { in: ['DUE', 'PARTIALLY_PAID'] } },
+          orderBy: { createdAt: 'desc' },
+          include: { payments: true },
+        });
+      }
+
+      if (!invoice) {
+        invoice = await tx.invoice.create({
+          data: {
+            tenantId,
+            memberId,
+            subscriptionId: subscriptionId || null,
+            invoiceNumber,
+            amount: amount,
+            status: 'DUE',
+          },
+          include: { payments: true },
+        });
+      }
+
       // Create payment record
       const payment = await tx.payment.create({
         data: {
           tenantId,
           memberId,
           subscriptionId: subscriptionId || null,
+          invoiceId: invoice.id,
           amount,
           paymentMethod: PaymentMethod.UPI, // Razorpay link payments default
           paymentStatus: PaymentStatus.PAID,
@@ -101,25 +125,31 @@ export class RazorpayWebhookService {
         },
       });
 
-      // Activate subscription if linked
-      if (subscriptionId) {
+      // Recalculate invoice status
+      const totalPaid = (invoice.payments || [])
+        .filter((p: any) => p.paymentStatus === 'PAID')
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+      const newTotalPaid = totalPaid + amount;
+      
+      let newInvoiceStatus = 'DUE';
+      if (newTotalPaid >= Number(invoice.amount)) {
+        newInvoiceStatus = 'PAID';
+      } else if (newTotalPaid > 0) {
+        newInvoiceStatus = 'PARTIALLY_PAID';
+      }
+
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: { status: newInvoiceStatus as any },
+      });
+
+      // Activate subscription if invoice is paid
+      if (subscriptionId && newInvoiceStatus === 'PAID') {
         await tx.subscription.update({
           where: { id: subscriptionId },
           data: { status: SubscriptionStatus.ACTIVE },
         });
       }
-
-      // Generate invoice
-      await tx.invoice.create({
-        data: {
-          tenantId,
-          memberId,
-          subscriptionId: subscriptionId || null,
-          paymentId: payment.id,
-          invoiceNumber,
-          amount: payment.amount,
-        },
-      });
 
       this.logger.log(
         ` Auto-processed Razorpay payment for member ${memberId}, subscription ${subscriptionId}`

@@ -7,15 +7,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCreatePayment } from '@/hooks/api/usePayments';
 import { useMembers } from '@/hooks/api/useMembers';
-import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 
 const paymentSchema = z.object({
   memberId: z.string().uuid('Please select a valid member'),
-  subscriptionId: z.string().uuid().optional().or(z.literal('')),
-  amount: z.coerce.number().min(0, 'Amount cannot be negative').max(99999999.99),
+  invoiceId: z.string().uuid('Please select an invoice'),
+  amount: z.coerce.number().min(1, 'Amount must be at least ₹1').max(99999999.99),
   paymentMethod: z.enum(['CASH', 'UPI', 'CARD', 'BANK_TRANSFER']),
   paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']),
   transactionReference: z.string().max(255).optional().or(z.literal('')),
@@ -23,6 +22,17 @@ const paymentSchema = z.object({
 });
 
 type PaymentFormValues = z.infer<typeof paymentSchema>;
+
+interface MemberInvoice {
+  id: string;
+  invoiceNumber: string;
+  amount: number;
+  amountDue: number;
+  status: string;
+  subscription?: {
+    membershipPlan?: { name: string };
+  };
+}
 
 export function PaymentForm() {
   const router = useRouter();
@@ -32,7 +42,7 @@ export function PaymentForm() {
     resolver: zodResolver(paymentSchema) as any,
     defaultValues: {
       memberId: '',
-      subscriptionId: '',
+      invoiceId: '',
       amount: 0,
       paymentMethod: 'CASH',
       paymentStatus: 'PAID',
@@ -42,37 +52,64 @@ export function PaymentForm() {
   });
 
   const memberId = form.watch('memberId');
-  const [memberSubscriptions, setMemberSubscriptions] = React.useState<any[]>([]);
+  const [memberInvoices, setMemberInvoices] = React.useState<MemberInvoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = React.useState<MemberInvoice | null>(null);
 
-  const handleMemberChange = async (memberId: string) => {
-    console.log('Member changed:', memberId);
-    form.setValue('memberId', memberId);
-    form.setValue('subscriptionId', '');
+  const handleMemberChange = async (newMemberId: string) => {
+    form.setValue('memberId', newMemberId);
+    form.setValue('invoiceId', '');
     form.setValue('amount', 0);
+    setSelectedInvoice(null);
     
-    if (!memberId) {
-      setMemberSubscriptions([]);
+    if (!newMemberId) {
+      setMemberInvoices([]);
       return;
     }
     
     try {
-      const url = `/api/subscriptions?memberId=${memberId}&status=PENDING`;
-      console.log('Fetching:', url);
-      
-      const token = useAuthStore.getState().accessToken;
-      const res = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+      // Fetch unpaid invoices for this member using the shared api instance
+      const { data: responseData } = await (await import('@/lib/axios')).default.get('/invoices', {
+        params: { memberId: newMemberId, limit: 100 },
       });
       
-      const data = await res.json();
-      console.log('Subscriptions response:', data);
-      setMemberSubscriptions(data.data || []);
+      const data = responseData || {};
+      const invoices: MemberInvoice[] = (data.data || []).filter(
+        (inv: any) => inv.status === 'DUE' || inv.status === 'PARTIALLY_PAID'
+      ).map((inv: any) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        amount: Number(inv.amount),
+        amountDue: Number(inv.amountDue ?? inv.amount),
+        status: inv.status,
+        subscription: inv.subscription,
+      }));
+      
+      setMemberInvoices(invoices);
+
+      // Auto-select the first unpaid invoice
+      if (invoices.length > 0) {
+        form.setValue('invoiceId', invoices[0].id, { shouldValidate: true });
+        form.setValue('amount', invoices[0].amountDue, { shouldValidate: true });
+        setSelectedInvoice(invoices[0]);
+      }
     } catch (err) {
-      console.error('Failed to fetch subscriptions:', err);
-      setMemberSubscriptions([]);
+      console.error('Failed to fetch invoices:', err);
+      setMemberInvoices([]);
+    }
+  };
+
+  const handleInvoiceChange = (invoiceId: string) => {
+    form.setValue('invoiceId', invoiceId, { shouldValidate: true });
+    
+    if (invoiceId) {
+      const inv = memberInvoices.find(i => i.id === invoiceId);
+      if (inv) {
+        form.setValue('amount', inv.amountDue, { shouldValidate: true });
+        setSelectedInvoice(inv);
+      }
+    } else {
+      form.setValue('amount', 0, { shouldValidate: true });
+      setSelectedInvoice(null);
     }
   };
 
@@ -82,7 +119,7 @@ export function PaymentForm() {
     try {
       await createMutation.mutateAsync({
         memberId: values.memberId,
-        subscriptionId: values.subscriptionId || undefined,
+        invoiceId: values.invoiceId,
         amount: values.amount,
         paymentMethod: values.paymentMethod,
         paymentStatus: values.paymentStatus,
@@ -119,43 +156,55 @@ export function PaymentForm() {
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-[var(--ink-soft)]">Subscription</label>
+          <label className="block text-sm font-medium text-[var(--ink-soft)]">Invoice <span className="text-red-500">*</span></label>
           <Select
-            {...form.register('subscriptionId')}
-            onChange={(e) => {
-              const subId = e.target.value;
-              form.setValue('subscriptionId', subId, { shouldValidate: true });
-              
-              if (subId) {
-                const selectedSub = memberSubscriptions.find(s => s.id === subId);
-                if (selectedSub) {
-                  form.setValue('amount', Number(selectedSub.amount), { shouldValidate: true });
-                }
-              } else {
-                form.setValue('amount', 0, { shouldValidate: true });
-              }
-            }}
-            disabled={!memberId}
+            {...form.register('invoiceId')}
+            onChange={(e) => handleInvoiceChange(e.target.value)}
+            disabled={!memberId || memberInvoices.length === 0}
             className="w-full"
           >
-            <option value="">No specific subscription (General Payment)</option>
-            {memberSubscriptions.map(sub => (
-              <option key={sub.id} value={sub.id}>
-                {sub.membershipPlan?.name || 'Plan'} — ₹{Number(sub.amount).toLocaleString('en-IN')} 
-                (ends {new Date(sub.endDate).toLocaleDateString('en-IN')})
+            <option value="">
+              {!memberId ? 'Select a member first' : memberInvoices.length === 0 ? 'No unpaid invoices' : 'Select an invoice'}
+            </option>
+            {memberInvoices.map(inv => (
+              <option key={inv.id} value={inv.id}>
+                {inv.invoiceNumber} — {inv.subscription?.membershipPlan?.name || 'General'} — Due: ₹{inv.amountDue.toLocaleString('en-IN')} ({inv.status})
               </option>
             ))}
           </Select>
+          {form.formState.errors.invoiceId && (
+            <p className="text-red-500 text-sm">{form.formState.errors.invoiceId.message}</p>
+          )}
         </div>
+
+        {/* Outstanding Info Card */}
+        {selectedInvoice && (
+          <div className="bg-purple-50 border border-purple-100 rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-800">Invoice {selectedInvoice.invoiceNumber}</p>
+              <p className="text-xs text-purple-600 mt-0.5">
+                Total: ₹{selectedInvoice.amount.toLocaleString('en-IN')} • Outstanding: ₹{selectedInvoice.amountDue.toLocaleString('en-IN')}
+              </p>
+            </div>
+            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+              selectedInvoice.status === 'PARTIALLY_PAID' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+            }`}>
+              {selectedInvoice.status.replace('_', ' ')}
+            </span>
+          </div>
+        )}
 
         <div className="space-y-1 relative">
           <label className="block text-sm font-medium text-[var(--ink-soft)]">Amount (INR) <span className="text-red-500">*</span></label>
           <div className="relative">
             <span className="absolute left-4 top-4 text-[var(--mute)] text-lg">₹</span>
-            <Input type="number" step="0.01" min="0" {...form.register('amount')} placeholder="0.00" className="pl-9 h-14 text-lg w-full rounded-xl" />
+            <Input type="number" step="0.01" min="1" {...form.register('amount')} placeholder="0.00" className="pl-9 h-14 text-lg w-full rounded-xl" />
           </div>
           {form.formState.errors.amount && (
             <p className="text-red-500 text-sm">{form.formState.errors.amount.message}</p>
+          )}
+          {selectedInvoice && (
+            <p className="text-xs text-[var(--ash)] mt-1">Maximum payable: ₹{selectedInvoice.amountDue.toLocaleString('en-IN')}</p>
           )}
         </div>
 
@@ -172,10 +221,8 @@ export function PaymentForm() {
           <div className="space-y-1">
             <label className="block text-sm font-medium text-[var(--ink-soft)]">Status <span className="text-red-500">*</span></label>
             <Select {...form.register('paymentStatus')} className="w-full">
-              <option value="PENDING">Pending</option>
               <option value="PAID">Paid</option>
-              <option value="FAILED">Failed</option>
-              <option value="REFUNDED">Refunded</option>
+              <option value="PENDING">Pending</option>
             </Select>
           </div>
         </div>
@@ -201,7 +248,7 @@ export function PaymentForm() {
           Cancel
         </Button>
         <Button type="submit" variant="primary" disabled={createMutation.isPending}>
-          Record Payment
+          {createMutation.isPending ? 'Recording...' : 'Record Payment'}
         </Button>
       </div>
     </form>

@@ -2,10 +2,18 @@
 
 import { useDashboardMembers } from "@/hooks/api/useDashboard"
 import { LoadingState, ErrorState } from "@/components/ui/States"
+import { useSectionFilter } from "@/hooks/useSectionFilter"
+import { DateFilter } from "@/components/ui/DateFilter"
+import { format } from "date-fns"
 import { Users } from "lucide-react"
 
 export function MembersAnalytics() {
-  const { data, isLoading, isError } = useDashboardMembers()
+  const { dateRange } = useSectionFilter("members")
+  const dateParams = {
+    dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  }
+  const { data, isLoading, isError } = useDashboardMembers(dateParams)
 
   if (isLoading) return <LoadingState />
   if (isError) return <ErrorState title="Failed to load member analytics" />
@@ -22,11 +30,14 @@ export function MembersAnalytics() {
   return (
     <div className="bg-[var(--canvas-light)] rounded-2xl border border-[var(--hairline-soft)] p-6 shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-[#6C47FF]/10 flex items-center justify-center">
-          <Users className="w-4 h-4 text-[#6C47FF]" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#6C47FF]/10 flex items-center justify-center">
+            <Users className="w-4 h-4 text-[#6C47FF]" />
+          </div>
+          <h2 className="text-[15px] font-semibold text-[var(--on-primary)]">Member Growth</h2>
         </div>
-        <h2 className="text-[15px] font-semibold text-[var(--on-primary)]">Member Analytics</h2>
+        <DateFilter paramPrefix="members" />
       </div>
 
       {/* Stats Row */}

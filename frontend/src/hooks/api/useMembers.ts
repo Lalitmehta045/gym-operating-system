@@ -19,15 +19,24 @@ export interface Member {
   weightKg?: number;
   fitnessGoal?: string;
   notes?: string;
-  source?: 'WALK_IN' | 'WHATSAPP' | 'INSTAGRAM' | 'FACEBOOK' | 'REFERRAL' | 'WEBSITE' | 'OTHER';
+  source?: 'WALK_IN' | 'WHATSAPP' | 'INSTAGRAM' | 'FACEBOOK' | 'REFERRAL' | 'WEBSITE' | 'GOOGLE' | 'YOUTUBE' | 'NEWSPAPER' | 'FRIEND_FAMILY' | 'OTHER';
   occupation?: string;
   bloodGroup?: 'A_POSITIVE' | 'A_NEGATIVE' | 'B_POSITIVE' | 'B_NEGATIVE' | 'AB_POSITIVE' | 'AB_NEGATIVE' | 'O_POSITIVE' | 'O_NEGATIVE';
+  whatsappNumber?: string;
+  medicalNotes?: string;
+  experienceLevel?: string;
+  preferredTime?: string;
+  fitnessNotes?: string;
+  assignedTrainerId?: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'PENDING';
   isActive: boolean;
   joinedAt: string;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  planName?: string | null;
+  planPrice?: string | null;
+  planType?: string | null;
 }
 
 export interface MembersResponse {
@@ -73,6 +82,12 @@ export interface CreateMemberDto {
   source?: string;
   occupation?: string;
   bloodGroup?: string;
+  whatsappNumber?: string;
+  medicalNotes?: string;
+  experienceLevel?: string;
+  preferredTime?: string;
+  fitnessNotes?: string;
+  assignedTrainerId?: string;
 }
 
 export type UpdateMemberDto = Partial<CreateMemberDto> & { status?: string };

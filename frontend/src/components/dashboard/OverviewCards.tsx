@@ -1,9 +1,14 @@
 "use client"
 
 import { useDashboardOverview } from "@/hooks/api/useDashboard"
+import { useDashboardFinancialMetrics } from "@/hooks/api/useFinancials"
 import { useGymProfile } from "@/hooks/api/useSettings"
 import { LoadingState, ErrorState } from "@/components/ui/States"
 import { formatCurrency } from "@/lib/utils"
+import { ArrowUpRight, ArrowDownRight, Users, UserCheck, Banknote, CalendarCheck } from "lucide-react"
+import { useSectionFilter } from "@/hooks/useSectionFilter"
+import { DateFilter } from "@/components/ui/DateFilter"
+import { format } from "date-fns"
 
 // SVG Sparkline component
 function Sparkline({ color, seed = 0 }: { color: string; seed?: number }) {
@@ -64,12 +69,19 @@ function MetricCard({ title, value, subtitle, icon, iconBg, sparkColor, seed }: 
 }
 
 export function OverviewCards() {
-  const { data, isLoading, isError } = useDashboardOverview()
+  const { dateRange } = useSectionFilter("dashboard")
+  const dateParams = {
+    dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+  }
+
+  const { data, isLoading, isError } = useDashboardOverview(dateParams)
+  const { data: financials, isLoading: isFinLoading } = useDashboardFinancialMetrics(dateParams)
   const { data: gymProfile } = useGymProfile()
 
-  if (isLoading) return <LoadingState />
+  if (isLoading || isFinLoading) return <LoadingState />
   if (isError) return <ErrorState title="Failed to load overview data" />
-  if (!data) return null
+  if (!data || !financials) return null
 
   const currency = gymProfile?.currency || "INR"
 
@@ -130,7 +142,7 @@ export function OverviewCards() {
     },
     {
       title: "Total Revenue",
-      value: formatCurrency(data.totalRevenue, currency),
+      value: formatCurrency(financials.totalRevenue, currency),
       subtitle: "All time revenue",
       icon: <svg className="w-5 h-5 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
       iconBg: "bg-[#22c55e]/10",
@@ -138,9 +150,9 @@ export function OverviewCards() {
       seed: 7,
     },
     {
-      title: "Monthly Revenue",
-      value: formatCurrency(data.monthlyRevenue, currency),
-      subtitle: "This month",
+      title: "Outstanding Balance",
+      value: formatCurrency(financials.totalOutstanding, currency),
+      subtitle: "Pending collection",
       icon: <svg className="w-5 h-5 text-[#f59e0b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" /></svg>,
       iconBg: "bg-[#f59e0b]/10",
       sparkColor: "#f59e0b",
@@ -158,10 +170,16 @@ export function OverviewCards() {
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {cards.map((card, i) => (
-        <MetricCard key={i} {...card} />
-      ))}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-lg font-bold text-[var(--on-primary)]">Dashboard Overview</h2>
+        <DateFilter paramPrefix="dashboard" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {cards.map((card, i) => (
+          <MetricCard key={i} {...card} />
+        ))}
+      </div>
     </div>
   )
 }

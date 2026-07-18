@@ -20,20 +20,24 @@ interface PaymentsTableProps {
   search?: string;
   status?: string;
   method?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
-export function PaymentsTable({ search, status, method }: PaymentsTableProps) {
+export function PaymentsTable({ search, status, method, startDate, endDate }: PaymentsTableProps) {
   const router = useRouter();
   const [page, setPage] = React.useState(1);
 
   // Reset to page 1 when filters change
-  React.useEffect(() => { setPage(1) }, [search, status, method])
+  React.useEffect(() => { setPage(1) }, [search, status, method, startDate, endDate])
 
   const { data, isLoading, isError } = usePayments({
     page,
     search,
     status: status !== 'ALL' ? status : undefined,
     method: method !== 'ALL' ? method : undefined,
+    startDate,
+    endDate,
   });
 
   if (isLoading) {

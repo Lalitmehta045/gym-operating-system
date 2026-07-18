@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/Button"
 import { AttendanceDashboardCards } from "@/components/attendance/AttendanceDashboardCards"
 import { KioskQRSection } from "@/components/attendance/KioskQRSection"
 import { AttendanceCharts } from "@/components/attendance/AttendanceCharts"
+import { RecentAttendanceTable } from "@/components/attendance/RecentAttendanceTable"
 import { useAuth } from "@/hooks/useAuth"
+import { DateFilter } from "@/components/ui/DateFilter"
 
 export default function AttendancePage() {
   const { user } = useAuth()
@@ -20,7 +22,7 @@ export default function AttendancePage() {
           <h1 className="text-[32px] font-bold text-[var(--on-primary)]">Attendance Dashboard</h1>
           <p className="text-sm text-[var(--mute)]">Daily attendance overview and operations</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {!isTrainer && (
             <Link href="/attendance/history">
               <button className="flex items-center bg-[var(--canvas-light)] border border-[var(--hairline)] text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] rounded-lg px-4 py-2 text-sm font-medium transition-colors">
@@ -41,8 +43,11 @@ export default function AttendancePage() {
       {canManageKiosk && <KioskQRSection />}
 
       <AttendanceDashboardCards />
-      
+
       {!isTrainer && <AttendanceCharts />}
+
+      <RecentAttendanceTable />
     </div>
   )
 }
+

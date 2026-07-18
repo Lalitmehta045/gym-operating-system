@@ -16,6 +16,16 @@ export default function PaymentsPage() {
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState('ALL');
   const [method, setMethod] = React.useState('ALL');
+  const [dateFilter, setDateFilter] = React.useState('ALL_TIME');
+  
+  const getStartDate = () => {
+    if (dateFilter === 'THIS_MONTH') {
+      const now = new Date();
+      const startOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1) - (330 * 60 * 1000));
+      return startOfMonth.toISOString();
+    }
+    return undefined;
+  };
 
   React.useEffect(() => {
     if (user && user.role === 'TRAINER') {
@@ -80,9 +90,13 @@ export default function PaymentsPage() {
             <option value="BANK_TRANSFER">Bank Transfer</option>
           </select>
 
-          <Button variant="outline" className="flex items-center gap-2 bg-[var(--canvas-light)] text-[var(--ink-soft)] border-[var(--hairline)] hover:bg-[var(--canvas-paper)] h-10 px-3 rounded-lg text-sm font-medium">
-            <Calendar className="w-4 h-4 text-[var(--mute)]" />
-            This Month
+          <Button 
+            variant="outline" 
+            onClick={() => setDateFilter(prev => prev === 'ALL_TIME' ? 'THIS_MONTH' : 'ALL_TIME')}
+            className={`flex items-center gap-2 bg-[var(--canvas-light)] text-[var(--ink-soft)] border-[var(--hairline)] hover:bg-[var(--canvas-paper)] h-10 px-3 rounded-lg text-sm font-medium ${dateFilter === 'THIS_MONTH' ? 'bg-[var(--canvas-paper)] border-[#6C47FF] text-[#6C47FF]' : ''}`}
+          >
+            <Calendar className={`w-4 h-4 ${dateFilter === 'THIS_MONTH' ? 'text-[#6C47FF]' : 'text-[var(--mute)]'}`} />
+            {dateFilter === 'ALL_TIME' ? 'All Time' : 'This Month'}
           </Button>
 
           <Button variant="outline" className="flex items-center gap-2 bg-[var(--canvas-light)] text-[var(--ink-soft)] border-[var(--hairline)] hover:bg-[var(--canvas-paper)] h-10 px-3 rounded-lg text-sm font-medium">
@@ -92,7 +106,7 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      <PaymentsTable search={search} status={status} method={method} />
+      <PaymentsTable search={search} status={status} method={method} startDate={getStartDate()} />
     </div>
   );
 }

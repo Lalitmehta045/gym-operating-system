@@ -16,9 +16,17 @@ export class InvoicesService {
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
+    const whereClause: any = { tenantId };
+    if (query.memberId) {
+      whereClause.memberId = query.memberId;
+    }
+    if (query.status) {
+      whereClause.status = query.status;
+    }
+
     const [invoices, total] = await this.prisma.$transaction([
       this.prisma.invoice.findMany({
-        where: { tenantId },
+        where: whereClause,
         orderBy: { issuedAt: 'desc' },
         skip,
         take: limit,
@@ -27,9 +35,9 @@ export class InvoicesService {
           tenantId: true,
           memberId: true,
           subscriptionId: true,
-          paymentId: true,
           invoiceNumber: true,
           amount: true,
+          status: true,
           issuedAt: true,
           notes: true,
           createdAt: true,
@@ -57,17 +65,18 @@ export class InvoicesService {
               },
             },
           },
-          payment: {
+          payments: {
             select: {
               id: true,
               paymentMethod: true,
               paymentStatus: true,
+              amount: true,
               paidAt: true,
             },
           },
         },
       }),
-      this.prisma.invoice.count({ where: { tenantId } }),
+      this.prisma.invoice.count({ where: whereClause }),
     ]);
 
     return {
@@ -91,9 +100,9 @@ export class InvoicesService {
         tenantId: true,
         memberId: true,
         subscriptionId: true,
-        paymentId: true,
         invoiceNumber: true,
         amount: true,
+        status: true,
         issuedAt: true,
         notes: true,
         createdAt: true,
@@ -121,7 +130,7 @@ export class InvoicesService {
             },
           },
         },
-        payment: {
+        payments: {
           select: {
             id: true,
             amount: true,
@@ -145,21 +154,34 @@ export class InvoicesService {
   }
 
   private mapToDto(invoice: any): InvoiceDto {
+    const amount = invoice.amount ? Number(invoice.amount) : 0;
+    
+    // Calculate total paid from all successful payments
+    let totalPaid = 0;
+    if (invoice.payments && Array.isArray(invoice.payments)) {
+      totalPaid = invoice.payments
+        .filter((p: any) => p.paymentStatus === 'PAID')
+        .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    }
+    
+    const amountDue = Math.max(0, amount - totalPaid);
+
     return {
       id: invoice.id,
       tenantId: invoice.tenantId,
       memberId: invoice.memberId,
       subscriptionId: invoice.subscriptionId,
-      paymentId: invoice.paymentId,
       invoiceNumber: invoice.invoiceNumber,
-      amount: invoice.amount ? Number(invoice.amount) : 0,
+      amount,
+      amountDue,
+      status: invoice.status,
       issuedAt: invoice.issuedAt,
       notes: invoice.notes,
       createdAt: invoice.createdAt,
       updatedAt: invoice.updatedAt,
       member: invoice.member,
       subscription: invoice.subscription,
-      payment: invoice.payment,
+      payments: invoice.payments,
     };
   }
 }

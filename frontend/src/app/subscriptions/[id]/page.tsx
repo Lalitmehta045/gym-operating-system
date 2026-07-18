@@ -38,13 +38,21 @@ export default function SubscriptionDetailsPage() {
 
   const handlePay = async () => {
     try {
+      const orderData = await razorpay.createOrder(subscriptionId)
+
+      if (orderData.keyId === 'mock_key') {
+        alert("Mock Provider Active: Simulating payment success via webhook...")
+        await razorpay.simulateMockSuccess(orderData.orderId)
+        alert("Mock payment processed! Refreshing...")
+        refetch()
+        return
+      }
+
       const res = await razorpay.loadRazorpayScript()
       if (!res) {
         alert("Failed to load Razorpay SDK. Are you online?")
         return
       }
-
-      const orderData = await razorpay.createOrder(subscriptionId)
 
       const options = {
         key: orderData.keyId,
@@ -86,6 +94,21 @@ export default function SubscriptionDetailsPage() {
     }
   }
 
+  const handleGenerateLink = async () => {
+    if (!subscription?.member?.id) return
+    try {
+      const link = await razorpay.createPaymentLink(subscriptionId, subscription.member.id)
+      if (link) {
+        await navigator.clipboard.writeText(link)
+        alert("Payment link copied to clipboard: " + link)
+      } else {
+        alert("Failed to generate payment link. Is an invoice pending?")
+      }
+    } catch (error) {
+      alert("Failed to generate payment link")
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center p-8">
@@ -121,7 +144,12 @@ export default function SubscriptionDetailsPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          {subscription.status === "PENDING" && (
+          {subscription.status === "ACTIVE" && (
+            <Button variant="secondary" className="border-purple-200 text-purple-600 hover:bg-purple-50" onClick={handleGenerateLink} disabled={razorpay.isLoading}>
+              Payment Link
+            </Button>
+          )}
+          {subscription.status === "ACTIVE" && (
             <Button variant="primary" onClick={handlePay} disabled={razorpay.isLoading}>
               Pay Now
             </Button>
