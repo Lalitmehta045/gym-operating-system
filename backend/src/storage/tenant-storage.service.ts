@@ -189,7 +189,7 @@ export class TenantStorageService {
       });
 
       if (tenant.phone) {
-        await this.whatsapp.sendMessage(tenant.phone, message).catch(() => {});
+        await this.whatsapp.sendStorageWarning(tenantId, warningLevel).catch(() => {});
       }
     }
   }

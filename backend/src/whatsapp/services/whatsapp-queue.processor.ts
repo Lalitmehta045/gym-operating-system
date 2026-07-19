@@ -1,7 +1,8 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { WHATSAPP_PROVIDER_TOKEN, IWhatsAppProvider } from './providers/whatsapp-provider.interface.js';
+import { WHATSAPP_PROVIDER_TOKEN } from '../providers/whatsapp-provider.interface.js';
+import type { IWhatsAppProvider } from '../providers/whatsapp-provider.interface.js';
 
 @Injectable()
 export class WhatsappQueueProcessor {
