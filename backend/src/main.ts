@@ -14,6 +14,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const logger = new Logger('Bootstrap');
 
+  // ── Trust Proxy (required behind Nginx/reverse proxy) ──
+  // Without this, req.ip always returns 127.0.0.1 and throttler
+  // treats all users as one IP, blocking everyone after a few requests.
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   // ── Raw Body Capture for Webhooks ──
   app.use(
     '/api/v1/webhooks/razorpay',
