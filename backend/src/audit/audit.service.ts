@@ -97,7 +97,7 @@ export class AuditService {
     if (query.search) {
       where.OR = [
         { description: { contains: query.search, mode: 'insensitive' } },
-        { entityId: { contains: query.search, mode: 'insensitive' } },
+        { ipAddress: { contains: query.search, mode: 'insensitive' } },
       ];
     }
 

@@ -278,7 +278,6 @@ export class DashboardService {
           attendanceDate: { gte: periodStart, lte: periodEnd },
         },
         _count: { _all: true },
-        orderBy: { status: 'asc' },
       }),
       this.prisma.attendance.findMany({
         where: {
