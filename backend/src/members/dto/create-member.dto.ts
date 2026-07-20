@@ -64,6 +64,10 @@ export class CreateMemberDto {
   dateOfBirth?: string;
 
   @IsOptional()
+  @IsDateString()
+  joinedAt?: string;
+
+  @IsOptional()
   @IsUrl({ require_protocol: true })
   @MaxLength(2048)
   photoUrl?: string;

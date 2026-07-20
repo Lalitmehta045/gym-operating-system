@@ -34,4 +34,12 @@ export class ListPaymentsQueryDto {
   @IsOptional()
   @Type(() => String)
   endDate?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  minAmount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  maxAmount?: number;
 }

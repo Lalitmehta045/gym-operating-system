@@ -41,6 +41,8 @@ export interface GetPaymentsParams {
   method?: string;
   startDate?: string;
   endDate?: string;
+  minAmount?: number;
+  maxAmount?: number;
   memberId?: string;
   subscriptionId?: string;
   sortBy?: string;

@@ -31,6 +31,10 @@ export interface GetPlansParams {
   search?: string;
   planType?: string;
   isActive?: boolean | string;
+  minDuration?: number;
+  maxDuration?: number;
+  minPrice?: number;
+  maxPrice?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }

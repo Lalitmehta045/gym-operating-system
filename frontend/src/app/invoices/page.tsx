@@ -6,13 +6,33 @@ import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { InvoicesTable } from '@/components/invoices/InvoicesTable';
+import { InvoiceFilters } from '@/components/invoices/InvoiceFilters';
 import { useDashboardFinancialMetrics } from '@/hooks/api/useFinancials';
-import { Download, Plus, Search, Calendar, Filter, FileText, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Download, Plus, FileText, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { useUrlFilters } from '@/hooks/useUrlFilters';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function InvoicesPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [search, setSearch] = React.useState('');
+  const { getFilter, setFilter, setFilters, clearFilters } = useUrlFilters();
+  
+  const [localSearch, setLocalSearch] = React.useState(getFilter('search'));
+  const debouncedSearch = useDebounce(localSearch, 300);
+
+  React.useEffect(() => {
+    setFilter('search', debouncedSearch);
+  }, [debouncedSearch, setFilter]);
+
+  const status = getFilter('status') || 'ALL';
+  const dateFilter = getFilter('dateFilter') || 'ALL_TIME';
+  const paymentMethod = getFilter('paymentMethod');
+  const dateFrom = getFilter('dateFrom');
+  const dateTo = getFilter('dateTo');
+  const minAmount = getFilter('minAmount');
+  const maxAmount = getFilter('maxAmount');
+  const membershipPlanId = getFilter('membershipPlanId');
+  
   const { data: financials } = useDashboardFinancialMetrics();
 
   const total = financials?.totalInvoices || 0;
@@ -117,45 +137,34 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <div className="bg-[var(--canvas-light)] border border-[var(--hairline)] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shadow-sm">
-        <div className="relative w-full lg:w-[450px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ash)]" />
-          <Input
-            placeholder="Search by invoice number or member name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 w-full bg-transparent border-[var(--hairline)] focus:border-[#6C47FF] focus:ring-[#6C47FF]/20"
-          />
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <select className="h-10 px-3 rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-sm focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] min-w-[130px] text-[var(--ink-soft)]">
-            <option value="ALL">All Statuses</option>
-            <option value="PAID">Paid</option>
-            <option value="PENDING">Pending</option>
-            <option value="OVERDUE">Overdue</option>
-          </select>
-          
-          <select className="h-10 px-3 rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-sm focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] min-w-[130px] text-[var(--ink-soft)]">
-            <option value="ALL">All Plans</option>
-            <option value="PREMIUM">Premium Plan</option>
-            <option value="STANDARD">Standard Plan</option>
-            <option value="BASIC">Basic Plan</option>
-          </select>
+      <InvoiceFilters
+        search={localSearch}
+        setSearch={setLocalSearch}
+        status={status}
+        setStatus={(val) => setFilter('status', val)}
+        dateFilter={dateFilter}
+        setDateFilter={(val) => setFilter('dateFilter', val)}
+        paymentMethod={paymentMethod}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        minAmount={minAmount}
+        maxAmount={maxAmount}
+        membershipPlanId={membershipPlanId}
+        onApplyAdvancedFilters={(filters) => setFilters(filters)}
+        onClearAdvancedFilters={() => clearFilters(['search', 'status', 'dateFilter'])}
+      />
 
-          <Button variant="outline" className="flex items-center gap-2 bg-[var(--canvas-light)] text-[var(--ink-soft)] border-[var(--hairline)] hover:bg-[var(--canvas-paper)] h-10 px-3 rounded-lg text-sm font-medium">
-            <Calendar className="w-4 h-4 text-[var(--mute)]" />
-            This Month
-          </Button>
-
-          <Button variant="outline" className="flex items-center gap-2 bg-[var(--canvas-light)] text-[var(--ink-soft)] border-[var(--hairline)] hover:bg-[var(--canvas-paper)] h-10 px-3 rounded-lg text-sm font-medium">
-            <Filter className="w-4 h-4 text-[var(--mute)]" />
-            Filters
-          </Button>
-        </div>
-      </div>
-
-      <InvoicesTable search={search} />
+      <InvoicesTable 
+        search={getFilter('search')}
+        status={status}
+        dateFilter={dateFilter}
+        paymentMethod={paymentMethod}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        minAmount={minAmount ? parseFloat(minAmount) : undefined}
+        maxAmount={maxAmount ? parseFloat(maxAmount) : undefined}
+        membershipPlanId={membershipPlanId}
+      />
     </div>
   );
 }

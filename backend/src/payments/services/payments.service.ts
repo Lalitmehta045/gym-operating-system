@@ -152,6 +152,12 @@ export class PaymentsService {
       if (query.endDate) where.createdAt.lte = new Date(query.endDate);
     }
 
+    if (query.minAmount !== undefined || query.maxAmount !== undefined) {
+      where.amount = {};
+      if (query.minAmount !== undefined) where.amount.gte = query.minAmount;
+      if (query.maxAmount !== undefined) where.amount.lte = query.maxAmount;
+    }
+
     if (query.search) {
       where.OR = [
         { transactionReference: { contains: query.search, mode: 'insensitive' } },

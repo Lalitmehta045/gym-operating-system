@@ -22,14 +22,16 @@ interface PaymentsTableProps {
   method?: string;
   startDate?: string;
   endDate?: string;
+  minAmount?: number;
+  maxAmount?: number;
 }
 
-export function PaymentsTable({ search, status, method, startDate, endDate }: PaymentsTableProps) {
+export function PaymentsTable({ search, status, method, startDate, endDate, minAmount, maxAmount }: PaymentsTableProps) {
   const router = useRouter();
   const [page, setPage] = React.useState(1);
 
   // Reset to page 1 when filters change
-  React.useEffect(() => { setPage(1) }, [search, status, method, startDate, endDate])
+  React.useEffect(() => { setPage(1) }, [search, status, method, startDate, endDate, minAmount, maxAmount])
 
   const { data, isLoading, isError } = usePayments({
     page,
@@ -38,6 +40,8 @@ export function PaymentsTable({ search, status, method, startDate, endDate }: Pa
     method: method !== 'ALL' ? method : undefined,
     startDate,
     endDate,
+    minAmount,
+    maxAmount,
   });
 
   if (isLoading) {

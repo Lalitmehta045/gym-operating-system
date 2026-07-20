@@ -94,6 +94,22 @@ export class MembershipPlansService implements MembershipPlanServiceInterface {
           { description: { contains: query.search, mode: 'insensitive' } },
         ],
       }),
+      ...(query.minDuration !== undefined || query.maxDuration !== undefined
+        ? {
+            durationDays: {
+              ...(query.minDuration !== undefined && { gte: query.minDuration }),
+              ...(query.maxDuration !== undefined && { lte: query.maxDuration }),
+            },
+          }
+        : {}),
+      ...(query.minPrice !== undefined || query.maxPrice !== undefined
+        ? {
+            price: {
+              ...(query.minPrice !== undefined && { gte: query.minPrice }),
+              ...(query.maxPrice !== undefined && { lte: query.maxPrice }),
+            },
+          }
+        : {}),
     };
 
     const [plans, total] = await this.prisma.$transaction([

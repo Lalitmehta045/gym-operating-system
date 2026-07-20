@@ -60,6 +60,7 @@ export interface GetMembersParams {
   includeDeleted?: boolean;
   dateFrom?: string;
   dateTo?: string;
+  membershipStatus?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -72,6 +73,7 @@ export interface CreateMemberDto {
   phone: string;
   gender: string;
   dateOfBirth?: string;
+  joinedAt?: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
   emergencyContactRelation: string;

@@ -8,19 +8,37 @@ import { PlanFilters } from "@/components/plans/PlanFilters"
 import { PlanDashboardCards } from "@/components/plans/PlanDashboardCards"
 import { usePlans, useDeletePlan } from "@/hooks/api/usePlans"
 import { useAuth } from "@/hooks/useAuth"
+import { useUrlFilters } from "@/hooks/useUrlFilters"
+import { useDebounce } from "@/hooks/useDebounce"
 
 export default function PlansPage() {
   const { user } = useAuth()
   const canManage = user?.role === "OWNER"
 
-  const [search, setSearch] = React.useState("")
-  const [planType, setPlanType] = React.useState("")
-  const [isActive, setIsActive] = React.useState("")
+  const { getFilter, setFilter, setFilters, clearFilters } = useUrlFilters()
+
+  const [localSearch, setLocalSearch] = React.useState(getFilter("search"))
+  const debouncedSearch = useDebounce(localSearch, 300)
+
+  React.useEffect(() => {
+    setFilter("search", debouncedSearch)
+  }, [debouncedSearch, setFilter])
+
+  const planType = getFilter("planType")
+  const isActive = getFilter("isActive")
+  const minDuration = getFilter("minDuration")
+  const maxDuration = getFilter("maxDuration")
+  const minPrice = getFilter("minPrice")
+  const maxPrice = getFilter("maxPrice")
 
   const { data, isLoading } = usePlans({
-    search: search || undefined,
+    search: getFilter("search") || undefined,
     planType: planType || undefined,
     isActive: isActive === "" ? undefined : isActive === "true",
+    minDuration: minDuration ? parseInt(minDuration, 10) : undefined,
+    maxDuration: maxDuration ? parseInt(maxDuration, 10) : undefined,
+    minPrice: minPrice ? parseFloat(minPrice) : undefined,
+    maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
   })
 
   const deletePlan = useDeletePlan()
@@ -56,12 +74,18 @@ export default function PlansPage() {
 
       {/* SEARCH/FILTERS */}
       <PlanFilters
-        search={search}
-        setSearch={setSearch}
+        search={localSearch}
+        setSearch={setLocalSearch}
         planType={planType}
-        setPlanType={setPlanType}
+        setPlanType={(val) => setFilter("planType", val)}
         isActive={isActive}
-        setIsActive={setIsActive}
+        setIsActive={(val) => setFilter("isActive", val)}
+        minDuration={minDuration}
+        maxDuration={maxDuration}
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        onApplyAdvancedFilters={(filters) => setFilters(filters)}
+        onClearAdvancedFilters={() => clearFilters(["search", "planType", "isActive"])}
       />
 
       {/* TABLE */}

@@ -9,12 +9,40 @@ import { SubscriptionDashboardCards } from "@/components/subscriptions/Subscript
 import { useSubscriptions, useRenewSubscription, useDeleteSubscription } from "@/hooks/api/useSubscriptions"
 import { useRazorpay } from "@/hooks/api/useRazorpay"
 import { useAuth } from "@/hooks/useAuth"
+import { useUrlFilters } from "@/hooks/useUrlFilters"
+import { useDebounce } from "@/hooks/useDebounce"
+import { SubscriptionFilters } from "@/components/subscriptions/SubscriptionFilters"
 
 export default function SubscriptionsPage() {
-  const [page, setPage] = React.useState(1)
+  const { getFilter, setFilter, setFilters, clearFilters } = useUrlFilters()
   const { user } = useAuth()
   const isTrainer = user?.role === "TRAINER"
-  const { data, isLoading, refetch } = useSubscriptions({ page })
+
+  const [localSearch, setLocalSearch] = React.useState(getFilter("search"))
+  const debouncedSearch = useDebounce(localSearch, 300)
+
+  React.useEffect(() => {
+    setFilter("search", debouncedSearch)
+  }, [debouncedSearch, setFilter])
+
+  const status = getFilter("status")
+  const membershipPlanId = getFilter("membershipPlanId")
+  const startDate = getFilter("startDate")
+  const endDate = getFilter("endDate")
+  const billingStatus = getFilter("billingStatus")
+  
+  const pageParam = getFilter("page")
+  const page = pageParam ? parseInt(pageParam, 10) : 1
+
+  const { data, isLoading, refetch } = useSubscriptions({ 
+    page,
+    search: getFilter("search") || undefined,
+    status: status || undefined,
+    membershipPlanId: membershipPlanId || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    billingStatus: billingStatus || undefined,
+  })
   const renewSubscription = useRenewSubscription()
   const cancelSubscription = useDeleteSubscription()
   const razorpay = useRazorpay()
@@ -123,11 +151,24 @@ export default function SubscriptionsPage() {
       <SubscriptionDashboardCards />
 
       {/* SEARCH/FILTER BAR & TABLE */}
+      <SubscriptionFilters
+        search={localSearch}
+        setSearch={setLocalSearch}
+        status={status}
+        setStatus={(val) => setFilter("status", val)}
+        membershipPlanId={membershipPlanId}
+        startDate={startDate}
+        endDate={endDate}
+        billingStatus={billingStatus}
+        onApplyAdvancedFilters={(filters) => setFilters(filters)}
+        onClearAdvancedFilters={() => clearFilters(["search", "status"])}
+      />
+
       <SubscriptionTable
         subscriptions={data?.data || []}
         meta={data?.meta}
         page={page}
-        onPageChange={setPage}
+        onPageChange={(p) => setFilter("page", p.toString())}
         isLoading={isLoading}
         onRenew={handleRenew}
         onCancel={handleCancel}

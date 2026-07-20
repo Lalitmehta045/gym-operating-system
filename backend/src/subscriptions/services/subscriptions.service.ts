@@ -134,6 +134,35 @@ export class SubscriptionsService {
       whereClause.status = query.status;
     }
 
+    if (query.membershipPlanId) {
+      whereClause.membershipPlanId = query.membershipPlanId;
+    }
+
+    if (query.startDate) {
+      whereClause.startDate = { gte: new Date(query.startDate) };
+    }
+
+    if (query.endDate) {
+      whereClause.endDate = { ...(whereClause.endDate || {}), lte: new Date(query.endDate) };
+    }
+
+    if (query.renewalDate) {
+      whereClause.endDate = { ...(whereClause.endDate || {}), gte: new Date(query.renewalDate), lte: new Date(query.renewalDate) }; // Approximate matching might be needed, but strictly it's equality on date. Let's just do equality if they pass a single date, or we can use a range if they pass from/to. Wait, renewal date IS end date. Let's assume renewalDate means it matches endDate exactly (or gte/lte if it's a date string). Let's use gte and lt for the day. 
+      const startOfDay = new Date(query.renewalDate);
+      startOfDay.setHours(0,0,0,0);
+      const endOfDay = new Date(query.renewalDate);
+      endOfDay.setHours(23,59,59,999);
+      whereClause.endDate = { ...(whereClause.endDate || {}), gte: startOfDay, lte: endOfDay };
+    }
+
+    if (query.billingStatus) {
+      whereClause.invoices = {
+        some: {
+          status: query.billingStatus as any,
+        }
+      };
+    }
+
     const [subscriptions, total] = await this.prisma.$transaction([
       this.prisma.subscription.findMany({
         where: whereClause,

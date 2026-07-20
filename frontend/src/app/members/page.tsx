@@ -9,26 +9,41 @@ import { MemberFilters } from "@/components/members/MemberFilters"
 import { useMembers, useDeleteMember, useRestoreMember } from "@/hooks/api/useMembers"
 import { useDashboardMembers } from "@/hooks/api/useDashboard"
 import { useAuth } from "@/hooks/useAuth"
+import { useUrlFilters } from "@/hooks/useUrlFilters"
+import { useDebounce } from "@/hooks/useDebounce"
 
 export default function MembersPage() {
   const { user } = useAuth()
   const canManage = user?.role === "OWNER" || user?.role === "MANAGER"
 
-  const [search, setSearch] = React.useState("")
-  const [status, setStatus] = React.useState("")
-  const [gender, setGender] = React.useState("")
-  const [source, setSource] = React.useState("")
-  const [page, setPage] = React.useState(1)
+  const { getFilter, setFilter, setFilters, clearFilters } = useUrlFilters()
 
-  // Reset to page 1 whenever filters change
-  React.useEffect(() => { setPage(1) }, [search, status, gender, source])
+  const [localSearch, setLocalSearch] = React.useState(getFilter("search"))
+  const debouncedSearch = useDebounce(localSearch, 300)
+
+  React.useEffect(() => {
+    setFilter("search", debouncedSearch)
+  }, [debouncedSearch, setFilter])
+
+  const status = getFilter("status")
+  const gender = getFilter("gender")
+  const source = getFilter("source")
+  const dateFrom = getFilter("dateFrom")
+  const dateTo = getFilter("dateTo")
+  const membershipStatus = getFilter("membershipStatus")
+  
+  const pageParam = getFilter("page")
+  const page = pageParam ? parseInt(pageParam, 10) : 1
 
   const { data, isLoading } = useMembers({
     page,
-    search,
+    search: getFilter("search"),
     status,
     gender,
     source,
+    dateFrom,
+    dateTo,
+    membershipStatus,
     includeInactive: true,
   })
 
@@ -168,21 +183,26 @@ export default function MembersPage() {
       )}
 
       <MemberFilters
-        search={search}
-        setSearch={setSearch}
+        search={localSearch}
+        setSearch={setLocalSearch}
         status={status}
-        setStatus={setStatus}
+        setStatus={(val) => setFilter("status", val)}
         gender={gender}
-        setGender={setGender}
+        setGender={(val) => setFilter("gender", val)}
         source={source}
-        setSource={setSource}
+        setSource={(val) => setFilter("source", val)}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        membershipStatus={membershipStatus}
+        onApplyAdvancedFilters={(filters) => setFilters(filters)}
+        onClearAdvancedFilters={() => clearFilters(["search", "status", "gender", "source"])}
       />
 
       <MemberTable
         members={data?.data || []}
         meta={data?.meta}
         page={page}
-        onPageChange={setPage}
+        onPageChange={(p) => setFilter("page", p.toString())}
         isLoading={isLoading}
         onDelete={handleDelete}
         onRestore={handleRestore}

@@ -18,22 +18,56 @@ import { Eye, FileText, Smartphone, CreditCard, Banknote, Building2, MoreVertica
 
 interface InvoicesTableProps {
   search?: string;
+  status?: string;
+  dateFilter?: string;
+  paymentMethod?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  membershipPlanId?: string;
 }
 
-export function InvoicesTable({ search }: InvoicesTableProps) {
+export function InvoicesTable({ 
+  search, 
+  status, 
+  dateFilter, 
+  paymentMethod, 
+  dateFrom, 
+  dateTo, 
+  minAmount, 
+  maxAmount, 
+  membershipPlanId 
+}: InvoicesTableProps) {
   const router = useRouter();
   const [page, setPage] = React.useState(1);
+
+  const getStartDate = () => {
+    if (dateFilter === 'THIS_MONTH') {
+      const now = new Date();
+      const startOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1) - (330 * 60 * 1000));
+      return startOfMonth.toISOString();
+    }
+    return dateFrom;
+  };
 
   const { data, isLoading, isError } = useInvoices({
     search,
     page,
     limit: 20,
+    status: status !== 'ALL' ? status : undefined,
+    paymentMethod,
+    dateFrom: getStartDate(),
+    dateTo,
+    minAmount,
+    maxAmount,
+    membershipPlanId,
   });
 
-  // Reset page when search changes
+  // Reset page when search or filters change
   React.useEffect(() => {
     setPage(1);
-  }, [search]);
+  }, [search, status, dateFilter, paymentMethod, dateFrom, dateTo, minAmount, maxAmount, membershipPlanId]);
 
   if (isLoading) {
     return <LoadingState />;

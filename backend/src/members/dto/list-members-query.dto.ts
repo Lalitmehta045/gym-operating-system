@@ -112,4 +112,8 @@ export class ListMembersQueryDto {
   @IsOptional()
   @IsEnum(SortOrder)
   sortOrder?: SortOrder = SortOrder.Desc;
+
+  @IsOptional()
+  @IsString()
+  membershipStatus?: string;
 }

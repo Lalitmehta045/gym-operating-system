@@ -56,6 +56,24 @@ export class ListMembershipPlansQueryDto {
   @Type(() => Boolean)
   @IsBoolean()
   includeDeleted?: boolean = false;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  minDuration?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  maxDuration?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  minPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  maxPrice?: number;
 }
 
 export class MembershipPlanListMetaDto {

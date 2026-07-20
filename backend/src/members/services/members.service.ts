@@ -92,6 +92,16 @@ export class MembersService implements MemberServiceInterface {
             },
           }
         : {}),
+      ...(query?.membershipStatus
+        ? {
+            subscriptions: {
+              some: {
+                status: query.membershipStatus as any,
+                deletedAt: null,
+              },
+            },
+          }
+        : {}),
       ...(includeInactive ? {} : { isActive: true }),
       ...(includeDeleted ? {} : { deletedAt: null }),
       ...(query?.search
@@ -229,6 +239,7 @@ export class MembersService implements MemberServiceInterface {
         assignedTrainerId: dto.assignedTrainerId,
         status: (dto.status as PrismaMemberStatus) ?? PrismaMemberStatus.ACTIVE,
         isActive: dto.isActive ?? true,
+        joinedAt: dto.joinedAt ? new Date(dto.joinedAt) : new Date(),
       },
     });
 

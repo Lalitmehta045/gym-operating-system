@@ -25,6 +25,7 @@ const memberSchema = z.object({
     .regex(/^\+91\s?\d{5}\s?\d{5}$/, "Enter valid 10-digit number after +91"),
   gender: z.enum(["MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY"]),
   dateOfBirth: z.string().optional(),
+  joinedAt: z.string().optional(),
   whatsappNumber: z
     .string()
     .optional()
@@ -154,6 +155,7 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
       phone: initialData?.phone || "",
       gender: initialData?.gender || "MALE",
       dateOfBirth: initialData?.dateOfBirth ? new Date(initialData.dateOfBirth).toISOString().split('T')[0] : "",
+      joinedAt: initialData?.joinedAt ? new Date(initialData.joinedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       whatsappNumber: initialData?.whatsappNumber || "",
       heightCm: initialData?.heightCm || undefined,
       weightKg: initialData?.weightKg || undefined,
@@ -274,7 +276,7 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
   const handleSubmit = async (values: MemberFormValues) => {
     // Clean up empty optional selects and strings
     const payload: any = { ...values }
-    const optionalFields = ["source", "bloodGroup", "dateOfBirth", "medicalNotes", "experienceLevel", "preferredTime", "fitnessNotes", "assignedTrainerId", "occupation", "fitnessGoal", "notes"];
+    const optionalFields = ["source", "bloodGroup", "dateOfBirth", "joinedAt", "medicalNotes", "experienceLevel", "preferredTime", "fitnessNotes", "assignedTrainerId", "occupation", "fitnessGoal", "notes"];
     
     optionalFields.forEach(field => {
       if (payload[field] === "") delete payload[field];
@@ -821,7 +823,7 @@ export function MemberForm({ initialData, onSubmit, isLoading, isEdit = false }:
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium text-[var(--ink-soft)] block">Join Date</label>
-            <Input type="date" />
+            <Input type="date" {...form.register("joinedAt")} />
           </div>
         </div>
       </div>

@@ -23,6 +23,28 @@ export class InvoicesService {
     if (query.status) {
       whereClause.status = query.status;
     }
+    if (query.paymentMethod) {
+      whereClause.payments = {
+        some: {
+          paymentMethod: query.paymentMethod as any,
+        }
+      };
+    }
+    if (query.dateFrom || query.dateTo) {
+      whereClause.issuedAt = {};
+      if (query.dateFrom) whereClause.issuedAt.gte = new Date(query.dateFrom);
+      if (query.dateTo) whereClause.issuedAt.lte = new Date(query.dateTo);
+    }
+    if (query.minAmount !== undefined || query.maxAmount !== undefined) {
+      whereClause.amount = {};
+      if (query.minAmount !== undefined) whereClause.amount.gte = query.minAmount;
+      if (query.maxAmount !== undefined) whereClause.amount.lte = query.maxAmount;
+    }
+    if (query.membershipPlanId) {
+      whereClause.subscription = {
+        membershipPlanId: query.membershipPlanId
+      };
+    }
 
     const [invoices, total] = await this.prisma.$transaction([
       this.prisma.invoice.findMany({

@@ -22,4 +22,28 @@ export class ListInvoicesQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
+
+  @IsOptional()
+  @IsString()
+  dateFrom?: string;
+
+  @IsOptional()
+  @IsString()
+  dateTo?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  minAmount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  maxAmount?: number;
+
+  @IsOptional()
+  @IsString()
+  membershipPlanId?: string;
 }

@@ -7,16 +7,29 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PaymentsTable } from '@/components/payments/PaymentsTable';
+import { PaymentFilters } from '@/components/payments/PaymentFilters';
 import { RevenueSummary } from '@/components/reports/RevenueSummary';
-import { Receipt, Search, Filter, Calendar } from 'lucide-react';
+import { Receipt } from 'lucide-react';
+import { useUrlFilters } from '@/hooks/useUrlFilters';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function PaymentsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [search, setSearch] = React.useState('');
-  const [status, setStatus] = React.useState('ALL');
-  const [method, setMethod] = React.useState('ALL');
-  const [dateFilter, setDateFilter] = React.useState('ALL_TIME');
+  const { getFilter, setFilter, setFilters, clearFilters } = useUrlFilters();
+  
+  const [localSearch, setLocalSearch] = React.useState(getFilter('search'));
+  const debouncedSearch = useDebounce(localSearch, 300);
+
+  React.useEffect(() => {
+    setFilter('search', debouncedSearch);
+  }, [debouncedSearch, setFilter]);
+
+  const status = getFilter('status') || 'ALL';
+  const method = getFilter('method') || 'ALL';
+  const dateFilter = getFilter('dateFilter') || 'ALL_TIME';
+  const minAmount = getFilter('minAmount');
+  const maxAmount = getFilter('maxAmount');
   
   const getStartDate = () => {
     if (dateFilter === 'THIS_MONTH') {
@@ -54,59 +67,29 @@ export default function PaymentsPage() {
 
       <RevenueSummary />
 
-      <div className="bg-[var(--canvas-light)] border border-[var(--hairline)] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center justify-between mb-6 shadow-sm">
-        <div className="relative w-full lg:w-[400px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ash)]" />
-          <Input
-            placeholder="Search by name, email, invoice or transaction ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 w-full bg-transparent border-[var(--hairline)] focus:border-[#6C47FF] focus:ring-[#6C47FF]/20"
-          />
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <select 
-            value={status} 
-            onChange={(e) => setStatus(e.target.value)} 
-            className="h-10 px-3 rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-sm focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] min-w-[130px] text-[var(--ink-soft)]"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="PAID">Paid</option>
-            <option value="PENDING">Pending</option>
-            <option value="FAILED">Failed</option>
-            <option value="REFUNDED">Refunded</option>
-          </select>
-          
-          <select 
-            value={method} 
-            onChange={(e) => setMethod(e.target.value)} 
-            className="h-10 px-3 rounded-lg border border-[var(--hairline)] bg-[var(--canvas-light)] text-sm focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] min-w-[130px] text-[var(--ink-soft)]"
-          >
-            <option value="ALL">All Methods</option>
-            <option value="CASH">Cash</option>
-            <option value="UPI">UPI</option>
-            <option value="CARD">Card</option>
-            <option value="BANK_TRANSFER">Bank Transfer</option>
-          </select>
+      <PaymentFilters
+        search={localSearch}
+        setSearch={setLocalSearch}
+        status={status}
+        setStatus={(val) => setFilter('status', val)}
+        method={method}
+        setMethod={(val) => setFilter('method', val)}
+        dateFilter={dateFilter}
+        setDateFilter={(val) => setFilter('dateFilter', val)}
+        minAmount={minAmount}
+        maxAmount={maxAmount}
+        onApplyAdvancedFilters={(filters) => setFilters(filters)}
+        onClearAdvancedFilters={() => clearFilters(['search', 'status', 'method', 'dateFilter'])}
+      />
 
-          <Button 
-            variant="outline" 
-            onClick={() => setDateFilter(prev => prev === 'ALL_TIME' ? 'THIS_MONTH' : 'ALL_TIME')}
-            className={`flex items-center gap-2 bg-[var(--canvas-light)] text-[var(--ink-soft)] border-[var(--hairline)] hover:bg-[var(--canvas-paper)] h-10 px-3 rounded-lg text-sm font-medium ${dateFilter === 'THIS_MONTH' ? 'bg-[var(--canvas-paper)] border-[#6C47FF] text-[#6C47FF]' : ''}`}
-          >
-            <Calendar className={`w-4 h-4 ${dateFilter === 'THIS_MONTH' ? 'text-[#6C47FF]' : 'text-[var(--mute)]'}`} />
-            {dateFilter === 'ALL_TIME' ? 'All Time' : 'This Month'}
-          </Button>
-
-          <Button variant="outline" className="flex items-center gap-2 bg-[var(--canvas-light)] text-[var(--ink-soft)] border-[var(--hairline)] hover:bg-[var(--canvas-paper)] h-10 px-3 rounded-lg text-sm font-medium">
-            <Filter className="w-4 h-4 text-[var(--mute)]" />
-            Filters
-          </Button>
-        </div>
-      </div>
-
-      <PaymentsTable search={search} status={status} method={method} startDate={getStartDate()} />
+      <PaymentsTable 
+        search={getFilter('search')} 
+        status={status} 
+        method={method} 
+        startDate={getStartDate()} 
+        minAmount={minAmount ? parseFloat(minAmount) : undefined}
+        maxAmount={maxAmount ? parseFloat(maxAmount) : undefined}
+      />
     </div>
   );
 }

@@ -12,12 +12,17 @@ export default function CreateSubscriptionPage() {
   const router = useRouter()
   const createSubscription = useCreateSubscription()
 
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
+
   const handleSubmit = async (data: CreateSubscriptionDto) => {
     try {
+      setErrorMsg(null)
       await createSubscription.mutateAsync(data)
       router.push("/subscriptions")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create subscription:", error)
+      const message = error?.response?.data?.message || error.message || "Failed to create subscription"
+      setErrorMsg(Array.isArray(message) ? message.join(", ") : message)
     }
   }
 
@@ -32,6 +37,12 @@ export default function CreateSubscriptionPage() {
           <h1 className="text-3xl font-bold text-[var(--on-primary)]">New Subscription</h1>
           <p className="text-sm text-[var(--mute)] mt-1">Enroll a member in a plan</p>
         </div>
+
+        {errorMsg && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg text-sm">
+            {errorMsg}
+          </div>
+        )}
 
         <SubscriptionForm onSubmit={handleSubmit} isLoading={createSubscription.isPending} submitLabel="Enroll Member" />
       </div>

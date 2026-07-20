@@ -71,30 +71,6 @@ export function SubscriptionTable({ subscriptions, isLoading, meta, page = 1, on
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-[var(--canvas-light)] p-3 rounded-xl border border-[var(--hairline-soft)] shadow-sm">
-        <div className="relative flex-1 w-full lg:w-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--ash)]" />
-          <input
-            type="text"
-            placeholder="Search by member name, plan, or invoice..."
-            className="w-full pl-9 pr-4 py-2 bg-transparent text-sm text-[var(--on-primary)] focus:outline-none"
-          />
-        </div>
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <select className="bg-transparent text-sm text-[var(--ink-soft)] font-medium focus:outline-none cursor-pointer border-l border-[var(--hairline-soft)] pl-3">
-            <option>All Statuses</option>
-            <option>Active</option>
-            <option>Pending</option>
-            <option>Expired</option>
-          </select>
-          <button onClick={() => {}} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--canvas-paper)] rounded-lg border-l border-[var(--hairline-soft)] transition-colors">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-        </div>
-      </div>
-
       {/* Table */}
       <div className="bg-[var(--canvas-light)] rounded-xl border border-[var(--hairline-soft)] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

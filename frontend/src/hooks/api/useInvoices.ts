@@ -39,8 +39,13 @@ export interface GetInvoicesParams {
   page?: number;
   limit?: number;
   search?: string;
-  startDate?: string;
-  endDate?: string;
+  status?: string;
+  paymentMethod?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  membershipPlanId?: string;
   memberId?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';

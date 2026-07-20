@@ -40,6 +40,7 @@ export interface GetSubscriptionsParams {
   membershipPlanId?: string;
   startDate?: string;
   endDate?: string;
+  billingStatus?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }

@@ -46,4 +46,12 @@ export class ListSubscriptionsQueryDto {
   @IsOptional()
   @IsString()
   sortOrder?: string;
+
+  @IsOptional()
+  @IsString()
+  billingStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  renewalDate?: string;
 }
