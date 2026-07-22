@@ -1,8 +1,8 @@
 export function TrustSection() {
   const stats = [
-    { id: 1, name: 'Gyms', value: '500+' },
-    { id: 2, name: 'Members', value: '50K+' },
-    { id: 3, name: 'Processed', value: '₹10Cr+' },
+    { id: 1, name: 'Gyms', value: '10+' },
+    { id: 2, name: 'Members', value: '500+' },
+    { id: 3, name: 'Processed', value: '₹1.5L+' },
     { id: 4, name: 'Uptime', value: '99.9%' },
   ];
 

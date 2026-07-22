@@ -57,13 +57,13 @@ export function PricingSection() {
                 <h3 className="text-heading-md mb-[var(--spacing-sm)]">
                   {tier.name}
                 </h3>
-                <p className={`text-body mb-[var(--spacing-lg)] ${tier.featured ? 'text-[var(--ash)]' : 'text-[var(--ink-soft)]'}`}>
+                <p className={`text-body mb-[var(--spacing-lg)] ${tier.featured ? 'opacity-80' : 'text-[var(--ink-soft)]'}`}>
                   {tier.description}
                 </p>
                 <div className="mb-[var(--spacing-lg)] flex items-baseline gap-x-1">
                   <span className="text-display-md">{tier.priceMonthly}</span>
                   {tier.priceMonthly !== 'Custom' && (
-                    <span className="text-body-sm text-[var(--mute)]">/month</span>
+                    <span className={`text-body-sm ${tier.featured ? 'opacity-60' : 'text-[var(--mute)]'}`}>/month</span>
                   )}
                 </div>
 

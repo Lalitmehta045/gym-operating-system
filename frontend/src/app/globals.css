@@ -81,6 +81,10 @@
   --spacing-lg: 24px;
   --spacing-xl: 32px;
   --spacing-xxl: 48px;
+  --spacing-3xl: 64px;
+  --spacing-4xl: 80px;
+  --spacing-5xl: 96px;
+  --spacing-6xl: 128px;
   --spacing-section: 64px;
   --spacing-section-lg: 96px;
 
@@ -464,7 +468,7 @@ body {
 
 .pricing-card-featured {
   background-color: var(--ink);
-  color: var(--on-primary);
+  color: var(--canvas);
   padding: var(--spacing-xl);
   border-radius: var(--radius-marketing);
 }
