@@ -1,6 +1,12 @@
-export const WHATSAPP_PROVIDER_TOKEN = 'WHATSAPP_PROVIDER_TOKEN';
+﻿export const WHATSAPP_PROVIDER_TOKEN = 'WHATSAPP_PROVIDER_TOKEN';
+export const WHATSAPP_PROVIDERS_TOKEN = 'WHATSAPP_PROVIDERS_TOKEN';
 
 export interface IWhatsAppProvider {
+  /**
+   * Name of the provider (used for selection)
+   */
+  providerName: string;
+
   /**
    * Sends a WhatsApp template message.
    * @param to The recipient's phone number
@@ -13,6 +19,7 @@ export interface IWhatsAppProvider {
     to: string,
     templateName: string,
     languageCode: string,
-    components: any[]
+    components: any[],
+    credentials?: Record<string, any>
   ): Promise<{ messageId: string }>;
 }

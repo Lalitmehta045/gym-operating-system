@@ -4,10 +4,10 @@ import axios from 'axios';
 import { ExternalServiceCall } from '../../common/utils/circuit-breaker.util.js';
 
 @Injectable()
-export class MetaWhatsAppProvider implements IWhatsAppProvider {
-  providerName = 'META';
-  private readonly logger = new Logger(MetaWhatsAppProvider.name);
-  private readonly apiUrl = 'https://graph.facebook.com/v19.0';
+export class AiSensyWhatsAppProvider implements IWhatsAppProvider {
+  providerName = 'aisensy';
+  private readonly logger = new Logger(AiSensyWhatsAppProvider.name);
+  private readonly apiUrl = 'https://api.aisensy.com/v1/whatsapp/send';
 
   
   async sendTemplate(
@@ -20,37 +20,33 @@ export class MetaWhatsAppProvider implements IWhatsAppProvider {
     
     try {
       const response = await ExternalServiceCall.execute(
-        'whatsapp-send-template',
+        'whatsapp-aisensy-send-template',
         () => axios.post(
-          `${this.apiUrl}/${credentials.whatsappPhoneNumberId}/messages`,
+          this.apiUrl,
           {
-            messaging_product: 'whatsapp',
-            to,
-            type: 'template',
-            template: {
-              name: templateName,
-              language: { code: languageCode },
-              components,
-            },
+            to: to,
+            template: templateName,
+            language: languageCode,
+            parameters: components.flatMap(c => c.parameters || []).map(p => p.text || ''),
           },
           {
             headers: {
-              Authorization: `Bearer ${credentials.whatsappAccessToken}`,
+              'Authorization': `Bearer ${credentials.apiKey}`,
               'Content-Type': 'application/json',
             },
             timeout: 5000,
           }
         ),
         (err) => {
-          this.logger.error('WhatsApp API unavailable for template.', err);
-          throw err; // Let it throw to trigger retry handling by the caller
+          this.logger.error('AiSensy WhatsApp API unavailable for template.', err);
+          throw err;
         },
         { timeout: 5000 }
       );
 
-      const messageId = response.data.messages?.[0]?.id;
+      const messageId = response.data.message_id;
       if (!messageId) {
-        throw new InternalServerErrorException('No message ID returned from Meta API');
+        throw new InternalServerErrorException('No message ID returned from AiSensy API');
       }
 
       return { messageId };
@@ -59,17 +55,17 @@ export class MetaWhatsAppProvider implements IWhatsAppProvider {
       
       // Determine if error is transient for the Queue to handle retries
       if (status === 429) {
-        throw new ServiceUnavailableException('WhatsApp API Rate Limited (429)');
+        throw new ServiceUnavailableException('AiSensy WhatsApp API Rate Limited (429)');
       } else if (status === 500) {
-        throw new InternalServerErrorException('WhatsApp API Internal Error (500)');
+        throw new InternalServerErrorException('AiSensy WhatsApp API Internal Error (500)');
       } else if (status === 502) {
-        throw new BadGatewayException('WhatsApp API Bad Gateway (502)');
+        throw new BadGatewayException('AiSensy WhatsApp API Bad Gateway (502)');
       } else if (status === 503) {
-        throw new ServiceUnavailableException('WhatsApp API Service Unavailable (503)');
+        throw new ServiceUnavailableException('AiSensy WhatsApp API Service Unavailable (503)');
       } else if (status === 504) {
-        throw new GatewayTimeoutException('WhatsApp API Gateway Timeout (504)');
+        throw new GatewayTimeoutException('AiSensy WhatsApp API Gateway Timeout (504)');
       } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        throw new GatewayTimeoutException('WhatsApp API Request Timeout');
+        throw new GatewayTimeoutException('AiSensy WhatsApp API Request Timeout');
       }
 
       // If it's a 400 Bad Request, it's non-transient, throw the raw error

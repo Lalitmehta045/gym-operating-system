@@ -4,13 +4,15 @@ import crypto from 'crypto';
 
 @Injectable()
 export class MockWhatsAppProvider implements IWhatsAppProvider {
+  providerName = 'MOCK';
   private readonly logger = new Logger(MockWhatsAppProvider.name);
 
   async sendTemplate(
     to: string,
     templateName: string,
     languageCode: string,
-    components: any[]
+    components: any[],
+    credentials: Record<string, any> = {}
   ): Promise<{ messageId: string }> {
     this.logger.log(`[MOCK] Sending WhatsApp template '${templateName}' to ${to}`);
     this.logger.log(`[MOCK] Language: ${languageCode}, Components: ${JSON.stringify(components)}`);
