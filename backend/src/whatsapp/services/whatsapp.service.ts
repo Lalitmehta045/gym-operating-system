@@ -1,5 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { WHATSAPP_PROVIDER_TOKEN, WHATSAPP_PROVIDERS_TOKEN } from '../providers/whatsapp-provider.interface.js';
+import type { IWhatsAppProvider } from '../providers/whatsapp-provider.interface.js';
+import { IntegrationSettingsService } from '../../settings/services/integration-settings.service.js';
 
 interface RenewalReminderRecipient {
   tenantId: string;
@@ -16,7 +19,12 @@ interface RenewalReminderRecipient {
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private integrationSettingsService: IntegrationSettingsService,
+    @Inject(WHATSAPP_PROVIDER_TOKEN)
+    private readonly whatsappProvider: IWhatsAppProvider,
+  ) {}
 
   /**
    * Core enqueue function replacing direct sending.
@@ -322,7 +330,7 @@ export class WhatsappService {
 
     const existingKeys = new Set(
       existingLogs.map(
-        (log) => `${log.tenantId}:${log.memberId ?? ''}:${log.type}`,
+        (log) => `${log.tenantId}:${log.memberId}:${log.type}`,
       ),
     );
 

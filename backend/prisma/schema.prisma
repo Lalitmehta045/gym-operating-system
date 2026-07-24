@@ -521,9 +521,14 @@ model TenantIntegrationSettings {
   razorpayKeySecret     String?  @map("razorpay_key_secret") @db.VarChar(255)
   razorpayWebhookSecret String?  @map("razorpay_webhook_secret") @db.VarChar(255)
   razorpayEnabled       Boolean  @default(false) @map("razorpay_enabled")
+  /// @deprecated Use whatsappCredentials instead
   whatsappPhoneNumberId String?  @map("whatsapp_phone_number_id") @db.VarChar(100)
+  /// @deprecated Use whatsappCredentials instead
   whatsappAccessToken   String?  @map("whatsapp_access_token")
+  /// @deprecated Use whatsappCredentials instead
   whatsappBusinessId    String?  @map("whatsapp_business_id") @db.VarChar(100)
+  whatsappProvider      WhatsAppProvider? @map("whatsapp_provider")
+  whatsappCredentials   Json?             @map("whatsapp_credentials")
   whatsappEnabled       Boolean  @default(false) @map("whatsapp_enabled")
   notifyExpiringDays    Int      @default(7) @map("notify_expiring_days")
   notifyOnPayment       Boolean  @default(true) @map("notify_on_payment")
@@ -700,4 +705,12 @@ enum AuditAction {
   SUBSCRIPTION_RENEWED
   SUSPEND
   ACTIVATE
+}
+
+enum WhatsAppProvider {
+  META
+  MSG91
+  TWILIO
+  INTERAKT
+  AISENSY
 }
